@@ -13,6 +13,9 @@ SinkPeer.prototype.socketInit = function(cb) {
   this._socket.emit('sink', function(data) {
     self._id = data.id;
     self._pc = new mozRTCPeerConnection(self._config);
+
+    this.setupDataChannel();
+
     self._socket.on('offer', function(data) {
       self._pc.setRemoteDescription(data.sdp, function() {
         self._pc.createAnswer(function(answer) {
@@ -25,3 +28,17 @@ SinkPeer.prototype.socketInit = function(cb) {
     cb(self._id);
   });
 });
+
+SinkPeer.prototype.setupDataChannel = function() {
+  this._pc.ondatachannel = function(dc) {
+    dc.binaryType = "blob";
+    dc.onmessage = function(e) {
+
+    };
+    this._dc = dc;
+  };
+
+  this._pc.onclosedconnection = function() {
+    // ??
+  };
+};

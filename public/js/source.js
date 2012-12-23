@@ -35,32 +35,45 @@ SourcePeer.prototype.socketInit = function() {
       self._pcs[data.sink].setRemoteDescription(data.sdp);
     });
   });
-}
+};
 
 // Based on stream type requested, sets up the stream for PC.
 SourcePeer.prototype.handleStream(pc, target, cb) {
-  if (this._streams === 'v') {
+  /*if (this._streams === 'v') {
   } else if (this._streams === 'a') {
   } else if (this._streams === 'av') {
-  } else if (this._streams === 'd') {
+  } else if (this._streams === 'd') {*/
     this.setupDataChannel(pc, target);
+  /*} else if (this._streams === 'dav') {
+    this.setupDataChannel(pc, target);
+  } else if (this._streams === 'da') {
+    this.setupDataChannel(pc, target);
+  } else if (this._streams === 'dv') {
+    this.setupDataChannel(pc, target);
+  } else {
+    //error
+  }*/
+};
+
+SourcePeer.prototype.setupDataChannel = function(pc, target) {
+  pc.onconnection = function() {
     var dc = pc.createDataChannel(this._name, {}, target);
     this._dc[target] = dc;
     dc.binaryType = 'blob';
     dc.onmessage = function(e) {
+      this.handleDataMessage(pc, e);
       // process e.data
     };
-  } else if (this._streams === 'dav') {
-  } else if (this._streams === 'da') {
-  } else if (this._streams === 'dv') {
-  } else {
-    //error
-  }
-}
+  };
 
-SourcePeer.prototype.setupDataChannel = function(pc, target) {
+  pc.onclosedconnection = function() {
+    // ??
+  };
+};
 
-});
+SourcePeer.prototype.on = function(code, cb) {
+  // For enduser.
+};
 
 SourcePeer.prototype.gotDescription = function(desc) {
   this._pc
