@@ -57,7 +57,7 @@ SinkPeer.prototype.setupDataChannel = function() {
     console.log('SINK: ondatachannel triggered');
     dc.binaryType = "blob";
     dc.onmessage = function(e) {
-
+      console.log(e.data);
     };
     self._dc = dc;
   };

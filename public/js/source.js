@@ -82,10 +82,10 @@ SourcePeer.prototype.setupDataChannel = function(pc, target, cb) {
   pc.onconnection = function() {
     console.log('SOURCE: onconnection triggered.');
     var dc = pc.createDataChannel(self._name, {}, target);
-    self._dc[target] = dc;
+    self._dcs[target] = dc;
     dc.binaryType = 'blob';
     dc.onmessage = function(e) {
-      self.handleDataMessage(pc, e);
+      self.handleDataMessage(dc, e);
       // process e.data
     };
   };
@@ -100,6 +100,13 @@ SourcePeer.prototype.setupDataChannel = function(pc, target, cb) {
   cb();
 };
 
+// Handles a Datachannel message.
+SourcePeer.prototype.handleDataMessage = function(dc, e) {
+  console.log(e.data);
+
+}
+
 SourcePeer.prototype.on = function(code, cb) {
   // For enduser.
 };
+

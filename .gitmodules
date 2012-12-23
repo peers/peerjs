@@ -1,0 +1,3 @@
+[submodule "public/js/binarypack"]
+	path = public/js/binarypack
+	url = git@github.com:michellebu/js-binarypack.git
