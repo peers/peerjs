@@ -26,9 +26,9 @@ io.sockets.on('connection', function(socket) {
   clients[socket.id] = socket;
 
   // Source connected.
-  socket.on('source', function(msg, fn) {
+  socket.on('source', function(fn) {
     fn({ 'id': socket.id });
-    connections(socket.id) = [];
+    connections[socket.id] = [];
   });
   // Sink connected.
   socket.on('sink', function(msg, fn) {
@@ -41,17 +41,18 @@ io.sockets.on('connection', function(socket) {
 
   // Offer from src to dest.
   socket.on('offer', function (msg) {
+    console.log('OFFER MADE');
     sink = clients[msg.sink];
     sink.emit('offer', msg);
   });
   // Answer from dest to src.
   socket.on('answer', function (msg) {
-    source = msg.source;
-    source.emit('answer', msg, function() {
-      // Add to list of successful connections.
-      connections[msg.source].append(msg.sink);
-      console.log('Successful Offer/Answer between ', msg.source, ' and ', msg.sink);
-    });
+    console.log('ANSWER MADE');
+    source = clients[msg.source];
+    // Add to list of successful connections.
+    // May want to move this to another message soon.
+    connections[msg.source].push(msg.sink);
+    source.emit('answer', msg);
   });
 
   socket.on('disconnect', function() {
@@ -68,6 +69,4 @@ app.get('/', function(req, res){
 });
 
 
-app.listen(80);
-
-
+app.listen(process.env.PORT || 8000);

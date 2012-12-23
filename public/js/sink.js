@@ -12,34 +12,54 @@ SinkPeer.prototype.socketInit = function(cb) {
   self = this;
   this._socket.emit('sink', { source: this._source }, function(data) {
     self._id = data.id;
-    self._pc = new mozRTCPeerConnection(self._config);
+    self._pc = new window.mozRTCPeerConnection(self._config);
 
-    this.setupDataChannel();
+    //FIREFOX
+    self._pc.onaddstream = function(obj) {
+      console.log('SINK: data stream get');
+    };
 
-    self._socket.on('offer', function(data) {
-      self._pc.setRemoteDescription(data.sdp, function() {
+    self.setupDataChannel();
+
+    self._socket.on('offer', function(offer) {
+      self._pc.setRemoteDescription(JSON.parse(offer.sdp), function() {
         self._pc.createAnswer(function(answer) {
           self._pc.setLocalDescription(answer, function() {
             self._socket.emit('answer',
-                { 'sink' = this._id,'sdp': answer, 'source': data.source });
+                { 'sink': self._id,
+                  'sdp': JSON.stringify(answer),
+                  'source': offer.source });
             // Firefoxism
-            self._pc.connectDataConnection(5001,5000);
+            console.log('FIREFOX', new Date());
+            self._pc.connectDataConnection(5001, 5000);
+            console.log('FIREFOX-2');
+          }, function(err) {
+            console.log('failed to setLocalDescription, ', err)
           });
+        }, function(err) {
+          console.log('failed to create answer, ', err)
         });
+      }, function(err) {
+        console.log('failed to setRemoteDescription with offer, ', err);
       });
     });
     cb(self._id);
   });
-});
+};
 
 SinkPeer.prototype.setupDataChannel = function() {
   this._pc.ondatachannel = function(dc) {
+    console.log('SINK: ondatachannel triggered');
     dc.binaryType = "blob";
     dc.onmessage = function(e) {
 
     };
-    this._dc = dc;
+    self._dc = dc;
   };
+
+  this._pc.onconnection = function() {
+    console.log('SINK: onconnection triggered');
+  }
 
   this._pc.onclosedconnection = function() {
     // ??
