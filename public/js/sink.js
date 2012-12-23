@@ -43,7 +43,6 @@ SinkPeer.prototype.socketInit = function(cb) {
         console.log('failed to setRemoteDescription with offer, ', err);
       });
     });
-    cb(self._id);
   });
 };
 
