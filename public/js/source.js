@@ -26,13 +26,17 @@ SourcePeer.prototype.socketInit = function() {
       self.handleStream(pc, target, function() {
         pc.createOffer(function(offer) {
           pc.setLocalDescription(offer);
-          self._socket.emit('offer', { 'sdp': offer, 'sink': target });
+          self._socket.emit('offer',
+              { 'sdp': offer, 'sink': target, 'source': this._id });
         });
       });
     });
 
-    self._socket.on('answer', function(data) {
+    self._socket.on('answer', function(data, fn) {
       self._pcs[data.sink].setRemoteDescription(data.sdp);
+      fn();
+      // Firefoxism
+      self._pcs[data.sink].connectDataConnection(5000,5001);
     });
   });
 };

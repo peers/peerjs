@@ -26,17 +26,32 @@ io.sockets.on('connection', function(socket) {
   clients[socket.id] = socket;
 
   // Source connected.
-  socket.on('source', function(from, msg) {
-
+  socket.on('source', function(msg, fn) {
+    fn({ 'id': socket.id });
+    connections(socket.id) = [];
+  });
+  // Sink connected.
+  socket.on('sink', function(msg, fn) {
+    var source_id = msg.source;
+    var sink_id = socket.id;
+    var source = clients[source_id];
+    source.emit('sink-connected', { 'sink': sink_id });
+    fn({ 'id': sink_id });
   });
 
   // Offer from src to dest.
-  socket.on('offer', function (from, msg) {
+  socket.on('offer', function (msg) {
+    sink = clients[msg.sink];
+    sink.emit('offer', msg);
   });
   // Answer from dest to src.
-  socket.on('answer', function (from, msg) {
-    var source = clients[msg.answer];
-    source.emit('client-connected' { member: msg.member, offer: msg.offer });
+  socket.on('answer', function (msg) {
+    source = msg.source;
+    source.emit('answer', msg, function() {
+      // Add to list of successful connections.
+      connections[msg.source].append(msg.sink);
+      console.log('Successful Offer/Answer between ', msg.source, ' and ', msg.sink);
+    });
   });
 
   socket.on('disconnect', function() {
