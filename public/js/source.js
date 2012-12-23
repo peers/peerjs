@@ -31,7 +31,7 @@ SourcePeer.prototype.socketInit = function() {
           pc.createOffer(function(offer) {
             pc.setLocalDescription(offer, function() {
               self._socket.emit('offer',
-                  { 'sdp': JSON.stringify(offer),
+                  { 'sdp': offer,
                     'sink': target,
                     'source': self._id });
             }, function(err) {
@@ -43,7 +43,7 @@ SourcePeer.prototype.socketInit = function() {
     });
 
     self._socket.on('answer', function(data) {
-      self._pcs[data.sink].setRemoteDescription(JSON.parse(data.sdp), function() {
+      self._pcs[data.sink].setRemoteDescription(data.sdp, function() {
         // Firefoxism
         console.log('FIREFOX', new Date());
         self._pcs[data.sink].connectDataConnection(5000, 5001);
@@ -88,6 +88,10 @@ SourcePeer.prototype.setupDataChannel = function(pc, target, cb) {
       self.handleDataMessage(pc, e);
       // process e.data
     };
+  };
+
+  pc.ondatachannel = function() {
+    console.log('SOURCE: data channeled');
   };
 
   pc.onclosedconnection = function() {

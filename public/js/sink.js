@@ -22,15 +22,15 @@ SinkPeer.prototype.socketInit = function(cb) {
     self.setupDataChannel();
 
     self._socket.on('offer', function(offer) {
-      self._pc.setRemoteDescription(JSON.parse(offer.sdp), function() {
+      self._pc.setRemoteDescription(offer.sdp, function() {
         self._pc.createAnswer(function(answer) {
           self._pc.setLocalDescription(answer, function() {
             self._socket.emit('answer',
                 { 'sink': self._id,
-                  'sdp': JSON.stringify(answer),
+                  'sdp': answer,
                   'source': offer.source });
             // Firefoxism
-            console.log('FIREFOX', new Date());
+            console.log('FIREFOX');
             self._pc.connectDataConnection(5001, 5000);
             console.log('FIREFOX-2');
           }, function(err) {
