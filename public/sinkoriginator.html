@@ -1,7 +1,7 @@
 <!DOCTYPE HTML> 
 <html lang="en"> 
 <head>
-<title>Source Test</title>
+<title>Sink Test</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
 <meta http-equiv="Content-Language" content="en-us"> 
 <meta name="description" content=""> 
@@ -9,30 +9,29 @@
 
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> 
 <script src="/socket.io/socket.io.js"></script>
-<script type="text/javascript" src="/js/binarypack/dist/binarypack.js"></script>
 <script type="text/javascript" src="/js/msgpack/msgpack.js"></script>
+<script type="text/javascript" src="/js/binarypack/dist/binarypack.js"></script>
 <script type="text/javascript" src="/js/adapter.js"></script>
-<script type="text/javascript" src="/js/source.js"></script>
+<script type="text/javascript" src="/js/sink.js"></script>
 <script>
 $(document).ready(function() {
-  source = new SourcePeer({});
-  source.on('ready', function(source_id) {
-    console.log(source_id);
+  originator = new SinkPeer({});
+  originator.on('ready', function(id) {
+    console.log(id);
   });
-  source.on('sink', function(sink_id) {
-    console.log('Creepy message sent to sink');
-    source.send('I see you, ' + sink_id, sink_id);
-    source.send('Guys, ' + sink_id + ' just joined us!');
+  originator.on('connection', function(recipient) {
+    originator.send('Hi there!');
   });
-  source.on('data', function(data) {
+  originator.on('data', function(data) {
     console.log(data);
   });
 });
+
 </script>
 
 </head> 
  
 <body> 
-  This is the P2P source.
+  This is a P2P originator sink.
 </body> 
 </html> 

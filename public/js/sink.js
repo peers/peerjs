@@ -1,10 +1,7 @@
 function SinkPeer(options) {
-  if (!browserisms) {
-    readyfn({ error: 'RTC-incompatible browser' });
-  }
   this._config = options.config || {};
   this._source = options.source || null;
-  this._stream = this._source ? options.stream || null : options.stream || 'd';
+  this._stream = options.stream || 'd';
   this._pc = null;
   this._id = null;
   this._dc = null;
@@ -27,19 +24,13 @@ SinkPeer.prototype.socketInit = function() {
         console.log('SINK: data stream get');
       };
 
-
       self._socket.on('offer', function(offer) {
         self._pc.setRemoteDescription(offer.sdp, function() {
 
           // If we also have to set up a stream on the sink end, do so.
-          if (!!self._stream) {
-            self.handleStream(false, function() {
-              self.maybeBrowserisms(false, offer.source);
-            });
-          } else {
+          self.handleStream(false, offer.source, function() {
             self.maybeBrowserisms(false, offer.source);
-          }
-
+          });
         }, function(err) {
           console.log('failed to setRemoteDescription with offer, ', err);
         });
@@ -51,15 +42,27 @@ SinkPeer.prototype.socketInit = function() {
     this._socket.emit('source', function(data) {
       self._id = data.id;
 
-      if (!!self.readyHandler) {
-        self.readyHandler(self._id);
+      if (!!self._readyHandler) {
+        self._readyHandler(self._id);
       }
 
-      this._socket.on('sink-connected', function(data) {
+      self._socket.on('sink-connected', function(data) {
         target = data.sink;
         self._pc = new RTCPeerConnection(self._config);
-        self.handleStream(true, function() {
+        self.handleStream(true, target, function() {
           self.maybeBrowserisms(true, target);
+        });
+      });
+
+      self._socket.on('answer', function(data) {
+        self._pc.setRemoteDescription(data.sdp, function() {
+          // Firefoxism
+          if (browserisms == 'Firefox') {
+            self._pc.connectDataConnection(5000, 5001);
+          }
+          console.log('ORIGINATOR: PeerConnection success');
+        }, function(err) {
+          console.log('failed to setRemoteDescription, ', err);
         });
       });
     });
@@ -111,6 +114,7 @@ SinkPeer.prototype.makeAnswer = function(target) {
   });
 };
 
+
 SinkPeer.prototype.makeOffer = function(target) {
   var self = this;
 
@@ -121,38 +125,50 @@ SinkPeer.prototype.makeOffer = function(target) {
           'sink': target,
           'source': self._id });
     }, function(err) {
-      console.log('failed to setLocalDescription, ' err);
+      console.log('failed to setLocalDescription, ', err);
     });
   });
 };
 
 
-SinkPeer.prototype.handleStream = function(originator, cb) {
-  self.setupDataChannel(originator, cb);
+SinkPeer.prototype.handleStream = function(originator, target, cb) {
+  this.setupDataChannel(originator, target, cb);
 }
 
 
-SinkPeer.prototype.setupDataChannel = function(originator, cb) {
+SinkPeer.prototype.setupDataChannel = function(originator, target, cb) {
   self = this;
   if (browserisms != 'Webkit') {
     if (originator) {
+      /** ORIGINATOR SETUP */
       this._pc.onconnection = function() {
-        self._dc = pc.createDataChannel(self._name, {}, target);
+        console.log('ORIGINATOR: onconnection triggered');
+
+        self._dc = self._pc.createDataChannel('StreamAPI', {}, target);
         self._dc.binaryType = 'arraybuffer';
-      };
-    } else {
-      this._pc.ondatachannel = function(dc) {
-        console.log('SINK: ondatachannel triggered');
-        dc.binaryType = 'arraybuffer';
 
         if (!!self._connectionHandler) {
           self._connectionHandler(target);
         }
 
-        dc.onmessage = function(e) {
+        self._dc.onmessage = function(e) {
           self.handleDataMessage(e);
         };
+      };
+    } else {
+      /** TARGET SETUP */
+      this._pc.ondatachannel = function(dc) {
+        console.log('SINK: ondatachannel triggered');
         self._dc = dc;
+        self._dc.binaryType = 'arraybuffer';
+
+        if (!!self._connectionHandler) {
+          self._connectionHandler(target);
+        }
+
+        self._dc.onmessage = function(e) {
+          self.handleDataMessage(e);
+        };
       };
 
       this._pc.onconnection = function() {
@@ -177,7 +193,6 @@ SinkPeer.prototype.send = function(data) {
 // TODO: have these extend Peer, which will impl these generic handlers.
 SinkPeer.prototype.handleDataMessage = function(e) {
   data = MsgPack.decode(e.data);
-  console.log(data);
 
   if (!!this._dataHandler) {
     this._dataHandler(data);

@@ -149,7 +149,6 @@ SourcePeer.prototype.send = function(data, sink) {
 // Handles a DataChannel message.
 SourcePeer.prototype.handleDataMessage = function(e) {
   var data = MsgPack.decode(e.data);
-  console.log(data);
 
   if (!!this._dataHandler) {
     this._dataHandler(data);
