@@ -106,7 +106,7 @@ SourcePeer.prototype.setupDataChannel = function(pc, target, cb) {
     console.log('SOURCE: onconnection triggered.');
     var dc = pc.createDataChannel(self._name, {}, target);
     self._dcs[target] = dc;
-    dc.binaryType = 'arraybuffer';
+    dc.binaryType = 'blob';
 
     // User handler
     if (!!self._sinkHandler) {
@@ -148,16 +148,18 @@ SourcePeer.prototype.send = function(data, sink) {
 
 // Handles a DataChannel message.
 SourcePeer.prototype.handleDataMessage = function(e) {
-  var data = BinaryPack.unpack(e.data);
+  BinaryPack.unpack(e.data, function(msg) {
+    if (!!this._dataHandler) {
+      this._dataHandler(msg);
+    }
+  });
 
-  if (!!this._dataHandler) {
-    this._dataHandler(data);
-  }
 }
 
 
 SourcePeer.prototype.on = function(code, cb) {
   // For enduser.
+  // MAKE A HASH
   if (code === 'data') {
     this._dataHandler = cb;
   } else if (code === 'sink') {

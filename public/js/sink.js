@@ -145,7 +145,7 @@ SinkPeer.prototype.setupDataChannel = function(originator, target, cb) {
         console.log('ORIGINATOR: onconnection triggered');
 
         self._dc = self._pc.createDataChannel('StreamAPI', {}, target);
-        self._dc.binaryType = 'arraybuffer';
+        self._dc.binaryType = 'blob';
 
         if (!!self._connectionHandler) {
           self._connectionHandler(target);
@@ -160,7 +160,7 @@ SinkPeer.prototype.setupDataChannel = function(originator, target, cb) {
       this._pc.ondatachannel = function(dc) {
         console.log('SINK: ondatachannel triggered');
         self._dc = dc;
-        self._dc.binaryType = 'arraybuffer';
+        self._dc.binaryType = 'blob';
 
         if (!!self._connectionHandler) {
           self._connectionHandler(target);
@@ -192,11 +192,11 @@ SinkPeer.prototype.send = function(data) {
 // Handles a DataChannel message.
 // TODO: have these extend Peer, which will impl these generic handlers.
 SinkPeer.prototype.handleDataMessage = function(e) {
-  data = BinaryPack.unpack(e.data);
-
-  if (!!this._dataHandler) {
-    this._dataHandler(data);
-  }
+  BinaryPack.unpack(e.data, function(msg) {
+    if (!!this._dataHandler) {
+      this._dataHandler(msg);
+    }
+  });
 }
 
 
@@ -210,6 +210,7 @@ SinkPeer.prototype.on = function(code, cb) {
   } else if (code === 'ready') {
     this._readyHandler = cb;
   } else if (code === 'connection') {
+    console.log('poop');
     this._connectionHandler = cb;
   }
 }
