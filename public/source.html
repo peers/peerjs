@@ -11,9 +11,22 @@
 <script src="/socket.io/socket.io.js"></script>
 <script type="text/javascript" src="/js/binarypack/dist/binarypack.js"></script>
 <script type="text/javascript" src="/js/msgpack/msgpack.js"></script>
+<script type="text/javascript" src="/js/adapter.js"></script>
 <script type="text/javascript" src="/js/source.js"></script>
 <script>
-
+$(document).ready(function() {
+  source = new SourcePeer({});
+  source.on('ready', function(source_id) {
+    console.log(source_id);
+  });
+  source.on('sink', function(sink_id) {
+    source.send('I see you, ' + sink_id, sink_id);
+    source.send('Guys, ' + sink_id + ' just joined us!');
+  });
+  source.on('data', function(data) {
+    console.log(data);
+  });
+});
 </script>
 
 </head> 

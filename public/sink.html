@@ -11,8 +11,19 @@
 <script src="/socket.io/socket.io.js"></script>
 <script type="text/javascript" src="/js/msgpack/msgpack.js"></script>
 <script type="text/javascript" src="/js/binarypack/dist/binarypack.js"></script>
+<script type="text/javascript" src="/js/adapter.js"></script>
 <script type="text/javascript" src="/js/sink.js"></script>
 <script>
+$(document).ready(function() {
+  $('#connect').click(function() {
+    var source = $('#source').val();
+    sink = new SinkPeer({ source: source });
+    sink.on('data', function(data) {
+      console.log(data);
+      sink.send('I am so scared.');
+    });
+  });
+});
 
 </script>
 
@@ -20,5 +31,9 @@
  
 <body> 
   This is a P2P sink.
+  <br><br>
+  Enter source ID to connect to:
+  <br><input type="text" id="source"></input>
+  <button id="connect">Connect</button>
 </body> 
 </html> 
