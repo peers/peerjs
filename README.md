@@ -9,7 +9,7 @@ See [[b public/js/sink.js]] for progress.
 
 
 Current Dependencies:
-====
+===
 
-*node.js/SocketIO
-*BinaryPack/MsgPack for easy ArrayBuffers
+* node.js/SocketIO
+* BinaryPack/MsgPack for easy ArrayBuffers
