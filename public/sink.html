@@ -18,7 +18,6 @@ $(document).ready(function() {
     var source = $('#source').val();
     sink = new SinkPeer({ source: source });
     sink.on('data', function(data) {
-      console.log(data);
       sink.send('I am so scared.');
     });
   });

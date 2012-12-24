@@ -11,7 +11,7 @@ function SinkPeer(options) {
 
 
 SinkPeer.prototype.socketInit = function() {
-  self = this;
+  var self = this;
   // Multiple sinks to one source.
   if (!!this._source) {
     this._socket.emit('sink', { source: this._source, isms: browserisms },
@@ -137,7 +137,7 @@ SinkPeer.prototype.handleStream = function(originator, target, cb) {
 
 
 SinkPeer.prototype.setupDataChannel = function(originator, target, cb) {
-  self = this;
+  var self = this;
   if (browserisms != 'Webkit') {
     if (originator) {
       /** ORIGINATOR SETUP */
@@ -192,9 +192,10 @@ SinkPeer.prototype.send = function(data) {
 // Handles a DataChannel message.
 // TODO: have these extend Peer, which will impl these generic handlers.
 SinkPeer.prototype.handleDataMessage = function(e) {
+  var self = this;
   BinaryPack.unpack(e.data, function(msg) {
-    if (!!this._dataHandler) {
-      this._dataHandler(msg);
+    if (!!self._dataHandler) {
+      self._dataHandler(msg);
     }
   });
 }
@@ -210,7 +211,6 @@ SinkPeer.prototype.on = function(code, cb) {
   } else if (code === 'ready') {
     this._readyHandler = cb;
   } else if (code === 'connection') {
-    console.log('poop');
     this._connectionHandler = cb;
   }
 }
