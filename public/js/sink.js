@@ -53,11 +53,12 @@ SinkPeer.prototype.socketInit = function(cb) {
 };
 
 SinkPeer.prototype.setupDataChannel = function() {
+  self = this;
   this._pc.ondatachannel = function(dc) {
     console.log('SINK: ondatachannel triggered');
-    dc.binaryType = "blob";
+    dc.binaryType = "arraybuffer";
     dc.onmessage = function(e) {
-      console.log(e.data);
+      self.handleDataMessage(e);
     };
     self._dc = dc;
   };
@@ -70,3 +71,15 @@ SinkPeer.prototype.setupDataChannel = function() {
     // ??
   };
 };
+
+SinkPeer.prototype.send = function(data) {
+  var ab = MsgPack.encode(data);
+  this._dc.send(ab);
+}
+
+// Handles a DataChannel message.
+// TODO: have these extend Peer, which will impl these generic handlers.
+SinkPeer.prototype.handleDataMessage = function(e) {
+  data = MsgPack.decode(e.data);
+  console.log(data);
+}
