@@ -1,6 +1,3 @@
 [submodule "public/js/binarypack"]
 	path = public/js/binarypack
 	url = git@github.com:michellebu/js-binarypack.git
-[submodule "public/js/msgpack"]
-	path = public/js/msgpack
-	url = git@github.com:michellebu/msgpack-js-browser.git
