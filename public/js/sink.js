@@ -184,7 +184,7 @@ SinkPeer.prototype.setupDataChannel = function(originator, target, cb) {
 };
 
 SinkPeer.prototype.send = function(data) {
-  var ab = MsgPack.encode(data);
+  var ab = BinaryPack.pack(data);
   this._dc.send(ab);
 }
 
@@ -192,7 +192,7 @@ SinkPeer.prototype.send = function(data) {
 // Handles a DataChannel message.
 // TODO: have these extend Peer, which will impl these generic handlers.
 SinkPeer.prototype.handleDataMessage = function(e) {
-  data = MsgPack.decode(e.data);
+  data = BinaryPack.unpack(e.data);
 
   if (!!this._dataHandler) {
     this._dataHandler(data);

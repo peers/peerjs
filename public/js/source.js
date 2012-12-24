@@ -131,7 +131,7 @@ SourcePeer.prototype.setupDataChannel = function(pc, target, cb) {
 
 SourcePeer.prototype.send = function(data, sink) {
   // TODO: try/catch
-  var ab = MsgPack.encode(data);
+  var ab = BinaryPack.pack(data);
 
   if (!!sink) {
     this._dcs[sink].send(ab);
@@ -148,7 +148,7 @@ SourcePeer.prototype.send = function(data, sink) {
 
 // Handles a DataChannel message.
 SourcePeer.prototype.handleDataMessage = function(e) {
-  var data = MsgPack.decode(e.data);
+  var data = BinaryPack.unpack(e.data);
 
   if (!!this._dataHandler) {
     this._dataHandler(data);
