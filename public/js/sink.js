@@ -7,6 +7,31 @@ function SinkPeer(options) {
   this._dc = null;
   this._socket = io.connect('http://localhost');
   this.socketInit();
+  this._handlers = {};
+
+  // Testing firefox.
+  // MULTICONNECTION doesn't work still.
+  if (browserisms == 'Firefox' && !options.source) {
+    if (!SinkPeer.usedPorts) {
+      SinkPeer.usedPorts = [];
+    }
+    this.localPort = randomPort();
+    while (SinkPeer.usedPorts.indexOf(this.localPort) != -1) {
+      this.localPort = randomPort();
+    }
+    this.remotePort = randomPort();
+    while (this.remotePort == this.localPort ||
+        SinkPeer.usedPorts.indexOf(this.localPort) != -1) {
+      this.remotePort = randomPort();
+    }
+    SinkPeer.usedPorts.push(this.remotePort);
+    SinkPeer.usedPorts.push(this.localPort);
+  }
+};
+
+
+function randomPort() {
+  return Math.round(Math.random() * 60535) + 5000;
 };
 
 
@@ -42,8 +67,8 @@ SinkPeer.prototype.socketInit = function() {
     this._socket.emit('source', function(data) {
       self._id = data.id;
 
-      if (!!self._readyHandler) {
-        self._readyHandler(self._id);
+      if (!!self._handlers['ready']) {
+        self._handlers['ready'](self._id);
       }
 
       self._socket.on('sink-connected', function(data) {
@@ -58,7 +83,9 @@ SinkPeer.prototype.socketInit = function() {
         self._pc.setRemoteDescription(data.sdp, function() {
           // Firefoxism
           if (browserisms == 'Firefox') {
-            self._pc.connectDataConnection(5000, 5001);
+            self._pc.connectDataConnection(self.localPort, self.remotePort);
+            //self._pc.connectDataConnection(5000, 5001);
+            self._socket.emit('port', { sink: data.sink, remote: self.localPort, local: self.remotePort });
           }
           console.log('ORIGINATOR: PeerConnection success');
         }, function(err) {
@@ -98,14 +125,19 @@ SinkPeer.prototype.makeAnswer = function(target) {
 
   this._pc.createAnswer(function(answer) {
     self._pc.setLocalDescription(answer, function() {
+      if (browserisms && browserisms == 'Firefox') {
+        self._socket.on('port', function(data) {
+          self._pc.connectDataConnection(data.local, data.remote);
+        });
+      }
       self._socket.emit('answer',
           { 'sink': self._id,
             'sdp': answer,
             'source': target });
       // Firefoxism
-      if (browserisms && browserisms == 'Firefox') {
-        self._pc.connectDataConnection(5001, 5000);
-      }
+      //if (browserisms && browserisms == 'Firefox') {
+        //self._pc.connectDataConnection(5001, 5000);
+      //}
     }, function(err) {
       console.log('failed to setLocalDescription, ', err)
     });
@@ -147,8 +179,8 @@ SinkPeer.prototype.setupDataChannel = function(originator, target, cb) {
         self._dc = self._pc.createDataChannel('StreamAPI', {}, target);
         self._dc.binaryType = 'blob';
 
-        if (!!self._connectionHandler) {
-          self._connectionHandler(target);
+        if (!!self._handlers['connection']) {
+          self._handlers['connection'](target);
         }
 
         self._dc.onmessage = function(e) {
@@ -162,8 +194,8 @@ SinkPeer.prototype.setupDataChannel = function(originator, target, cb) {
         self._dc = dc;
         self._dc.binaryType = 'blob';
 
-        if (!!self._connectionHandler) {
-          self._connectionHandler(target);
+        if (!!self._handlers['connection']) {
+          self._handlers['connection'](target);
         }
 
         self._dc.onmessage = function(e) {
@@ -194,23 +226,13 @@ SinkPeer.prototype.send = function(data) {
 SinkPeer.prototype.handleDataMessage = function(e) {
   var self = this;
   BinaryPack.unpack(e.data, function(msg) {
-    if (!!self._dataHandler) {
-      self._dataHandler(msg);
+    if (!!self._handlers['data']) {
+      self._handlers['data'](msg);
     }
   });
 }
 
 
 SinkPeer.prototype.on = function(code, cb) {
-  if (code === 'stream') {
-    this._streamHandler = cb;
-  } else if (code === 'disconnect') {
-    this._disconnectHandler = cb;
-  } else if (code === 'data') {
-    this._dataHandler = cb;
-  } else if (code === 'ready') {
-    this._readyHandler = cb;
-  } else if (code === 'connection') {
-    this._connectionHandler = cb;
-  }
+  this._handlers[code] = cb;
 }

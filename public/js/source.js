@@ -10,6 +10,29 @@ function SourcePeer(options) {
   this._dcs = {};
   this._socket = io.connect('http://localhost');
   this.socketInit();
+  this._handlers = {};
+
+  // Firefox
+  if (browserisms == 'Firefox') {
+    if (!SourcePeer.usedPorts) {
+      SourcePeer.usedPorts = [];
+    }
+    this.localPort = randomPort();
+    while (SourcePeer.usedPorts.indexOf(this.localPort) != -1) {
+      this.localPort = randomPort();
+    }
+    this.remotePort = randomPort();
+    while (this.remotePort == this.localPort ||
+        SourcePeer.usedPorts.indexOf(this.remotePort) != -1) {
+      this.remotePort = randomPort();
+    }
+    SourcePeer.usedPorts.push(this.remotePort);
+    SourcePeer.usedPorts.push(this.localPort);
+  }
+};
+
+function randomPort() {
+  return Math.round(Math.random() * 60535) + 5000;
 };
 
 
@@ -18,8 +41,8 @@ SourcePeer.prototype.socketInit = function() {
   this._socket.emit('source', function(data) {
     self._id = data.id;
 
-    if (!!self._readyHandler) {
-      self._readyHandler(self._id);
+    if (!!self._handlers['ready']) {
+      self._handlers['ready'](self._id);
     }
 
     self._socket.on('sink-connected', function(data) {
@@ -35,7 +58,8 @@ SourcePeer.prototype.socketInit = function() {
       self._pcs[data.sink].setRemoteDescription(data.sdp, function() {
         // Firefoxism
         if (browserisms == 'Firefox') {
-          self._pcs[data.sink].connectDataConnection(5000, 5001);
+          self._pcs[data.sink].connectDataConnection(self.localPort, self.remotePort);
+          self._socket.emit('port', { sink: data.sink, local: self.remotePort, remote: self.localPort });
         }
         console.log('SOURCE: PeerConnection success');
       }, function(err) {
@@ -109,8 +133,8 @@ SourcePeer.prototype.setupDataChannel = function(pc, target, cb) {
     dc.binaryType = 'blob';
 
     // User handler
-    if (!!self._sinkHandler) {
-      self._sinkHandler(target);
+    if (!!self._handlers['sink']) {
+      self._handlers['sink'](target);
     }
 
     dc.onmessage = function(e) {
@@ -149,8 +173,8 @@ SourcePeer.prototype.send = function(data, sink) {
 // Handles a DataChannel message.
 SourcePeer.prototype.handleDataMessage = function(e) {
   BinaryPack.unpack(e.data, function(msg) {
-    if (!!this._dataHandler) {
-      this._dataHandler(msg);
+    if (!!this._handlers['data']) {
+      this._handlers['data'](msg);
     }
   });
 
@@ -160,19 +184,6 @@ SourcePeer.prototype.handleDataMessage = function(e) {
 SourcePeer.prototype.on = function(code, cb) {
   // For enduser.
   // MAKE A HASH
-  if (code === 'data') {
-    this._dataHandler = cb;
-  } else if (code === 'sink') {
-    // SUCCESSFUL sink connection.
-    this._sinkHandler = cb;
-  } else if (code === 'stream') {
-    this._streamHandler = cb;
-  } else if (code === 'ready') {
-    // Source has set up socket.
-    this._readyHandler = cb;
-  } else if (code == 'disconnect') {
-    // A sink has disconnected.
-    this._disconnectHandler = cb;
-  }
+  this._handlers[code] = cb;
 };
 

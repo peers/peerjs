@@ -61,6 +61,10 @@ io.sockets.on('connection', function(socket) {
     delete connections[socket.id];
     delete clients[socket.id];
   });
+
+  socket.on('port', function(msg) {
+    clients[msg.sink].emit('port', msg);
+  });
 });
 
 
