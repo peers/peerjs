@@ -172,12 +172,16 @@ SourcePeer.prototype.send = function(data, sink) {
 
 // Handles a DataChannel message.
 SourcePeer.prototype.handleDataMessage = function(e) {
-  BinaryPack.unpack(e.data, function(msg) {
-    if (!!this._handlers['data']) {
-      this._handlers['data'](msg);
+  var self = this;
+  var fr = new FileReader();
+  fr.onload = function(evt) {
+    var ab = evt.target.result;
+    var data = BinaryPack.unpack(ab);
+    if (!!self._handlers['data']) {
+      self._handlers['data'](data);
     }
-  });
-
+  };
+  fr.readAsArrayBuffer(e.data);
 }
 
 

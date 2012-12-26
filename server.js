@@ -30,6 +30,7 @@ io.sockets.on('connection', function(socket) {
     fn({ 'id': socket.id });
     connections[socket.id] = [];
   });
+
   // Sink connected.
   socket.on('sink', function(msg, fn) {
     var source_id = msg.source;
@@ -45,6 +46,7 @@ io.sockets.on('connection', function(socket) {
     sink = clients[msg.sink];
     sink.emit('offer', msg);
   });
+
   // Answer from dest to src.
   socket.on('answer', function (msg) {
     console.log('ANSWER MADE');

@@ -1,7 +1,9 @@
 function SinkPeer(options) {
   this._config = options.config || {};
   this._source = options.source || null;
-  this._stream = options.stream || 'd';
+  this._video = options.video;
+  this._data = options.data != undefined ? options.data : true;
+  this._audio = options.audio;
   this._pc = null;
   this._id = null;
   this._dc = null;
@@ -49,6 +51,8 @@ SinkPeer.prototype.socketInit = function() {
         console.log('SINK: data stream get');
       };
 
+      self.setupAudioVideo();
+
       self._socket.on('offer', function(offer) {
         self._pc.setRemoteDescription(offer.sdp, function() {
 
@@ -74,6 +78,7 @@ SinkPeer.prototype.socketInit = function() {
       self._socket.on('sink-connected', function(data) {
         target = data.sink;
         self._pc = new RTCPeerConnection(self._config);
+        self.setupAudioVideo();
         self.handleStream(true, target, function() {
           self.maybeBrowserisms(true, target);
         });
@@ -163,9 +168,32 @@ SinkPeer.prototype.makeOffer = function(target) {
 };
 
 
+SinkPeer.prototype.setupAudioVideo = function() {
+  this._pc.onaddstream = function(obj) {
+    if (!!self._handlers['remotestream']) {
+      self._handlers['remotestream'](obj.type, obj.stream);
+    }
+  };
+};
+
+
 SinkPeer.prototype.handleStream = function(originator, target, cb) {
-  this.setupDataChannel(originator, target, cb);
-}
+  if (this._data) {
+    this.setupDataChannel(originator, target, cb);
+  }
+  this.getAudioVideo(cb);
+};
+
+
+SinkPeer.prototype.getAudioVideo = function(cb) {
+  if (this._audio) {
+    getUserMedia({ video: true }, function(stream) {
+      self._pc.addStream(stream);
+      cb();
+    });
+  }
+
+};
 
 
 SinkPeer.prototype.setupDataChannel = function(originator, target, cb) {
@@ -225,11 +253,15 @@ SinkPeer.prototype.send = function(data) {
 // TODO: have these extend Peer, which will impl these generic handlers.
 SinkPeer.prototype.handleDataMessage = function(e) {
   var self = this;
-  BinaryPack.unpack(e.data, function(msg) {
+  var fr = new FileReader();
+  fr.onload = function(evt) {
+    var ab = evt.target.result;
+    var data = BinaryPack.unpack(ab);
     if (!!self._handlers['data']) {
-      self._handlers['data'](msg);
+      self._handlers['data'](data);
     }
-  });
+  };
+  fr.readAsArrayBuffer(e.data);
 }
 
 
