@@ -1,5 +1,5 @@
 function SinkPeer(options) {
-  this._config = options.config || {};
+  this._config = options.config || {"iceServers": [{"url": "stun:stun.l.google.com:19302"}]};
   this._source = options.source || null;
   this._video = options.video;
   this._data = options.data != undefined ? options.data : true;
@@ -45,16 +45,11 @@ SinkPeer.prototype.socketInit = function() {
         function(data) {
       self._id = data.id;
       self._pc = new RTCPeerConnection(self._config);
-
-      //FIREFOX
-      self._pc.onaddstream = function(obj) {
-        console.log('SINK: data stream get');
-      };
-
       self.setupAudioVideo();
 
       self._socket.on('offer', function(offer) {
-        self._pc.setRemoteDescription(offer.sdp, function() {
+        self._pc.setRemoteDescription(new RTCSessionDescription(offer.sdp),
+            function() {
 
           // If we also have to set up a stream on the sink end, do so.
           self.handleStream(false, offer.source, function() {
@@ -85,7 +80,8 @@ SinkPeer.prototype.socketInit = function() {
       });
 
       self._socket.on('answer', function(data) {
-        self._pc.setRemoteDescription(data.sdp, function() {
+        self._pc.setRemoteDescription(new RTCSessionDescription(data.sdp),
+            function() {
           // Firefoxism
           if (browserisms == 'Firefox') {
             self._pc.connectDataConnection(self.localPort, self.remotePort);
@@ -103,8 +99,9 @@ SinkPeer.prototype.socketInit = function() {
 
 
 SinkPeer.prototype.maybeBrowserisms = function(originator, target) {
+  console.log('maybeBrowserisms');
   var self = this;
-  if (browserisms == 'Firefox') {
+  if (browserisms == 'Firefox' && !this._video && !this._audio && !this._stream) {
     getUserMedia({ audio: true, fake: true }, function(s) {
       self._pc.addStream(s);
 
@@ -169,7 +166,11 @@ SinkPeer.prototype.makeOffer = function(target) {
 
 
 SinkPeer.prototype.setupAudioVideo = function() {
+  console.log('setupAudioVideo');
+  var self = this;
   this._pc.onaddstream = function(obj) {
+    console.log('onaddstream');
+    this._stream = true;
     if (!!self._handlers['remotestream']) {
       self._handlers['remotestream'](obj.type, obj.stream);
     }
@@ -179,18 +180,56 @@ SinkPeer.prototype.setupAudioVideo = function() {
 
 SinkPeer.prototype.handleStream = function(originator, target, cb) {
   if (this._data) {
-    this.setupDataChannel(originator, target, cb);
+    this.setupDataChannel(originator, target);
+  } else {
+    cb();
   }
-  this.getAudioVideo(cb);
+  this.getAudioVideo(originator, cb);
 };
 
 
-SinkPeer.prototype.getAudioVideo = function(cb) {
-  if (this._audio) {
-    getUserMedia({ video: true }, function(stream) {
-      self._pc.addStream(stream);
+SinkPeer.prototype.getAudioVideo = function(originator, cb) {
+  var self = this;
+  if (this._video) {
+    getUserMedia({ video: true }, function(vstream) {
+      self._pc.addStream(vstream);
+
+      if (originator && !!self._handlers['localstream']) {
+        self._handlers['localstream']('video', vstream);
+      } else if (!originator && !self.handlers['remotestream']) {
+        self.handlers['remotestream']('video', vstream);
+      }
+
+      if (self._audio) {
+        getUserMedia({ audio: true }, function(astream) {
+          self._pc.addStream(astream);
+
+          if (originator && !!self._handlers['localstream']) {
+            self._handlers['localstream']('audio', astream);
+          } else if (!originator && !self.handlers['remotestream']) {
+            self.handlers['remotestream']('audio', astream);
+          }
+
+          cb();
+        }, function(err) { console.log('Audio cannot start'); });
+      } else {
+        cb();
+      }
+    }, function(err) { console.log('Video cannot start'); });
+  } else if (this._audio) {
+    getUserMedia({ audio: true }, function(astream) {
+      self._pc.addStream(astream);
+
+      if (!!self._handlers['localstream']) {
+        self._handlers['localstream']('audio', astream);
+      } else if (!originator && !self.handlers['remotestream']) {
+        self.handlers['remotestream']('audio', astream);
+      }
+
       cb();
-    });
+    }, function(err) { console.log('Audio cannot start'); });
+  } else {
+    cb();
   }
 
 };
@@ -240,7 +279,6 @@ SinkPeer.prototype.setupDataChannel = function(originator, target, cb) {
   this._pc.onclosedconnection = function() {
     // Remove socket handlers perhaps.
   };
-  cb();
 };
 
 SinkPeer.prototype.send = function(data) {
