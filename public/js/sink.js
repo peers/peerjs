@@ -1,13 +1,13 @@
 function SinkPeer(options) {
   this._config = options.config || { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }]};
-  this._source = options.source || null;
+  this._peer = options.source || null;
   this._video = options.video;
   this._data = options.data != undefined ? options.data : true;
   this._audio = options.audio;
   this._pc = null;
   this._id = null;
   this._dc = null;
-  this._socket = io.connect('http://localhost');
+  this._socket = io.connect('http://192.168.0.14:8000');
   this.socketInit();
   this._handlers = {};
 
@@ -29,6 +29,13 @@ function SinkPeer(options) {
     SinkPeer.usedPorts.push(this.remotePort);
     SinkPeer.usedPorts.push(this.localPort);
   }
+
+  // Makes sure things clean up neatly.
+  window.onbeforeunload = function() {
+    if (!!this._socket) {
+      this._socket.emit('leave');
+    }
+  }
 };
 
 
@@ -37,28 +44,40 @@ function randomPort() {
 };
 
 
+/** Start up websocket communications. */
 SinkPeer.prototype.socketInit = function() {
   var self = this;
   // Multiple sinks to one source.
-  if (!!this._source) {
-    this._socket.emit('sink', { source: this._source, isms: browserisms },
+  if (!!this._peer) {
+    this._socket.emit('sink', { source: this._peer, isms: browserisms },
         function(data) {
       self._id = data.id;
-      self._pc = new RTCPeerConnection(self._config);
-      self.setupAudioVideo();
+      self.startPeerConnection();
 
       self._socket.on('offer', function(offer) {
-        self._pc.setRemoteDescription(new RTCSessionDescription(offer.sdp),
-            function() {
+        var sdp = offer.sdp;
+        try {
+          sdp = new RTCSessionDescription(offer.sdp);
+        } catch(e) {
+          console.log('Firefox');
+        }
+        self._pc.setRemoteDescription(sdp, function() {
 
           // If we also have to set up a stream on the sink end, do so.
-          self.handleStream(false, offer.source, function() {
-            self.maybeBrowserisms(false, offer.source);
+          self.handleStream(false, function() {
+            self.maybeBrowserisms(false);
           });
         }, function(err) {
           console.log('failed to setRemoteDescription with offer, ', err);
         });
       });
+
+      /*self._socket.on('candidate', function(data) {
+        console.log('SINK: Ice Candidate');
+        var candidate = new RTCIceCandidate({ sdpMLineIndex: data.label,
+                                              candidate: data.candidate });
+        self._pc.addIceCandidate(candidate);
+      });*/
     });
   } else {
     // Otherwise, this sink is the originator to another sink and should wait
@@ -71,17 +90,21 @@ SinkPeer.prototype.socketInit = function() {
       }
 
       self._socket.on('sink-connected', function(data) {
-        target = data.sink;
-        self._pc = new RTCPeerConnection(self._config);
-        self.setupAudioVideo();
-        self.handleStream(true, target, function() {
-          self.maybeBrowserisms(true, target);
+        self._peer = data.sink;
+        self.startPeerConnection();
+        self.handleStream(true, function() {
+          self.maybeBrowserisms(true);
         });
       });
 
       self._socket.on('answer', function(data) {
-        self._pc.setRemoteDescription(new RTCSessionDescription(data.sdp),
-            function() {
+        var sdp = data.sdp;
+        try {
+          sdp = new RTCSessionDescription(data.sdp);
+        } catch(e) {
+          console.log('Firefox');
+        }
+        self._pc.setRemoteDescription(sdp, function() {
           // Firefoxism
           if (browserisms == 'Firefox') {
             self._pc.connectDataConnection(self.localPort, self.remotePort);
@@ -92,36 +115,66 @@ SinkPeer.prototype.socketInit = function() {
           console.log('failed to setRemoteDescription, ', err);
         });
       });
+
+      self._socket.on('candidate', function(data) {
+        console.log('ORIGINATOR: Ice Candidate');
+        var candidate = new RTCIceCandidate({ sdpMLineIndex: data.label,
+                                              candidate: data.candidate });
+        self._pc.addIceCandidate(candidate);
+      });
     });
   }
 };
 
 
-SinkPeer.prototype.maybeBrowserisms = function(originator, target) {
-  console.log('maybeBrowserisms');
+/** Takes care of ice handlers. */
+SinkPeer.prototype.setupIce = function() {
+  this._pc.onicecandidate = function(event) {
+    if (event.candidate) {
+      this._socket.emit('candidate', { label: event.candidate.sdpMLineIndex,
+                                       id: event.candidate.sdpMid,
+                                       candidate: event.candidate.candidate });
+    } else {
+      console.log("End of candidates.");
+    }
+  };
+};
+
+
+/** Starts a PeerConnection and sets up handlers. */
+SinkPeer.prototype.startPeerConnection = function() {
+  this._pc = new RTCPeerConnection(this._config);
+  //this.setupIce();
+  this.setupAudioVideo();
+};
+
+
+/** Decide whether to handle Firefoxisms. */
+SinkPeer.prototype.maybeBrowserisms = function(originator) {
   var self = this;
   if (browserisms == 'Firefox' && !this._video && !this._audio && !this._stream) {
     getUserMedia({ audio: true, fake: true }, function(s) {
       self._pc.addStream(s);
 
       if (originator) {
-        self.makeOffer(target);
+        self.makeOffer();
       } else {
-        self.makeAnswer(target);
+        self.makeAnswer();
       }
 
     }, function(err) { console.log('crap'); });
   } else {
     if (originator) {
-      this.makeOffer(target);
+      this.makeOffer();
     } else {
-      this.makeAnswer(target);
+      this.makeAnswer();
     }
   }
 }
 
 
-SinkPeer.prototype.makeAnswer = function(target) {
+/** Create an answer for PC. */
+SinkPeer.prototype.makeAnswer = function() {
   var self = this;
 
   this._pc.createAnswer(function(answer) {
@@ -134,7 +187,7 @@ SinkPeer.prototype.makeAnswer = function(target) {
       self._socket.emit('answer',
           { 'sink': self._id,
             'sdp': answer,
-            'source': target });
+            'source': self._peer });
     }, function(err) {
       console.log('failed to setLocalDescription, ', err)
     });
@@ -144,14 +197,15 @@ SinkPeer.prototype.makeAnswer = function(target) {
 };
 
 
-SinkPeer.prototype.makeOffer = function(target) {
+/** Create an offer for PC. */
+SinkPeer.prototype.makeOffer = function() {
   var self = this;
 
   this._pc.createOffer(function(offer) {
     self._pc.setLocalDescription(offer, function() {
       self._socket.emit('offer',
         { 'sdp': offer,
-          'sink': target,
+          'sink': self._peer,
           'source': self._id });
     }, function(err) {
       console.log('failed to setLocalDescription, ', err);
@@ -160,6 +214,7 @@ SinkPeer.prototype.makeOffer = function(target) {
 };
 
 
+/** Sets up A/V stream handler. */
 SinkPeer.prototype.setupAudioVideo = function() {
   var self = this;
   this._pc.onaddstream = function(obj) {
@@ -171,9 +226,10 @@ SinkPeer.prototype.setupAudioVideo = function() {
 };
 
 
-SinkPeer.prototype.handleStream = function(originator, target, cb) {
+/** Handle the different types of streams requested by user. */
+SinkPeer.prototype.handleStream = function(originator, cb) {
   if (this._data) {
-    this.setupDataChannel(originator, target);
+    this.setupDataChannel(originator);
   } else {
     cb();
   }
@@ -181,6 +237,7 @@ SinkPeer.prototype.handleStream = function(originator, target, cb) {
 };
 
 
+/** Get A/V streams. */
 SinkPeer.prototype.getAudioVideo = function(originator, cb) {
   var self = this;
   if (this._video) {
@@ -189,8 +246,8 @@ SinkPeer.prototype.getAudioVideo = function(originator, cb) {
 
       if (originator && !!self._handlers['localstream']) {
         self._handlers['localstream']('video', vstream);
-      } else if (!originator && !self.handlers['remotestream']) {
-        self.handlers['remotestream']('video', vstream);
+      } else if (!originator && !self._handlers['remotestream']) {
+        self._handlers['remotestream']('video', vstream);
       }
 
       if (self._audio) {
@@ -199,8 +256,8 @@ SinkPeer.prototype.getAudioVideo = function(originator, cb) {
 
           if (originator && !!self._handlers['localstream']) {
             self._handlers['localstream']('audio', astream);
-          } else if (!originator && !self.handlers['remotestream']) {
-            self.handlers['remotestream']('audio', astream);
+          } else if (!originator && !self._handlers['remotestream']) {
+            self._handlers['remotestream']('audio', astream);
           }
 
           cb();
@@ -228,7 +285,8 @@ SinkPeer.prototype.getAudioVideo = function(originator, cb) {
 };
 
 
-SinkPeer.prototype.setupDataChannel = function(originator, target, cb) {
+/** Sets up DataChannel handlers. */
+SinkPeer.prototype.setupDataChannel = function(originator, cb) {
   var self = this;
   if (browserisms != 'Webkit') {
     if (originator) {
@@ -236,11 +294,11 @@ SinkPeer.prototype.setupDataChannel = function(originator, target, cb) {
       this._pc.onconnection = function() {
         console.log('ORIGINATOR: onconnection triggered');
 
-        self._dc = self._pc.createDataChannel('StreamAPI', {}, target);
+        self._dc = self._pc.createDataChannel('StreamAPI', {}, self._peer);
         self._dc.binaryType = 'blob';
 
         if (!!self._handlers['connection']) {
-          self._handlers['connection'](target);
+          self._handlers['connection'](self._peer);
         }
 
         self._dc.onmessage = function(e) {
@@ -255,7 +313,7 @@ SinkPeer.prototype.setupDataChannel = function(originator, target, cb) {
         self._dc.binaryType = 'blob';
 
         if (!!self._handlers['connection']) {
-          self._handlers['connection'](target);
+          self._handlers['connection'](self._peer);
         }
 
         self._dc.onmessage = function(e) {
@@ -274,6 +332,8 @@ SinkPeer.prototype.setupDataChannel = function(originator, target, cb) {
   };
 };
 
+
+/** Allows user to send data. */
 SinkPeer.prototype.send = function(data) {
   var ab = BinaryPack.pack(data);
   this._dc.send(ab);

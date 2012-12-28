@@ -36,8 +36,12 @@ io.sockets.on('connection', function(socket) {
     var source_id = msg.source;
     var sink_id = socket.id;
     var source = clients[source_id];
-    source.emit('sink-connected', { 'sink': sink_id });
-    fn({ 'id': sink_id });
+    if (!!source) {
+      source.emit('sink-connected', { 'sink': sink_id });
+      fn({ 'id': sink_id });
+    } else {
+      fn({ 'error': 'Source ID not found.' });
+    };
   });
 
   // Offer from src to dest.
