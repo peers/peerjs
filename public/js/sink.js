@@ -1,5 +1,5 @@
 function SinkPeer(options) {
-  this._config = options.config || {"iceServers": [{"url": "stun:stun.l.google.com:19302"}]};
+  this._config = options.config || { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }]};
   this._source = options.source || null;
   this._video = options.video;
   this._data = options.data != undefined ? options.data : true;
@@ -85,7 +85,6 @@ SinkPeer.prototype.socketInit = function() {
           // Firefoxism
           if (browserisms == 'Firefox') {
             self._pc.connectDataConnection(self.localPort, self.remotePort);
-            //self._pc.connectDataConnection(5000, 5001);
             self._socket.emit('port', { sink: data.sink, remote: self.localPort, local: self.remotePort });
           }
           console.log('ORIGINATOR: PeerConnection success');
@@ -136,10 +135,6 @@ SinkPeer.prototype.makeAnswer = function(target) {
           { 'sink': self._id,
             'sdp': answer,
             'source': target });
-      // Firefoxism
-      //if (browserisms && browserisms == 'Firefox') {
-        //self._pc.connectDataConnection(5001, 5000);
-      //}
     }, function(err) {
       console.log('failed to setLocalDescription, ', err)
     });
@@ -166,10 +161,8 @@ SinkPeer.prototype.makeOffer = function(target) {
 
 
 SinkPeer.prototype.setupAudioVideo = function() {
-  console.log('setupAudioVideo');
   var self = this;
   this._pc.onaddstream = function(obj) {
-    console.log('onaddstream');
     this._stream = true;
     if (!!self._handlers['remotestream']) {
       self._handlers['remotestream'](obj.type, obj.stream);

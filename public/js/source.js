@@ -1,6 +1,7 @@
 function SourcePeer(options) {
+  // TODO: Update for streams.
   // TODO: Allow passing in own ID.
-  this._config = options.config || {};
+  this._config = options.config || { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }]};
   this._streams = options.streamType || 'd';
   this._name = options.name || 'StreamAPI';
   // PeerConnections open for this source. Client name => PC.
@@ -55,7 +56,8 @@ SourcePeer.prototype.socketInit = function() {
     });
 
     self._socket.on('answer', function(data) {
-      self._pcs[data.sink].setRemoteDescription(data.sdp, function() {
+      self._pcs[data.sink].setRemoteDescription(new RTCSessionDescription(data.sdp),
+          function() {
         // Firefoxism
         if (browserisms == 'Firefox') {
           self._pcs[data.sink].connectDataConnection(self.localPort, self.remotePort);
@@ -74,7 +76,7 @@ SourcePeer.prototype.socketInit = function() {
 // a stream.
 SourcePeer.prototype.maybeBrowserisms = function(pc, target) {
   var self = this;
-  if (browserisms == 'Firefox') {
+  if (browserisms == 'Firefox' && !this._video && !this._audio && !this._stream) {
     getUserMedia({ audio: true, fake: true }, function(s) {
       pc.addStream(s);
       self.makeOffer(target);
@@ -107,20 +109,7 @@ SourcePeer.prototype.handleStream = function(pc, target, cb) {
   pc.onaddstream = function(obj) {
     console.log('SOURCE: data stream get');
   };
-  /*if (this._streams === 'v') {
-  } else if (this._streams === 'a') {
-  } else if (this._streams === 'av') {
-  } else if (this._streams === 'd') {*/
-    this.setupDataChannel(pc, target, cb);
-  /*} else if (this._streams === 'dav') {
-    this.setupDataChannel(pc, target);
-  } else if (this._streams === 'da') {
-    this.setupDataChannel(pc, target);
-  } else if (this._streams === 'dv') {
-    this.setupDataChannel(pc, target);
-  } else {
-    //error
-  }*/
+  this.setupDataChannel(pc, target, cb);
 };
 
 

@@ -16,7 +16,7 @@
 $(document).ready(function() {
   $('#connect').click(function() {
     var source = $('#source').val();
-    sink = new SinkPeer({ source: source, audio: false });
+    sink = new SinkPeer({ source: source, audio: true, video: true });
     sink.on('data', function(data) {
       console.log(data);
       sink.send('I am so scared.');

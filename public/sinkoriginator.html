@@ -14,7 +14,7 @@
 <script type="text/javascript" src="/js/sink.js"></script>
 <script>
 $(document).ready(function() {
-  originator = new SinkPeer({ video: true });
+  originator = new SinkPeer({ video: false });
   originator.on('ready', function(id) {
     console.log(id);
   });
