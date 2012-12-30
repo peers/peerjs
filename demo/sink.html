@@ -1,0 +1,43 @@
+<!DOCTYPE HTML> 
+<html lang="en"> 
+<head>
+<title>Sink Test</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
+<meta http-equiv="Content-Language" content="en-us"> 
+<meta name="description" content=""> 
+<meta name="keywords" content=""> 
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> 
+<script type="text/javascript" src="../lib/binarypack.js"></script>
+<script type="text/javascript" src="../lib/adapter.js"></script>
+<script type="text/javascript" src="../lib/sink.js"></script>
+<script>
+$(document).ready(function() {
+  $('#connect').click(function() {
+    var source = $('#source').val();
+    sink = new SinkPeer({ source: source, audio: true, video: true });
+    sink.on('data', function(data) {
+      console.log(data);
+      sink.send('I am so scared.');
+    });
+    sink.on('localstream', function(type, stream) {
+      console.log('Local stream: ', type);
+    });
+    sink.on('remotestream', function(type, stream) {
+      console.log('Remote stream: ', type);
+    });
+  });
+});
+
+</script>
+
+</head> 
+ 
+<body> 
+  This is a P2P sink.
+  <br><br>
+  Enter source ID to connect to:
+  <br><input type="text" id="source"></input>
+  <button id="connect">Connect</button>
+</body> 
+</html> 

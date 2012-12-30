@@ -1,82 +1,65 @@
-var express = require('express');
-var fs = require('fs');
-var app =  express.createServer();
-var io = require('socket.io').listen(app);
+var WebSocketServer = require('ws').Server;
 
-// Initialize main server.
-app.use(express.bodyParser());
+function randomId() {
+  return Math.random().toString(36).substr(2);
+}
 
-app.use(express.static(__dirname + '/public'));
+function prettyError(msg) {
+  console.log('PeerServer: ', msg);
+}
 
-app.set('view engine', 'ejs');
-app.set('views', __dirname + '/views');
+function PeerServer(options) {
+  var wss = new WebSocketServer({ port: options.port || 80 });
+  this.clients = {};
+  var self = this;
 
-// P2P sources: { socket id => url }.
-sources = {};
-// socket.io clients.
-clients = {};
+  // For connecting clients:
+  // Src will connect upon creating a link.
+  // Receivers will connect after clicking a button and entering an optional key.
+  wss.on('connection', function(socket) {
+    var clientId = randomId();
+    while (!!self.clients[clientId]) {
+      clientId = randomId();
+    }
+    self.clients[clientId] = socket;
 
-// P2Ps. { source id => group members }
-connections = {};
+    socket.on('message', function(data) {
+      var message = JSON.parse(data);
+      if (options.debug) {
+        console.log('PeerServer: ', message);
+      }
 
-// For connecting clients:
-// Src will connect upon creating a link.
-// Receivers will connect after clicking a button and entering an optional key.
-io.sockets.on('connection', function(socket) {
-  clients[socket.id] = socket;
+      switch (message.type) {
+        // Source connected -- send back its ID.
+        case 'SOURCE':
+          socket.send(JSON.stringify({ type: 'SOURCE-ID', id: clientId }));
+          break;
+        // Sink connected -- send back its ID and notify src.
+        case 'SINK':
+          if (!!message.source && !!self.clients[message.source]) {
+            self.clients[message.source].send(JSON.stringify({
+              type: 'SINK-CONNECTED', sink: clientId }));
 
-  // Source connected.
-  socket.on('source', function(fn) {
-    fn({ 'id': socket.id });
-    connections[socket.id] = [];
+            socket.send(JSON.stringify({ type: 'SINK-ID', id: clientId }));
+          } else {
+            prettyError('source invalid');
+          }
+          break;
+        case 'LEAVE':
+          delete self.clients[message.src];
+        // Offer or answer from src to sink.
+        case 'OFFER':
+        case 'ANSWER':
+        case 'CANDIDATE':
+        case 'PORT':
+          self.clients[message.dst].send(JSON.stringify(message));
+          break;
+        default:
+          prettyError('message unrecognized');
+      }
+    });
   });
 
-  // Sink connected.
-  socket.on('sink', function(msg, fn) {
-    var source_id = msg.source;
-    var sink_id = socket.id;
-    var source = clients[source_id];
-    if (!!source) {
-      source.emit('sink-connected', { 'sink': sink_id });
-      fn({ 'id': sink_id });
-    } else {
-      fn({ 'error': 'Source ID not found.' });
-    };
-  });
+};
 
-  // Offer from src to dest.
-  socket.on('offer', function (msg) {
-    console.log('OFFER MADE');
-    sink = clients[msg.sink];
-    sink.emit('offer', msg);
-  });
-
-  // Answer from dest to src.
-  socket.on('answer', function (msg) {
-    console.log('ANSWER MADE');
-    source = clients[msg.source];
-    // Add to list of successful connections.
-    // May want to move this to another message soon.
-    connections[msg.source].push(msg.sink);
-    source.emit('answer', msg);
-  });
-
-  socket.on('disconnect', function() {
-    // Handle on client side?
-    socket.broadcast.to(connections[socket.id]).emit('Host disconnected');
-    delete connections[socket.id];
-    delete clients[socket.id];
-  });
-
-  socket.on('port', function(msg) {
-    clients[msg.sink].emit('port', msg);
-  });
-});
-
-
-app.get('/', function(req, res){
-  res.render('index');
-});
-
-
-app.listen(process.env.PORT || 8000);
+exports.PeerServer = PeerServer;

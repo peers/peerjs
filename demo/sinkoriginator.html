@@ -1,0 +1,42 @@
+<!DOCTYPE HTML> 
+<html lang="en"> 
+<head>
+<title>Sink Test</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
+<meta http-equiv="Content-Language" content="en-us"> 
+<meta name="description" content=""> 
+<meta name="keywords" content=""> 
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> 
+<script type="text/javascript" src="../lib/binarypack.js"></script>
+<script type="text/javascript" src="../lib/adapter.js"></script>
+<script type="text/javascript" src="../lib/sink.js"></script>
+<script>
+$(document).ready(function() {
+  originator = new SinkPeer({ video: false });
+  originator.on('ready', function(id) {
+    console.log(id);
+  });
+  originator.on('connection', function(recipient) {
+    console.log('connection');
+    originator.send('Hi there!');
+  });
+  originator.on('data', function(data) {
+    console.log(data);
+  });
+  originator.on('localstream', function(type, stream) {
+    console.log('Local stream: ', type);
+  });
+  originator.on('remotestream', function(type, stream) {
+    console.log('Remote stream: ', type);
+  });
+});
+
+</script>
+
+</head> 
+ 
+<body> 
+  This is a P2P originator sink.
+</body> 
+</html> 
