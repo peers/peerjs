@@ -402,3 +402,5 @@ SinkPeer.prototype.handleDataMessage = function(e) {
 SinkPeer.prototype.on = function(code, cb) {
   this._handlers[code] = cb;
 }
+
+exports.SinkPeer = SinkPeer;
