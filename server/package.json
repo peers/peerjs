@@ -1,6 +1,6 @@
 {
-  "name": "p2p",
-  "version": "0.0.0",
+  "name": "peer",
+  "version": "0.0.1",
   "description": "Simple p2p file transfer",
   "main": "server.js",
   "scripts": {
@@ -11,8 +11,6 @@
   "author": "Michelle Bu",
   "license": "BSD",
   "dependencies": {
-    "express": "~2.5.11",
-    "socket.io": "~0.9.13",
-    "ejs": "~0.8.3"
+    "ws": "~0.4.25"
   }
 }

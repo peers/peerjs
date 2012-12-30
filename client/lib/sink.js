@@ -7,8 +7,11 @@ function SinkPeer(options) {
   this._pc = null;
   this._id = null;
   this._dc = null;
-  this._socket = io.connect('http://192.168.0.14:8000');
-  this.socketInit();
+  this._socket = new WebSocket(options.ws || 'ws://localhost');
+  var self = this;
+  this._socket.onopen = function() {
+    self.socketInit();
+  };
   this._handlers = {};
 
   // Testing firefox.
@@ -30,12 +33,6 @@ function SinkPeer(options) {
     SinkPeer.usedPorts.push(this.localPort);
   }
 
-  // Makes sure things clean up neatly.
-  window.onbeforeunload = function() {
-    if (!!this._socket) {
-      this._socket.emit('leave');
-    }
-  }
 };
 
 
@@ -49,80 +46,124 @@ SinkPeer.prototype.socketInit = function() {
   var self = this;
   // Multiple sinks to one source.
   if (!!this._peer) {
-    this._socket.emit('sink', { source: this._peer, isms: browserisms },
-        function(data) {
-      self._id = data.id;
-      self.startPeerConnection();
+    this._socket.send(JSON.stringify({
+      type: 'SINK',
+      source: this._peer,
+      isms: browserisms
+    }));
 
-      self._socket.on('offer', function(offer) {
-        var sdp = offer.sdp;
-        try {
-          sdp = new RTCSessionDescription(offer.sdp);
-        } catch(e) {
-          console.log('Firefox');
-        }
-        self._pc.setRemoteDescription(sdp, function() {
+    this._socket.onmessage = function(event) {
+      var message = JSON.parse(event.data);
 
-          // If we also have to set up a stream on the sink end, do so.
-          self.handleStream(false, function() {
-            self.maybeBrowserisms(false);
+      switch (message.type) {
+        case 'SINK-ID':
+          self._id = message.id;
+          if (!!self._handlers['ready']) {
+            self._handlers['ready'](self._id);
+          }
+          self.startPeerConnection();
+          break;
+        case 'OFFER':
+          var sdp = message.sdp;
+          try {
+            sdp = new RTCSessionDescription(message.sdp);
+          } catch(e) {
+            console.log('Firefox');
+          }
+          self._pc.setRemoteDescription(sdp, function() {
+
+            // If we also have to set up a stream on the sink end, do so.
+            self.handleStream(false, function() {
+              self.maybeBrowserisms(false);
+            });
+          }, function(err) {
+            console.log('failed to setRemoteDescription with offer, ', err);
           });
-        }, function(err) {
-          console.log('failed to setRemoteDescription with offer, ', err);
-        });
-      });
+          break;
+        case 'CANDIDATE':
+          var candidate = new RTCIceCandidate({ sdpMLineIndex: message.label,
+                                                candidate: message.candidate });
+          self._pc.addIceCandidate(candidate);
+          break;
+        case 'PORT':
+          if (browserisms && browserisms == 'Firefox') {
+            if (!SinkPeer.usedPorts) {
+              SinkPeer.usedPorts = [];
+            }
+            SinkPeer.usedPorts.push(message.local);
+            SinkPeer.usedPorts.push(message.remote);
+            self._pc.connectDataConnection(message.local, message.remote);
+            break;
+          }
+        case 'DEFAULT':
+          console.log('SINK: unrecognized message ', message.type);
+          break;
+      }
+    };
 
-      /*self._socket.on('candidate', function(data) {
-        console.log('SINK: Ice Candidate');
-        var candidate = new RTCIceCandidate({ sdpMLineIndex: data.label,
-                                              candidate: data.candidate });
-        self._pc.addIceCandidate(candidate);
-      });*/
-    });
   } else {
     // Otherwise, this sink is the originator to another sink and should wait
     // for an alert.
-    this._socket.emit('source', function(data) {
-      self._id = data.id;
+    this._socket.send(JSON.stringify({
+      type: 'SOURCE',
+      isms: browserisms
+    }));
 
-      if (!!self._handlers['ready']) {
-        self._handlers['ready'](self._id);
-      }
+    this._socket.onmessage = function(event) {
+      var message = JSON.parse(event.data);
 
-      self._socket.on('sink-connected', function(data) {
-        self._peer = data.sink;
-        self.startPeerConnection();
-        self.handleStream(true, function() {
-          self.maybeBrowserisms(true);
-        });
-      });
-
-      self._socket.on('answer', function(data) {
-        var sdp = data.sdp;
-        try {
-          sdp = new RTCSessionDescription(data.sdp);
-        } catch(e) {
-          console.log('Firefox');
-        }
-        self._pc.setRemoteDescription(sdp, function() {
-          // Firefoxism
-          if (browserisms == 'Firefox') {
-            self._pc.connectDataConnection(self.localPort, self.remotePort);
-            self._socket.emit('port', { sink: data.sink, remote: self.localPort, local: self.remotePort });
+      switch (message.type) {
+        case 'SOURCE-ID':
+          self._id = message.id;
+          if (!!self._handlers['ready']) {
+            self._handlers['ready'](self._id);
           }
-          console.log('ORIGINATOR: PeerConnection success');
-        }, function(err) {
-          console.log('failed to setRemoteDescription, ', err);
-        });
-      });
-
-      self._socket.on('candidate', function(data) {
-        console.log('ORIGINATOR: Ice Candidate');
-        var candidate = new RTCIceCandidate({ sdpMLineIndex: data.label,
-                                              candidate: data.candidate });
-        self._pc.addIceCandidate(candidate);
-      });
-    });
+          break;
+        case 'SINK-CONNECTED':
+          self._peer = message.sink;
+          self.startPeerConnection();
+          self.handleStream(true, function() {
+            self.maybeBrowserisms(true);
+          });
+          break;
+        case 'ANSWER':
+          var sdp = message.sdp;
+          try {
+            sdp = new RTCSessionDescription(message.sdp);
+          } catch(e) {
+            console.log('Firefox');
+          }
+          self._pc.setRemoteDescription(sdp, function() {
+            // Firefoxism
+            if (browserisms == 'Firefox') {
+              self._pc.connectDataConnection(self.localPort, self.remotePort);
+              self._socket.send(JSON.stringify({
+                type: 'PORT',
+                dst: self._peer,
+                remote: self.localPort,
+                local: self.remotePort
+              }));
+            }
+            console.log('ORIGINATOR: PeerConnection success');
+          }, function(err) {
+            console.log('failed to setRemoteDescription, ', err);
+          });
+          break;
+        case 'CANDIDATE':
+          var candidate = new RTCIceCandidate({ sdpMLineIndex: message.label,
+                                                candidate: message.candidate });
+          self._pc.addIceCandidate(candidate);
+          break;
+        case 'DEFAULT':
+          console.log('ORIGINATOR: message not recognized ', message.type);
+      }
+    };
+  }
+  // Makes sure things clean up neatly.
+  window.onbeforeunload = function() {
+    if (!!this._socket) {
+      this._socket.send(JSON.stringify({ type: 'LEAVE' }));
+    }
   }
 };
 
@@ -131,9 +172,12 @@ SinkPeer.prototype.socketInit = function() {
 SinkPeer.prototype.setupIce = function() {
   this._pc.onicecandidate = function(event) {
     if (event.candidate) {
-      this._socket.emit('candidate', { label: event.candidate.sdpMLineIndex,
-                                       id: event.candidate.sdpMid,
-                                       candidate: event.candidate.candidate });
+      this._socket.send(JSON.stringify({
+        type: 'CANDIDATE',
+        label: event.candidate.sdpMLineIndex,
+        id: event.candidate.sdpMid,
+        candidate: event.candidate.candidate
+      }));
     } else {
       console.log("End of candidates.");
     }
@@ -144,7 +188,7 @@ SinkPeer.prototype.setupIce = function() {
 /** Starts a PeerConnection and sets up handlers. */
 SinkPeer.prototype.startPeerConnection = function() {
   this._pc = new RTCPeerConnection(this._config);
-  //this.setupIce();
+  this.setupIce();
   this.setupAudioVideo();
 };
 
@@ -179,15 +223,12 @@ SinkPeer.prototype.makeAnswer = function() {
 
   this._pc.createAnswer(function(answer) {
     self._pc.setLocalDescription(answer, function() {
-      if (browserisms && browserisms == 'Firefox') {
-        self._socket.on('port', function(data) {
-          self._pc.connectDataConnection(data.local, data.remote);
-        });
-      }
-      self._socket.emit('answer',
-          { 'sink': self._id,
-            'sdp': answer,
-            'source': self._peer });
+      self._socket.send(JSON.stringify({
+        type: 'ANSWER',
+        src: self._id,
+        sdp: answer,
+        dst: self._peer
+      }));
     }, function(err) {
       console.log('failed to setLocalDescription, ', err)
     });
@@ -203,10 +244,12 @@ SinkPeer.prototype.makeOffer = function() {
 
   this._pc.createOffer(function(offer) {
     self._pc.setLocalDescription(offer, function() {
-      self._socket.emit('offer',
-        { 'sdp': offer,
-          'sink': self._peer,
-          'source': self._id });
+      self._socket.send(JSON.stringify({
+        type: 'OFFER',
+        sdp: offer,
+        dst: self._peer,
+        src: self._id
+      }));
     }, function(err) {
       console.log('failed to setLocalDescription, ', err);
     });
