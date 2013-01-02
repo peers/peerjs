@@ -1,0 +1,68 @@
+<!DOCTYPE HTML> 
+<html lang="en"> 
+<head>
+<title>Sink Test</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
+<meta http-equiv="Content-Language" content="en-us"> 
+<meta name="description" content=""> 
+<meta name="keywords" content=""> 
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> 
+<script type="text/javascript" src="/peer.js"></script>
+<script>
+$(document).ready(function() {
+  originator = new Peer({ ws: 'ws://mixest.com:9382', video: true, audio: true });
+  originator.on('ready', function(id) {
+    console.log(id);
+  });
+  originator.on('connection', function(recipient) {
+    console.log('connection');
+    originator.send('Hi there!');
+  });
+  originator.on('data', function(data) {
+    console.log(data);
+  });
+  originator.on('localstream', function(type, stream) {
+    console.log('Local stream: ', type);
+    if (type == "video") {
+      var video = document.getElementById("localVideo");
+      video.mozSrcObject = stream;
+      video.play();
+    } else if (type == "audio") {
+      var audio = document.getElementById("localAudio");
+      audio.mozSrcObject = stream;
+      audio.play();
+    }
+  });
+  originator.on('remotestream', function(type, stream) {
+    console.log('Remote stream: ', type);
+    if (type == "video") {
+      var video = document.getElementById("remoteVideo");
+      video.mozSrcObject = stream;
+      video.play();
+    } else if (type == "audio") {
+      var audio = document.getElementById("remoteAudio");
+      audio.mozSrcObject = stream;
+      audio.play();
+    }
+  });
+});
+
+</script>
+
+</head> 
+ 
+<body> 
+  This is a P2P originator sink.
+  <br><br>
+  Local:
+  <br>
+  <video id="localVideo" width="75" height="54"></video>
+  <br><br>
+  Remote:
+  <br>
+  <video id="remoteVideo" width="258" height="194"></video>
+  <audio id="localAudio" muted></audio>
+  <audio id="remoteAudio"></audio>
+</body> 
+</html> 
