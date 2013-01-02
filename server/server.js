@@ -46,13 +46,31 @@ function PeerServer(options) {
           }
           break;
         case 'LEAVE':
-          delete self.clients[message.src];
+          if (!!self.clients[message.dst]) {
+            try {
+              self.clients[message.dst].send(data);
+            } catch (e) {
+              if (options.debug) {
+                console.log('Error', e);
+              }
+            }
+            delete self.clients[message.src];
+          }
+          break;
         // Offer or answer from src to sink.
         case 'OFFER':
         case 'ANSWER':
         case 'CANDIDATE':
         case 'PORT':
-          self.clients[message.dst].send(JSON.stringify(message));
+          if (!!self.clients[message.dst]) {
+            try {
+              self.clients[message.dst].send(data);
+            } catch (e) {
+              if (options.debug) {
+                console.log('Error', e);
+              }
+            }
+          }
           break;
         default:
           prettyError('message unrecognized');
