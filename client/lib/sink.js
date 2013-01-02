@@ -1,21 +1,36 @@
 function SinkPeer(options) {
+  var options = options || {};
+
+  debug = options.debug;
   this._config = options.config || { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] };
+  this._id = null;
+  // User handlers.
+  this._handlers = {};
+
+  // Source to connect to; null if waiting for a connection.
   this._peer = options.source || null;
+
+  // Booleans to determine what streams to allow.
   this._video = options.video;
   this._data = options.data != undefined ? options.data : true;
   this._audio = options.audio;
+
+  // Connections
   this._pc = null;
-  this._id = null;
   this._dc = null;
   this._socket = new WebSocket(options.ws || 'ws://localhost');
+
+  // Local streams for multiple use.
+  this._localVideo = options.localVideo || null;
+  this._localAudio = options.localAudio || null;
+
+  // Init socket msg handlers
   var self = this;
   this._socket.onopen = function() {
     self.socketInit();
   };
-  this._handlers = {};
 
-  // Testing firefox.
-  // MULTICONNECTION doesn't work still.
+  // Firefoxism: connectDataConnection ports.
   if (browserisms == 'Firefox' && !options.source) {
     if (!SinkPeer.usedPorts) {
       SinkPeer.usedPorts = [];
@@ -36,6 +51,7 @@ function SinkPeer(options) {
 };
 
 
+/** Generates random port number. */
 function randomPort() {
   return Math.round(Math.random() * 60535) + 5000;
 };
@@ -44,8 +60,8 @@ function randomPort() {
 /** Start up websocket communications. */
 SinkPeer.prototype.socketInit = function() {
   var self = this;
-  // Multiple sinks to one source.
   if (!!this._peer) {
+    // Announce as a sink if initiated with a source.
     this._socket.send(JSON.stringify({
       type: 'SINK',
       source: this._peer,
@@ -68,23 +84,35 @@ SinkPeer.prototype.socketInit = function() {
           try {
             sdp = new RTCSessionDescription(message.sdp);
           } catch(e) {
-            console.log('Firefox');
+            log('Firefox');
           }
           self._pc.setRemoteDescription(sdp, function() {
-            console.log('setRemoteDescription: offer');
+            log('setRemoteDescription: offer');
 
             // If we also have to set up a stream on the sink end, do so.
             self.handleStream(false, function() {
               self.maybeBrowserisms(false);
             });
           }, function(err) {
-            console.log('failed to setRemoteDescription with offer, ', err);
+            log('failed to setRemoteDescription with offer, ', err);
           });
           break;
         case 'CANDIDATE':
-          console.log(message.candidate);
+          log(message.candidate);
           var candidate = new RTCIceCandidate(message.candidate);
           self._pc.addIceCandidate(candidate);
+          break;
+        case 'LEAVE':
+          log('counterpart disconnected');
+          if (!!self._pc && self._pc.readyState != 'closed') {
+            self._pc.close();
+            self._pc = null;
+            self._peer = null;
+          }
+          if (!!self._dc && self._dc.readyState != 'closed') {
+            self._dc.close();
+            self._dc = null;
+          }
           break;
         case 'PORT':
           if (browserisms && browserisms == 'Firefox') {
@@ -97,14 +125,14 @@ SinkPeer.prototype.socketInit = function() {
             break;
           }
         case 'DEFAULT':
-          console.log('SINK: unrecognized message ', message.type);
+          log('SINK: unrecognized message ', message.type);
           break;
       }
     };
 
   } else {
     // Otherwise, this sink is the originator to another sink and should wait
-    // for an alert.
+    // for an alert to begin the PC process.
     this._socket.send(JSON.stringify({
       type: 'SOURCE',
       isms: browserisms
@@ -132,10 +160,10 @@ SinkPeer.prototype.socketInit = function() {
           try {
             sdp = new RTCSessionDescription(message.sdp);
           } catch(e) {
-            console.log('Firefox');
+            log('Firefox');
           }
           self._pc.setRemoteDescription(sdp, function() {
-            console.log('setRemoteDescription: answer');
+            log('setRemoteDescription: answer');
             // Firefoxism
             if (browserisms == 'Firefox') {
               self._pc.connectDataConnection(self.localPort, self.remotePort);
@@ -146,29 +174,42 @@ SinkPeer.prototype.socketInit = function() {
                 local: self.remotePort
               }));
             }
-            console.log('ORIGINATOR: PeerConnection success');
+            log('ORIGINATOR: PeerConnection success');
           }, function(err) {
-            console.log('failed to setRemoteDescription, ', err);
+            log('failed to setRemoteDescription, ', err);
           });
           break;
         case 'CANDIDATE':
-          console.log(message.candidate);
+          log(message.candidate);
           var candidate = new RTCIceCandidate(message.candidate);
           self._pc.addIceCandidate(candidate);
           break;
+        case 'LEAVE':
+          log('counterpart disconnected');
+          if (!!self._pc && self._pc.readyState != 'closed') {
+            self._pc.close();
+            self._pc = null;
+            self._peer = null;
+          }
+          if (!!self._dc && self._dc.readyState != 'closed') {
+            self._dc.close();
+            self._dc = null;
+          }
+          break;
         case 'DEFAULT':
-          console.log('ORIGINATOR: message not recognized ', message.type);
+          log('ORIGINATOR: message not recognized ', message.type);
       }
     };
   }
-  // Makes sure things clean up neatly.
+
+  // Makes sure things clean up neatly when window is closed.
   window.onbeforeunload = function() {
-    if (!!self._pc) {
+    if (!!self._pc && self._pc.readyState != 'closed') {
       self._pc.close();
     }
     if (!!self._socket && !!self._peer) {
       self._socket.send(JSON.stringify({ type: 'LEAVE', dst: self._peer }));
-      if (!!self._dc) {
+      if (!!self._dc && self._dc.readyState != 'closed') {
         self._dc.close();
       }
     }
@@ -180,7 +221,7 @@ SinkPeer.prototype.socketInit = function() {
 SinkPeer.prototype.setupIce = function() {
   var self = this;
   this._pc.onicecandidate = function(event) {
-    console.log('candidates received');
+    log('candidates received');
     if (event.candidate) {
       self._socket.send(JSON.stringify({
         type: 'CANDIDATE',
@@ -188,7 +229,7 @@ SinkPeer.prototype.setupIce = function() {
         dst: self._peer
       }));
     } else {
-      console.log("End of candidates.");
+      log("End of candidates.");
     }
   };
 };
@@ -205,7 +246,7 @@ SinkPeer.prototype.startPeerConnection = function() {
 /** Decide whether to handle Firefoxisms. */
 SinkPeer.prototype.maybeBrowserisms = function(originator) {
   var self = this;
-  if (browserisms == 'Firefox' && !this._video && !this._audio && !this._stream) {
+  if (browserisms == 'Firefox' && !this._video && !this._audio/* && !this._stream*/) {
     getUserMedia({ audio: true, fake: true }, function(s) {
       self._pc.addStream(s);
 
@@ -215,7 +256,7 @@ SinkPeer.prototype.maybeBrowserisms = function(originator) {
         self.makeAnswer();
       }
 
-    }, function(err) { console.log('crap'); });
+    }, function(err) { log('crap'); });
   } else {
     if (originator) {
       this.makeOffer();
@@ -231,9 +272,9 @@ SinkPeer.prototype.makeAnswer = function() {
   var self = this;
 
   this._pc.createAnswer(function(answer) {
-    console.log('createAnswer');
+    log('createAnswer');
     self._pc.setLocalDescription(answer, function() {
-      console.log('setLocalDescription: answer');
+      log('setLocalDescription: answer');
       self._socket.send(JSON.stringify({
         type: 'ANSWER',
         src: self._id,
@@ -241,10 +282,10 @@ SinkPeer.prototype.makeAnswer = function() {
         dst: self._peer
       }));
     }, function(err) {
-      console.log('failed to setLocalDescription, ', err)
+      log('failed to setLocalDescription, ', err)
     });
   }, function(err) {
-    console.log('failed to create answer, ', err)
+    log('failed to create answer, ', err)
   });
 };
 
@@ -254,9 +295,9 @@ SinkPeer.prototype.makeOffer = function() {
   var self = this;
 
   this._pc.createOffer(function(offer) {
-    console.log('createOffer')
+    log('createOffer')
     self._pc.setLocalDescription(offer, function() {
-      console.log('setLocalDescription: offer');
+      log('setLocalDescription: offer');
       self._socket.send(JSON.stringify({
         type: 'OFFER',
         sdp: offer,
@@ -264,7 +305,7 @@ SinkPeer.prototype.makeOffer = function() {
         src: self._id
       }));
     }, function(err) {
-      console.log('failed to setLocalDescription, ', err);
+      log('failed to setLocalDescription, ', err);
     });
   });
 };
@@ -273,10 +314,10 @@ SinkPeer.prototype.makeOffer = function() {
 /** Sets up A/V stream handler. */
 SinkPeer.prototype.setupAudioVideo = function() {
   var self = this;
-  console.log('onaddstream handler added');
+  log('onaddstream handler added');
   this._pc.onaddstream = function(obj) {
-    console.log('Remote stream added');
-    this._stream = true;
+    log('Remote stream added');
+    //this._stream = true;
     if (!!self._handlers['remotestream']) {
       self._handlers['remotestream'](obj.type, obj.stream);
     }
@@ -296,41 +337,55 @@ SinkPeer.prototype.handleStream = function(originator, cb) {
 /** Get A/V streams. */
 SinkPeer.prototype.getAudioVideo = function(originator, cb) {
   var self = this;
-  if (this._video) {
+  if (this._video && !this._localVideo) {
     getUserMedia({ video: true }, function(vstream) {
       self._pc.addStream(vstream);
-      console.log('Local video stream added');
+      self._localVideo = vstream;
+      log('Local video stream added');
 
       if (!!self._handlers['localstream']) {
         self._handlers['localstream']('video', vstream);
       }
 
-      if (self._audio) {
+      if (self._audio && !self._localAudio) {
         getUserMedia({ audio: true }, function(astream) {
           self._pc.addStream(astream);
-          console.log('Local audio stream added');
+          self._localAudio = astream;
+          log('Local audio stream added');
 
           if (!!self._handlers['localstream']) {
             self._handlers['localstream']('audio', astream);
           }
 
           cb();
-        }, function(err) { console.log('Audio cannot start'); cb(); });
+        }, function(err) { log('Audio cannot start'); cb(); });
       } else {
+        if (self._audio) {
+          self._pc.addStream(self._localAudio);
+        }
         cb();
       }
-    }, function(err) { console.log('Video cannot start', err); cb(); });
-  } else if (this._audio) {
+    }, function(err) { log('Video cannot start', err); cb(); });
+  } else if (this._audio && !this._localAudio) {
     getUserMedia({ audio: true }, function(astream) {
       self._pc.addStream(astream);
+      self._localAudio = astream;
+      log('Local audio stream added');
 
       if (!!self._handlers['localstream']) {
         self._handlers['localstream']('audio', astream);
       }
 
       cb();
-    }, function(err) { console.log('Audio cannot start'); cb(); });
+    }, function(err) { log('Audio cannot start'); cb(); });
   } else {
+    if (this._audio) {
+      this._pc.addStream(this._localAudio);
+    }
+    if (this._video) {
+      this._pc.addStream(this._localVideo);
+    }
+    log('no audio/video streams initiated');
     cb();
   }
 
@@ -345,9 +400,9 @@ SinkPeer.prototype.setupDataChannel = function(originator, cb) {
     if (browserisms == 'Webkit') {
 
       this._pc.onstatechange = function() {
-        console.log('State Change: ', self._pc.readyState);
+        log('State Change: ', self._pc.readyState);
         /*if (self._pc.readyState == 'active') {
-          console.log('ORIGINATOR: active state detected');
+          log('ORIGINATOR: active state detected');
 
           self._dc = self._pc.createDataChannel('StreamAPI', { reliable: false });
           self._dc.binaryType = 'blob';
@@ -364,7 +419,7 @@ SinkPeer.prototype.setupDataChannel = function(originator, cb) {
 
     } else {
       this._pc.onconnection = function() {
-        console.log('ORIGINATOR: onconnection triggered');
+        log('ORIGINATOR: onconnection triggered');
 
         self.startDataChannel();
       };
@@ -372,7 +427,7 @@ SinkPeer.prototype.setupDataChannel = function(originator, cb) {
   } else {
     /** TARGET SETUP */
     this._pc.ondatachannel = function(dc) {
-      console.log('SINK: ondatachannel triggered');
+      log('SINK: ondatachannel triggered');
       self._dc = dc;
       self._dc.binaryType = 'blob';
 
@@ -386,7 +441,7 @@ SinkPeer.prototype.setupDataChannel = function(originator, cb) {
     };
 
     this._pc.onconnection = function() {
-      console.log('SINK: onconnection triggered');
+      log('SINK: onconnection triggered');
     };
   }
 
@@ -437,6 +492,14 @@ SinkPeer.prototype.handleDataMessage = function(e) {
 
 SinkPeer.prototype.on = function(code, cb) {
   this._handlers[code] = cb;
+}
+
+function log() {
+  if (debug) {
+    for (var i = 0; i < arguments.length; i++) {
+      console.log('*', i, '-- ', arguments[i]);
+    }
+  }
 }
 
 exports.Peer = SinkPeer;

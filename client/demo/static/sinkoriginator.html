@@ -11,7 +11,8 @@
 <script type="text/javascript" src="/peer.js"></script>
 <script>
 $(document).ready(function() {
-  originator = new Peer({ ws: 'ws://mixest.com:9382', video: true, audio: true });
+  originator = new Peer({ ws: 'ws://mixest.com:9382', video: true, audio: true,
+    debug: true });
   originator.on('ready', function(id) {
     console.log(id);
   });
