@@ -1,36 +1,5 @@
 /*! peerjs.js build:0.0.1, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
 (function(exports){
-var RTCPeerConnection = null;
-var getUserMedia = null;
-var attachMediaStream = null;
-var browserisms = null;
-
-if (navigator.mozGetUserMedia) {
-  browserisms = 'Firefox'
-
-  RTCPeerConnection = mozRTCPeerConnection;
-
-  getUserMedia = navigator.mozGetUserMedia.bind(navigator);
-  attachMediaStream = function(element, stream) {
-    console.log("Attaching media stream");
-    element.mozSrcObject = stream;
-    element.play();
-  };
-} else if (navigator.webkitGetUserMedia) {
-  browserisms = 'Webkit'
-
-  RTCPeerConnection = webkitRTCPeerConnection;
-
-  getUserMedia = navigator.webkitGetUserMedia.bind(navigator);
-  attachMediaStream = function(element, stream) {
-    element.src = webkitURL.createObjectURL(stream);
-  };
-}
-
-exports.RTCPeerConnection = RTCPeerConnection;
-exports.getUserMedia = getUserMedia;
-exports.attachMediaStream = attachMediaStream;
-exports.browserisms = browserisms;
 var binaryFeatures = {};
 binaryFeatures.useBlobBuilder = (function(){
   try {
@@ -46,6 +15,21 @@ binaryFeatures.useArrayBufferView = !binaryFeatures.useBlobBuilder && (function(
     return (new Blob([new Uint8Array([])])).size === 0;
   } catch (e) {
     return true;
+  }
+})();
+binaryFeatures.supportsBinaryWebsockets = (function(){
+  try {
+    var wstest = new WebSocket('ws://null');
+    wstest.onerror = function(){};
+    if (typeof(wstest.binaryType) !== "undefined") {
+      return true;
+    } else {
+      return false;
+    }
+    wstest.close();
+    wstest = null;
+  } catch (e) {
+    return false;
   }
 })();
 
@@ -581,7 +565,259 @@ Packer.prototype.pack_int64 = function(num){
   this.bufferBuilder.append((low  & 0x0000ff00) >>>  8);
   this.bufferBuilder.append((low  & 0x000000ff));
 }
-function SinkPeer(options) {
+/**
+ * Light EventEmitter. Ported from Node.js/events.js
+ * Eric Zhang
+ */
+
+/**
+ * EventEmitter class
+ * Creates an object with event registering and firing methods
+ */
+function EventEmitter() {
+  // Initialise required storage variables
+  this._events = {};
+}
+
+var isArray = Array.isArray;
+
+
+EventEmitter.prototype.addListener = function(type, listener, scope, once) {
+  if ('function' !== typeof listener) {
+    throw new Error('addListener only takes instances of Function');
+  }
+  
+  // To avoid recursion in the case that type == "newListeners"! Before
+  // adding it to the listeners, first emit "newListeners".
+  this.emit('newListener', type, typeof listener.listener === 'function' ?
+            listener.listener : listener);
+            
+  if (!this._events[type]) {
+    // Optimize the case of one listener. Don't need the extra array object.
+    this._events[type] = listener;
+  } else if (isArray(this._events[type])) {
+
+    // If we've already got an array, just append.
+    this._events[type].push(listener);
+
+  } else {
+    // Adding the second element, need to change to array.
+    this._events[type] = [this._events[type], listener];
+  }
+  
+};
+
+EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+EventEmitter.prototype.once = function(type, listener, scope) {
+  if ('function' !== typeof listener) {
+    throw new Error('.once only takes instances of Function');
+  }
+
+  var self = this;
+  function g() {
+    self.removeListener(type, g);
+    listener.apply(this, arguments);
+  };
+
+  g.listener = listener;
+  self.on(type, g);
+
+  return this;
+};
+
+EventEmitter.prototype.removeListener = function(type, listener, scope) {
+  if ('function' !== typeof listener) {
+    throw new Error('removeListener only takes instances of Function');
+  }
+
+  // does not use listeners(), so no side effect of creating _events[type]
+  if (!this._events[type]) return this;
+
+  var list = this._events[type];
+
+  if (isArray(list)) {
+    var position = -1;
+    for (var i = 0, length = list.length; i < length; i++) {
+      if (list[i] === listener ||
+          (list[i].listener && list[i].listener === listener))
+      {
+        position = i;
+        break;
+      }
+    }
+
+    if (position < 0) return this;
+    list.splice(position, 1);
+    if (list.length == 0)
+      delete this._events[type];
+  } else if (list === listener ||
+             (list.listener && list.listener === listener))
+  {
+    delete this._events[type];
+  }
+
+  return this;
+};
+
+
+EventEmitter.prototype.off = EventEmitter.prototype.removeListener;
+
+
+EventEmitter.prototype.removeAllListeners = function(type) {
+  if (arguments.length === 0) {
+    this._events = {};
+    return this;
+  }
+
+  // does not use listeners(), so no side effect of creating _events[type]
+  if (type && this._events && this._events[type]) this._events[type] = null;
+  return this;
+};
+
+EventEmitter.prototype.listeners = function(type) {
+  if (!this._events[type]) this._events[type] = [];
+  if (!isArray(this._events[type])) {
+    this._events[type] = [this._events[type]];
+  }
+  return this._events[type];
+};
+
+EventEmitter.prototype.emit = function(type) {
+  var type = arguments[0];
+  var handler = this._events[type];
+  if (!handler) return false;
+
+  if (typeof handler == 'function') {
+    switch (arguments.length) {
+      // fast cases
+      case 1:
+        handler.call(this);
+        break;
+      case 2:
+        handler.call(this, arguments[1]);
+        break;
+      case 3:
+        handler.call(this, arguments[1], arguments[2]);
+        break;
+      // slower
+      default:
+        var l = arguments.length;
+        var args = new Array(l - 1);
+        for (var i = 1; i < l; i++) args[i - 1] = arguments[i];
+        handler.apply(this, args);
+    }
+    return true;
+
+  } else if (isArray(handler)) {
+    var l = arguments.length;
+    var args = new Array(l - 1);
+    for (var i = 1; i < l; i++) args[i - 1] = arguments[i];
+
+    var listeners = handler.slice();
+    for (var i = 0, l = listeners.length; i < l; i++) {
+      listeners[i].apply(this, args);
+    }
+    return true;
+  } else {
+    return false;
+  }
+};
+
+
+
+
+var util = {
+  inherits: function(ctor, superCtor) {
+    ctor.super_ = superCtor;
+    ctor.prototype = Object.create(superCtor.prototype, {
+      constructor: {
+        value: ctor,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+  },
+  extend: function(dest, source) {
+    for(var key in source) {
+      if(source.hasOwnProperty(key)) {
+        dest[key] = source[key];
+      }
+    }
+    return dest;
+  },
+  pack: BinaryPack.pack,
+  unpack: BinaryPack.unpack,
+  randomPort: function() {
+    return Math.round(Math.random() * 60535) + 5000;
+  },
+  setZeroTimeout: (function(global) {
+    var timeouts = [];
+    var messageName = 'zero-timeout-message';
+
+    // Like setTimeout, but only takes a function argument.	 There's
+    // no time argument (always zero) and no arguments (you have to
+    // use a closure).
+    function setZeroTimeoutPostMessage(fn) {
+      timeouts.push(fn);
+      global.postMessage(messageName, '*');
+    }		
+
+    function handleMessage(event) {
+      if (event.source == global && event.data == messageName) {
+        if (event.stopPropagation) {
+          event.stopPropagation();
+        }
+        if (timeouts.length) {
+          timeouts.shift()();
+        }
+      }
+    }
+    if (global.addEventListener) {
+      global.addEventListener('message', handleMessage, true);
+    } else if (global.attachEvent) {
+      global.attachEvent('onmessage', handleMessage);
+    }
+    return setZeroTimeoutPostMessage;
+  }(this))
+};
+var RTCPeerConnection = null;
+var getUserMedia = null;
+var attachMediaStream = null;
+var browserisms = null;
+
+if (navigator.mozGetUserMedia) {
+  browserisms = 'Firefox'
+
+  RTCPeerConnection = mozRTCPeerConnection;
+
+  getUserMedia = navigator.mozGetUserMedia.bind(navigator);
+  attachMediaStream = function(element, stream) {
+    console.log("Attaching media stream");
+    element.mozSrcObject = stream;
+    element.play();
+  };
+} else if (navigator.webkitGetUserMedia) {
+  browserisms = 'Webkit'
+
+  RTCPeerConnection = webkitRTCPeerConnection;
+
+  getUserMedia = navigator.webkitGetUserMedia.bind(navigator);
+  attachMediaStream = function(element, stream) {
+    element.src = webkitURL.createObjectURL(stream);
+  };
+}
+
+exports.RTCPeerConnection = RTCPeerConnection;
+exports.getUserMedia = getUserMedia;
+exports.attachMediaStream = attachMediaStream;
+exports.browserisms = browserisms;
+function Peer(options) {
+  if (!(this instanceof Peer)) return new Peer(options);
+  
+  EventEmitter.call(this);
+  
   this._config = options.config || { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] };
   this._peer = options.source || null;
   this._video = options.video;
@@ -595,37 +831,33 @@ function SinkPeer(options) {
   this._socket.onopen = function() {
     self.socketInit();
   };
-  this._handlers = {};
+  
 
   // Testing firefox.
   // MULTICONNECTION doesn't work still.
   if (browserisms == 'Firefox' && !options.source) {
-    if (!SinkPeer.usedPorts) {
-      SinkPeer.usedPorts = [];
+    if (!Peer.usedPorts) {
+      Peer.usedPorts = [];
     }
-    this.localPort = randomPort();
-    while (SinkPeer.usedPorts.indexOf(this.localPort) != -1) {
-      this.localPort = randomPort();
+    this.localPort = util.randomPort();
+    while (Peer.usedPorts.indexOf(this.localPort) != -1) {
+      this.localPort = util.randomPort();
     }
-    this.remotePort = randomPort();
+    this.remotePort = util.randomPort();
     while (this.remotePort == this.localPort ||
-        SinkPeer.usedPorts.indexOf(this.localPort) != -1) {
-      this.remotePort = randomPort();
+        Peer.usedPorts.indexOf(this.localPort) != -1) {
+      this.remotePort = util.randomPort();
     }
-    SinkPeer.usedPorts.push(this.remotePort);
-    SinkPeer.usedPorts.push(this.localPort);
+    Peer.usedPorts.push(this.remotePort);
+    Peer.usedPorts.push(this.localPort);
   }
 
 };
 
-
-function randomPort() {
-  return Math.round(Math.random() * 60535) + 5000;
-};
-
+util.inherits(Peer, EventEmitter);
 
 /** Start up websocket communications. */
-SinkPeer.prototype.socketInit = function() {
+Peer.prototype.socketInit = function() {
   var self = this;
   // Multiple sinks to one source.
   if (!!this._peer) {
@@ -641,9 +873,7 @@ SinkPeer.prototype.socketInit = function() {
       switch (message.type) {
         case 'SINK-ID':
           self._id = message.id;
-          if (!!self._handlers['ready']) {
-            self._handlers['ready'](self._id);
-          }
+          self.emit('ready', self._id);          
           self.startPeerConnection();
           break;
         case 'OFFER':
@@ -671,11 +901,11 @@ SinkPeer.prototype.socketInit = function() {
           break;
         case 'PORT':
           if (browserisms && browserisms == 'Firefox') {
-            if (!SinkPeer.usedPorts) {
-              SinkPeer.usedPorts = [];
+            if (!Peer.usedPorts) {
+              Peer.usedPorts = [];
             }
-            SinkPeer.usedPorts.push(message.local);
-            SinkPeer.usedPorts.push(message.remote);
+            Peer.usedPorts.push(message.local);
+            Peer.usedPorts.push(message.remote);
             self._pc.connectDataConnection(message.local, message.remote);
             break;
           }
@@ -699,9 +929,7 @@ SinkPeer.prototype.socketInit = function() {
       switch (message.type) {
         case 'SOURCE-ID':
           self._id = message.id;
-          if (!!self._handlers['ready']) {
-            self._handlers['ready'](self._id);
-          }
+          self.emit('ready', self._id);
           break;
         case 'SINK-CONNECTED':
           self._peer = message.sink;
@@ -760,7 +988,7 @@ SinkPeer.prototype.socketInit = function() {
 
 
 /** Takes care of ice handlers. */
-SinkPeer.prototype.setupIce = function() {
+Peer.prototype.setupIce = function() {
   var self = this;
   this._pc.onicecandidate = function(event) {
     console.log('candidates received');
@@ -778,7 +1006,7 @@ SinkPeer.prototype.setupIce = function() {
 
 
 /** Starts a PeerConnection and sets up handlers. */
-SinkPeer.prototype.startPeerConnection = function() {
+Peer.prototype.startPeerConnection = function() {
   this._pc = new RTCPeerConnection(this._config, { optional:[ { RtpDataChannels: true } ]});
   this.setupIce();
   this.setupAudioVideo();
@@ -786,7 +1014,7 @@ SinkPeer.prototype.startPeerConnection = function() {
 
 
 /** Decide whether to handle Firefoxisms. */
-SinkPeer.prototype.maybeBrowserisms = function(originator) {
+Peer.prototype.maybeBrowserisms = function(originator) {
   var self = this;
   if (browserisms == 'Firefox' && !this._video && !this._audio && !this._stream) {
     getUserMedia({ audio: true, fake: true }, function(s) {
@@ -810,7 +1038,7 @@ SinkPeer.prototype.maybeBrowserisms = function(originator) {
 
 
 /** Create an answer for PC. */
-SinkPeer.prototype.makeAnswer = function() {
+Peer.prototype.makeAnswer = function() {
   var self = this;
 
   this._pc.createAnswer(function(answer) {
@@ -833,7 +1061,7 @@ SinkPeer.prototype.makeAnswer = function() {
 
 
 /** Create an offer for PC. */
-SinkPeer.prototype.makeOffer = function() {
+Peer.prototype.makeOffer = function() {
   var self = this;
 
   this._pc.createOffer(function(offer) {
@@ -854,21 +1082,19 @@ SinkPeer.prototype.makeOffer = function() {
 
 
 /** Sets up A/V stream handler. */
-SinkPeer.prototype.setupAudioVideo = function() {
+Peer.prototype.setupAudioVideo = function() {
   var self = this;
   console.log('onaddstream handler added');
   this._pc.onaddstream = function(obj) {
     console.log('Remote stream added');
     this._stream = true;
-    if (!!self._handlers['remotestream']) {
-      self._handlers['remotestream'](obj.type, obj.stream);
-    }
+    self.emit('remotestream', obj.type, obj.stream);
   };
 };
 
 
 /** Handle the different types of streams requested by user. */
-SinkPeer.prototype.handleStream = function(originator, cb) {
+Peer.prototype.handleStream = function(originator, cb) {
   if (this._data) {
     this.setupDataChannel(originator);
   }
@@ -877,25 +1103,21 @@ SinkPeer.prototype.handleStream = function(originator, cb) {
 
 
 /** Get A/V streams. */
-SinkPeer.prototype.getAudioVideo = function(originator, cb) {
+Peer.prototype.getAudioVideo = function(originator, cb) {
   var self = this;
   if (this._video) {
     getUserMedia({ video: true }, function(vstream) {
       self._pc.addStream(vstream);
       console.log('Local video stream added');
 
-      if (!!self._handlers['localstream']) {
-        self._handlers['localstream']('video', vstream);
-      }
-
+      self.emit('localstream', 'video', vstream);
+      
       if (self._audio) {
         getUserMedia({ audio: true }, function(astream) {
           self._pc.addStream(astream);
           console.log('Local audio stream added');
 
-          if (!!self._handlers['localstream']) {
-            self._handlers['localstream']('audio', astream);
-          }
+          self.emit('localstream', 'audio', astream);
 
           cb();
         }, function(err) { console.log('Audio cannot start'); cb(); });
@@ -907,10 +1129,8 @@ SinkPeer.prototype.getAudioVideo = function(originator, cb) {
     getUserMedia({ audio: true }, function(astream) {
       self._pc.addStream(astream);
 
-      if (!!self._handlers['localstream']) {
-        self._handlers['localstream']('audio', astream);
-      }
-
+      self.emit('localstream', 'audio', astream);
+      
       cb();
     }, function(err) { console.log('Audio cannot start'); cb(); });
   } else {
@@ -921,7 +1141,7 @@ SinkPeer.prototype.getAudioVideo = function(originator, cb) {
 
 
 /** Sets up DataChannel handlers. */
-SinkPeer.prototype.setupDataChannel = function(originator, cb) {
+Peer.prototype.setupDataChannel = function(originator, cb) {
   var self = this;
   if (originator) {
     /** ORIGINATOR SETUP */
@@ -959,10 +1179,8 @@ SinkPeer.prototype.setupDataChannel = function(originator, cb) {
       self._dc = dc;
       self._dc.binaryType = 'blob';
 
-      if (!!self._handlers['connection']) {
-        self._handlers['connection'](self._peer);
-      }
-
+      self.emit('connection', self._peer);
+      
       self._dc.onmessage = function(e) {
         self.handleDataMessage(e);
       };
@@ -980,15 +1198,13 @@ SinkPeer.prototype.setupDataChannel = function(originator, cb) {
 };
 
 
-SinkPeer.prototype.startDataChannel = function() {
+Peer.prototype.startDataChannel = function() {
   var self = this;
   this._dc = this._pc.createDataChannel(this._peer, { reliable: false });
   this._dc.binaryType = 'blob';
 
-  if (!!this._handlers['connection']) {
-    this._handlers['connection'](this._peer);
-  }
-
+  this.emit('connection', this._peer);
+  
   this._dc.onmessage = function(e) {
     self.handleDataMessage(e);
   };
@@ -996,7 +1212,7 @@ SinkPeer.prototype.startDataChannel = function() {
 
 
 /** Allows user to send data. */
-SinkPeer.prototype.send = function(data) {
+Peer.prototype.send = function(data) {
   var ab = BinaryPack.pack(data);
   this._dc.send(ab);
 }
@@ -1004,24 +1220,19 @@ SinkPeer.prototype.send = function(data) {
 
 // Handles a DataChannel message.
 // TODO: have these extend Peer, which will impl these generic handlers.
-SinkPeer.prototype.handleDataMessage = function(e) {
+Peer.prototype.handleDataMessage = function(e) {
   var self = this;
   var fr = new FileReader();
   fr.onload = function(evt) {
     var ab = evt.target.result;
     var data = BinaryPack.unpack(ab);
-    if (!!self._handlers['data']) {
-      self._handlers['data'](data);
-    }
+    
+    self.emit('data', data);
+    
   };
   fr.readAsArrayBuffer(e.data);
 }
 
-
-SinkPeer.prototype.on = function(code, cb) {
-  this._handlers[code] = cb;
-}
-
-exports.Peer = SinkPeer;
+exports.Peer = Peer;
 
 })(this);

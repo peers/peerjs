@@ -38,7 +38,12 @@ var starttagIF = '// if node'
  */
 
 var base = [
-  'adapter.js', 'bufferbuilder.js', 'binarypack.js', 'sink.js'
+    '../deps/js-binarypack/lib/bufferbuilder.js'
+  , '../deps/js-binarypack/lib/binarypack.js'
+  , '../deps/EventEmitter/EventEmitter.js'
+  , 'util.js'
+  , 'adapter.js' 
+  , 'sink.js'
 
 ];
 

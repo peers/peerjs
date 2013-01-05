@@ -19,3 +19,5 @@ app.get('/', function(req, res){
 app.listen(8000);
 
 
+var peer = require('peer');
+s = new peer.PeerServer({port: 9382});
