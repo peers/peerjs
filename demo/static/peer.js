@@ -726,8 +726,10 @@ EventEmitter.prototype.emit = function(type) {
 
 
 
-
 var util = {
+  
+  debug: false,
+  
   inherits: function(ctor, superCtor) {
     ctor.super_ = superCtor;
     ctor.prototype = Object.create(superCtor.prototype, {
@@ -754,7 +756,7 @@ var util = {
   },
   
   log: function () {
-    if (debug) {
+    if (util.debug) {
       for (var i = 0; i < arguments.length; i++) {
         console.log('*', i, '-- ', arguments[i]);
       }
@@ -828,8 +830,10 @@ function Peer(options) {
   EventEmitter.call(this);
   
   options = util.extend({
-    // Defaults
+    debug: false
   }, options);
+  
+  util.debug = options.debug;
   
   
   this._config = options.config || { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] };
