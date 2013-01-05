@@ -13,7 +13,7 @@
 $(document).ready(function() {
   $('#connect').click(function() {
     var source = $('#source').val();
-    sink = new Peer({ ws: 'ws://mixest.com:9382', source: source, audio: true,
+    sink = new Peer({ ws: 'ws://localhost:9382', source: source, audio: true,
       video: true });
     sink.on('data', function(data) {
       console.log(data);
