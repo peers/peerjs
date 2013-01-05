@@ -1,3 +1,6 @@
-[submodule "public/js/binarypack"]
-	path = public/js/binarypack
-	url = git@github.com:michellebu/js-binarypack.git
+[submodule "deps/js-binarypack"]
+	path = deps/js-binarypack
+	url = git://github.com/binaryjs/js-binarypack.git
+[submodule "deps/EventEmitter"]
+	path = deps/EventEmitter
+	url = git://github.com/ericz/EventEmitter.git
