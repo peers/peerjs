@@ -13,8 +13,9 @@
 $(document).ready(function() {
   $('#connect').click(function() {
     var source = $('#source').val();
+
     sink = new Peer({ ws: 'ws://localhost:9382', source: source, audio: true,
-      video: true });
+      video: true, debug: true });
     sink.on('data', function(data) {
       console.log(data);
       sink.send('I am so scared.');
