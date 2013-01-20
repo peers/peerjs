@@ -29,9 +29,7 @@ var PeerServer = require('peer').PeerServer({ port: 80, debug: true });
 `<script type="text/javascript" src="/client/dist/peer.js"></script>`
 
 
-#### Peer ####
-
-## First peer ##
+#### First peer ####
 
 ```js
 var connections = {};
@@ -61,7 +59,7 @@ p1.on('connection', function(connection) {
 
 ```
 
-## Second Peer ##
+#### Second Peer ####
 
 ```js
 p2 = new Peer({ ws: 'ws://www.host.com' });
