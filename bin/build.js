@@ -43,7 +43,8 @@ var base = [
   , '../deps/EventEmitter/EventEmitter.js'
   , 'util.js'
   , 'adapter.js' 
-  , 'sink.js'
+  , 'peer.js'
+  , 'connection.js'
 
 ];
 

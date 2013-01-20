@@ -1,6 +1,6 @@
 # Peers: a node.js PeerConnection library #
 
-Under heavy development and testing.
+New API in the works, nothing is ready yet.
 
 ## Chrome ##
 
@@ -29,34 +29,53 @@ var PeerServer = require('peer').PeerServer({ port: 80, debug: true });
 `<script type="text/javascript" src="/client/dist/peer.js"></script>`
 
 
-#### Source Peer ####
+#### Peer ####
+
+## First peer ##
 
 ```js
-originator = new SinkPeer({ video: true, audio: true, ws: 'ws://www.host.com' });
-originator.on('ready', function(id) {
-  console.log(id);
+var connections = {};
+
+p1 = new Peer({ ws: 'ws://www.host.com' });
+p1.on('ready', function(id) {
+  console.log(id); // => 'some_id_1'
 });
-originator.on('connection', function(recipient) {
+
+p1.on('connection', function(connection) {
   // Sends a message to the other peer. This can even be a blob or JSON.
-  originator.send('Hi there!');
-  originator.send({ file: new Blob([1, 2, 3])});
+  connection.send('Hi there!');
+  connection.send({ file: new Blob([1, 2, 3])});
+
+  // Probably want to save the connection object.
+  connections[connection.metadata.username] = connection;
+
+  if (connection.metadata.username == 'spy') {
+    connection.close();
+  } else {
+    // Add handler for connection data.
+    connection.on('data', function(data) {
+      console.log(data);
+    }
+  }
 });
-originator.on('data', function(data) {
-  // Prints out any messages received.
-  console.log(data);
-});
+
 ```
 
-#### Sink Peer ####
+## Second Peer ##
 
 ```js
-// Sinks start off with an ID of whom to connect to.
-sink = new SinkPeer({ source: source_id, ws: 'ws://localhost' });
+p2 = new Peer({ ws: 'ws://www.host.com' });
+p2.on('ready', function(id) {
+  console.log(id);
+
+  p2.connect('some_id_1', { username: 'friend' }, function(err, connection) {
+    connection.send('Hi, bye.');
+
+    connection.close();
+  });
+});
 ```
 
 #### Other events ####
 
-* `localstream, remotestream`: Callback is called with `type`, `stream` when a
-local or remote stream is added.
-
-* `disconnect`: Called with `id` when a peer disconnects. (TODO)
+* Connection - `close`: Called when a peer disconnects.
