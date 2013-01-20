@@ -853,6 +853,10 @@ util.inherits(Peer, EventEmitter);
 /** Start up websocket communications. */
 Peer.prototype.socketInit = function() {
   var self = this;
+  // Announce as a PEER to receive an ID.
+  this._socket.send(JSON.stringify({
+    type: 'PEER'
+  }));
 
   this._socket.onmessage = function(event) {
     var message = JSON.parse(event.data);
@@ -872,7 +876,7 @@ Peer.prototype.socketInit = function() {
           originator: false,
           sdp: message.sdp
         };
-        var connection = new DataConnection(options, self._socket, function(err, connection) {
+        var connection = new DataConnection(options, socket, function(err, connection) {
           if (!err) {
             self.emit('connection', connection);
           }
@@ -898,10 +902,6 @@ Peer.prototype.socketInit = function() {
         break;
     }
   };
-  // Announce as a PEER to receive an ID.
-  this._socket.send(JSON.stringify({
-    type: 'PEER'
-  }));
 
 };
 
@@ -915,7 +915,7 @@ Peer.prototype.connect = function(peer, metadata, cb) {
     peer: peer,
     originator: true
   };
-  var connection = new DataConnection(options, this._socket, cb);
+  var connection = new DataConnection(options, socket, cb);
   this.connections[peer] = connection;
 };
 
@@ -958,10 +958,11 @@ function DataConnection(options, socket, cb) {
 
   // Set up PeerConnection.
   this._startPeerConnection();
-  var self = this;
   if (this._originator) {
-    this._setupDataChannel();
-    this._maybeBrowserisms();
+    var self = this;
+    this._setupDataConnection(function() {
+      this._maybeBrowserisms();
+    });
   } else if (sdp) {
     try {
       sdp = new RTCSessionDescription(message.sdp);
@@ -970,18 +971,18 @@ function DataConnection(options, socket, cb) {
     }
     this._pc.setRemoteDescription(sdp, function() {
       util.log('setRemoteDescription: offer');
-      self._setupDataChannel();
-      self._maybeBrowserisms();
 
+      self._setupDataChannel(function() {
+        self._maybeBrowserisms();
+      });
     }, function(err) {
       util.log('failed to setRemoteDescription with offer, ', err);
     });
   }
 };
 
-util.inherits(DataConnection, EventEmitter);
 
-DataConnection.prototype.handleAnswer = function(message) {
+DataConnection.prototype.handleAnswer(message) {
   var sdp = message.sdp;
   try {
     sdp = new RTCSessionDescription(message.sdp);
@@ -1009,14 +1010,14 @@ DataConnection.prototype.handleAnswer = function(message) {
 };
 
 
-DataConnection.prototype.handleCandidate = function(message) {
+DataConnection.prototype.handleCandidate(message) {
   util.log(message.candidate);
   var candidate = new RTCIceCandidate(message.candidate);
   this._pc.addIceCandidate(candidate);
 };
 
 
-DataConnection.prototype.handleLeave = function(message) {
+DataConnection.prototype.handleLeave(message) {
   util.log('counterpart disconnected');
   if (!!this._pc && this._pc.readyState != 'closed') {
     this._pc.close();
@@ -1029,7 +1030,7 @@ DataConnection.prototype.handleLeave = function(message) {
   this.emit('close', this._peer);
 };
 
-DataConnection.prototype.handlePort = function(message) {
+DataConnection.prototype.handlePort(message) {
   if (!DataConnection.usedPorts) {
     DataConnection.usedPorts = [];
   }
@@ -1066,7 +1067,7 @@ DataConnection.prototype._setupIce = function() {
 
 
 /** Sets up DataChannel handlers. */
-DataConnection.prototype._setupDataChannel = function() {
+DataConnection.prototype._setupDataChannel = function(cb) {
   var self = this;
   if (this._originator) {
     /** ORIGINATOR SETUP */
@@ -1090,17 +1091,19 @@ DataConnection.prototype._setupDataChannel = function() {
       util.log('SINK: ondatachannel triggered');
       self._dc = dc;
       self._dc.binaryType = 'blob';
+
+      self._cb(null, self);
+
       self._dc.onmessage = function(e) {
         self._handleDataMessage(e);
       };
-
-      self._cb(null, self);
     };
 
     this._pc.onconnection = function() {
       util.log('SINK: onconnection triggered');
     };
   }
+
 
   this._pc.onclosedconnection = function() {
     // Remove socket handlers perhaps.
@@ -1151,6 +1154,7 @@ DataConnection.prototype._makeAnswer = function() {
   var self = this;
 
   this._pc.createAnswer(function(answer) {
+    util.log('createAnswer');
     self._pc.setLocalDescription(answer, function() {
       util.log('setLocalDescription: answer');
       self._socket.send(JSON.stringify({
@@ -1173,6 +1177,7 @@ DataConnection.prototype._makeOffer = function() {
   var self = this;
 
   this._pc.createOffer(function(offer) {
+    util.log('createOffer')
     self._pc.setLocalDescription(offer, function() {
       util.log('setLocalDescription: offer');
       self._socket.send(JSON.stringify({
@@ -1203,7 +1208,6 @@ DataConnection.prototype._handleDataMessage = function(e) {
   fr.onload = function(evt) {
     var ab = evt.target.result;
     var data = BinaryPack.unpack(ab);
-    console.log(data);
 
     self.emit('data', data);
   };

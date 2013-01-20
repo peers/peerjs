@@ -11,38 +11,20 @@
 <script type="text/javascript" src="/peer.js"></script>
 <script>
 $(document).ready(function() {
+  connections = {};
   $('#connect').click(function() {
     var source = $('#source').val();
 
-    sink = new Peer({ ws: 'ws://localhost:9382', source: source, audio: true,
-      video: true, debug: true });
-    sink.on('data', function(data) {
-      console.log(data);
-      sink.send('I am so scared.');
-    });
-    sink.on('localstream', function(type, stream) {
-      console.log('Local stream: ', type);
-      if (type == "video") {
-        var video = document.getElementById("localVideo");
-        video.mozSrcObject = stream;
-        video.play();
-      } else if (type == "audio") {
-        var audio = document.getElementById("localAudio");
-        audio.mozSrcObject = stream;
-        audio.play();
-      }
-    });
-    sink.on('remotestream', function(type, stream) {
-      console.log('Remote stream: ', type);
-      if (type == "video") {
-        var video = document.getElementById("remoteVideo");
-        video.mozSrcObject = stream;
-        video.play();
-      } else if (type == "audio") {
-        var audio = document.getElementById("remoteAudio");
-        audio.mozSrcObject = stream;
-        audio.play();
-      }
+    sink = new Peer({ ws: 'ws://localhost:9000', debug: true });
+    sink.on('ready', function() {
+      sink.connect(source, { username: 'michelle' }, function(err, connection) {
+        console.log(connection);
+        connection.on('data', function(data) {
+          console.log(data);
+        });
+        connection.send('I am so scared.');
+        connections['hi'] = connection;
+      });
     });
   });
 });
@@ -57,15 +39,5 @@ $(document).ready(function() {
   Enter source ID to connect to:
   <br><input type="text" id="source"></input>
   <button id="connect">Connect</button>
-  <br><br>
-  Local:
-  <br>
-  <video id="localVideo" width="75" height="54"></video>
-  <br><br>
-  Remote:
-  <br>
-  <video id="remoteVideo" width="258" height="194"></video>
-  <audio id="localAudio" muted></audio>
-  <audio id="remoteAudio"></audio>
 </body> 
 </html> 

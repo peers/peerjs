@@ -11,40 +11,17 @@
 <script type="text/javascript" src="/peer.js"></script>
 <script>
 $(document).ready(function() {
-  originator = new Peer({ ws: 'ws://localhost:9382', video: true, audio: true, debug: true });
+  originator = new Peer({ ws: 'ws://localhost:9000', debug: true });
   originator.on('ready', function(id) {
     console.log(id);
   });
-  originator.on('connection', function(recipient) {
+  originator.on('connection', function(connection) {
     console.log('connection');
-    originator.send('Hi there!');
-  });
-  originator.on('data', function(data) {
-    console.log(data);
-  });
-  originator.on('localstream', function(type, stream) {
-    console.log('Local stream: ', type);
-    if (type == "video") {
-      var video = document.getElementById("localVideo");
-      video.mozSrcObject = stream;
-      video.play();
-    } else if (type == "audio") {
-      var audio = document.getElementById("localAudio");
-      audio.mozSrcObject = stream;
-      audio.play();
-    }
-  });
-  originator.on('remotestream', function(type, stream) {
-    console.log('Remote stream: ', type);
-    if (type == "video") {
-      var video = document.getElementById("remoteVideo");
-      video.mozSrcObject = stream;
-      video.play();
-    } else if (type == "audio") {
-      var audio = document.getElementById("remoteAudio");
-      audio.mozSrcObject = stream;
-      audio.play();
-    }
+    connection.on('data', function(data) {
+      console.log(data);
+    });
+    connection.send('Hi there!');
+    c = connection;
   });
 });
 
