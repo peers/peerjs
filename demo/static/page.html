@@ -1,7 +1,7 @@
 <!DOCTYPE HTML> 
 <html lang="en"> 
 <head>
-<title>Sink Test</title>
+<title>PeerJS Test Page</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
 <meta http-equiv="Content-Language" content="en-us"> 
 <meta name="description" content=""> 
@@ -9,30 +9,6 @@
 
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> 
 <script type="text/javascript" src="/peer.js"></script>
-<script>
-$(document).ready(function() {
-  pc1 = new Peer({ video: true });
-  pc1.on('ready', function(id) {
-    console.log(id);
-    pc2 = new Peer({ source: id, audio: true });
-  });
-  pc1.on('connection', function(recipient) {
-    console.log('connection');
-    pc1.send('Hi there!');
-  });
-  pc1.on('data', function(data) {
-    console.log(data);
-  });
-  pc1.on('localstream', function(type, stream) {
-    console.log('Local stream: ', type);
-  });
-  pc1.on('remotestream', function(type, stream) {
-    console.log('Remote stream: ', type);
-  });
-
-});
-
-</script>
 
 </head> 
  
