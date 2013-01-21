@@ -1213,7 +1213,4 @@ DataConnection.prototype._handleDataMessage = function(e) {
   fr.readAsArrayBuffer(e.data);
 };
 
-exports.DataChannel = DataChannel;
-
-
 })(this);
