@@ -974,6 +974,7 @@ function DataConnection(options, socket, cb) {
       self._maybeBrowserisms();
 
     }, function(err) {
+      this._cb('failed to setRemoteDescription');
       util.log('failed to setRemoteDescription with offer, ', err);
     });
   }
@@ -1004,6 +1005,7 @@ DataConnection.prototype.handleAnswer = function(message) {
     }
     util.log('ORIGINATOR: PeerConnection success');
   }, function(err) {
+    this._cb('failed to setRemoteDescription');
     util.log('failed to setRemoteDescription, ', err);
   });
 };
@@ -1113,12 +1115,11 @@ DataConnection.prototype._startDataChannel = function() {
   var self = this;
   this._dc = this._pc.createDataChannel(this._peer, { reliable: false });
   this._dc.binaryType = 'blob';
-
-  this._cb(null, self);
-
   this._dc.onmessage = function(e) {
     self._handleDataMessage(e);
   };
+
+  this._cb(null, self);
 };
 
 
@@ -1160,9 +1161,11 @@ DataConnection.prototype._makeAnswer = function() {
         dst: self._peer
       }));
     }, function(err) {
+      self._cb('failed to setLocalDescription');
       util.log('failed to setLocalDescription, ', err)
     });
   }, function(err) {
+    self._cb('failed to create answer');
     util.log('failed to create answer, ', err)
   });
 };
@@ -1183,6 +1186,7 @@ DataConnection.prototype._makeOffer = function() {
         metadata: self._metadata
       }));
     }, function(err) {
+      self._cb('failed to setLocalDescription');
       util.log('failed to setLocalDescription, ', err);
     });
   });
@@ -1203,7 +1207,6 @@ DataConnection.prototype._handleDataMessage = function(e) {
   fr.onload = function(evt) {
     var ab = evt.target.result;
     var data = BinaryPack.unpack(ab);
-    console.log(data);
 
     self.emit('data', data);
   };

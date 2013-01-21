@@ -11,6 +11,7 @@
 <script type="text/javascript" src="/peer.js"></script>
 <script>
 $(document).ready(function() {
+  connections = {};
   originator = new Peer({ ws: 'ws://localhost:9000', debug: true });
   originator.on('ready', function(id) {
     console.log(id);
@@ -20,8 +21,8 @@ $(document).ready(function() {
     connection.on('data', function(data) {
       console.log(data);
     });
-    connection.send('Hi there!');
-    c = connection;
+    connection.send('What is going on?');
+    connections[connection.metadata.username] = connection;
   });
 });
 

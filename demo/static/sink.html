@@ -19,11 +19,13 @@ $(document).ready(function() {
     sink.on('ready', function() {
       sink.connect(source, { username: 'michelle' }, function(err, connection) {
         console.log(connection);
+
         connection.on('data', function(data) {
           console.log(data);
         });
-        connection.send('I am so scared.');
-        connections['hi'] = connection;
+
+        connection.send('Hi there!');
+        connections[source] = connection;
       });
     });
   });
