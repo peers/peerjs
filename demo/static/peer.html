@@ -12,7 +12,8 @@
 <script>
 $(document).ready(function() {
   connections = {};
-  originator = new Peer({ ws: 'ws://localhost:9000', debug: true });
+  var REMOTE = 'ws://mixest.com:9382';
+  originator = new Peer({ ws: REMOTE, debug: true });
   originator.on('ready', function(id) {
     console.log(id);
   });

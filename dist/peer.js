@@ -964,7 +964,7 @@ function DataConnection(options, socket, cb) {
     this._maybeBrowserisms();
   } else if (sdp) {
     try {
-      sdp = new RTCSessionDescription(message.sdp);
+      sdp = new RTCSessionDescription(sdp);
     } catch(e) {
       util.log('Firefox');
     }
