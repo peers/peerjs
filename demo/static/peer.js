@@ -861,10 +861,12 @@ function Peer(options) {
 
   this._socket = new WebSocket(options.ws);
   this._socketInit();
-  
-  
+
   // Connections
   this.connections = {};
+
+  // Queued connections to make
+  this._queued = [];
 };
 
 util.inherits(Peer, EventEmitter);
@@ -879,6 +881,7 @@ Peer.prototype._socketInit = function() {
     switch (message.type) {
       case 'ID':
         self._id = message.id;
+        self._processQueue();
         self.emit('ready', self._id);
         break;
       case 'OFFER':
@@ -921,12 +924,26 @@ Peer.prototype._socketInit = function() {
 };
 
 
+Peer.prototype._processQueue = function() {
+  while (this._queued.length > 0) {
+    var cdata = this._queued.pop();
+    this.connect.apply(this, cdata);
+  }
+};
+
+
 Peer.prototype.connect = function(peer, metadata, cb) {
   if (typeof metadata === 'function' && !cb) cb = metadata; metadata = false;
+
+  if (!this._id) {
+    this._queued.push(Array.prototype.slice.apply(arguments));
+    return;
+  }
 
   var options = {
     metadata: metadata
   };
+
   var connection = new DataConnection(this._id, peer, this._socket, cb, options);
   this.connections[peer] = connection;
 };
@@ -978,17 +995,14 @@ function DataConnection(id, peer, socket, cb, options) {
   this._setupDataChannel();
   
   var self = this;
-  util.log(0)
   if (options.sdp) {
     this.handleSDP({type: 'OFFER', sdp: options.sdp});
     if (browserisms !== 'Firefox') { 
       this._makeAnswer();
     }
   }
-  util.log(1)
   
   if (browserisms === 'Firefox') {
-    util.log('pop');
     this._firefoxAdditional();
   }
 };
@@ -1009,9 +1023,7 @@ DataConnection.prototype._setupDataChannel = function() {
   if (this._originator) {
     util.log('Creating data channel');
     this._dc = this._pc.createDataChannel(this._peer, { reliable: false });
-    console.log('cdc');
     this._configureDataChannel();
-    console.log('cdc3');
   } else {
     util.log('Listening for data channel');
     this._pc.ondatachannel = function(evt) {
@@ -1159,12 +1171,10 @@ DataConnection.prototype._configureDataChannel = function() {
   if (browserisms === 'Firefox') {
     this._dc.binaryType = 'blob';
   }
-  console.log(3)
   this._dc.onopen = function() {
     util.log('Data channel connection success');
     self._cb(null, self);
   };
-  console.log(4)
   this._dc.onmessage = function(e) {
     self._handleDataMessage(e);
   };
