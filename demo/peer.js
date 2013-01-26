@@ -1081,7 +1081,6 @@ DataConnection.prototype._setupDataChannel = function(cb) {
     } else {
       this._pc.onconnection = function() {
         util.log('ORIGINATOR: onconnection triggered');
-
         self._startDataChannel();
       };
     }

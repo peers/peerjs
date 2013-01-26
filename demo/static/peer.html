@@ -12,18 +12,19 @@
 <script>
 $(document).ready(function() {
   connections = {};
-  var REMOTE = 'ws://mixest.com:9382';
+  var REMOTE = 'ws://localhost:9000';
   originator = new Peer({ ws: REMOTE, debug: true });
   originator.on('ready', function(id) {
     console.log(id);
   });
   originator.on('connection', function(connection) {
+    x = connection;
     console.log('connection');
     connection.on('data', function(data) {
       console.log(data);
     });
     connection.send('What is going on?');
-    connections[connection.metadata.username] = connection;
+    //connections[connection.metadata.username] = connection;
   });
 });
 

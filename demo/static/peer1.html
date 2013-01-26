@@ -15,9 +15,11 @@ $(document).ready(function() {
   $('#connect').click(function() {
     var source = $('#source').val();
 
-    sink = new Peer({ ws: 'ws://mixest.com:9382', debug: true });
+    sink = new Peer({ ws: 'ws://localhost:9000', debug: true });
     sink.on('ready', function() {
       sink.connect(source, { username: 'michelle' }, function(err, connection) {
+        x = connection;
+        console.log('got connection');
         console.log(connection);
 
         connection.on('data', function(data) {

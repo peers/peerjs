@@ -791,7 +791,29 @@ var util = {
       global.attachEvent('onmessage', handleMessage);
     }
     return setZeroTimeoutPostMessage;
-  }(this))
+  }(this)),
+  
+  blobToArrayBuffer: function(blob, cb){
+    var fr = new FileReader();
+    fr.onload = function(evt) {
+      cb(evt.target.result);
+    };
+    fr.readAsArrayBuffer(blob);
+  },
+  blobToBinaryString: function(blob, cb){
+    var fr = new FileReader();
+    fr.onload = function(evt) {
+      cb(evt.target.result);
+    };
+    fr.readAsBinaryString(blob);
+  },
+  binaryStringToArrayBuffer: function(binary) {
+    var byteArray = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) {
+      byteArray[i] = binary.charCodeAt(i) & 0xff;
+    }
+    return byteArray.buffer;
+  }
 };
 var RTCPeerConnection = null;
 var getUserMedia = null;
@@ -830,35 +852,30 @@ function Peer(options) {
 
   options = util.extend({
     debug: false,
-    config: { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] },
-    ws: 'ws://localhost'
+    peer: 'ws://localhost'
   }, options);
+  this.options = options;
   util.debug = options.debug;
 
   this._id = null;
 
+  this._socket = new WebSocket(options.ws);
+  this._socketInit();
+  
+  
   // Connections
   this.connections = {};
-  this._socket = new WebSocket(options.ws);
-
-  // Init socket msg handlers
-  var self = this;
-  this._socket.onopen = function() {
-    self.socketInit();
-  };
 };
 
 util.inherits(Peer, EventEmitter);
 
 /** Start up websocket communications. */
-Peer.prototype.socketInit = function() {
+Peer.prototype._socketInit = function() {
   var self = this;
-
   this._socket.onmessage = function(event) {
     var message = JSON.parse(event.data);
     var peer = message.src;
     var connection = self.connections[peer];
-
     switch (message.type) {
       case 'ID':
         self._id = message.id;
@@ -867,20 +884,17 @@ Peer.prototype.socketInit = function() {
       case 'OFFER':
         var options = {
           metadata: message.metadata,
-          peer: peer,
-          id: self._id,
-          originator: false,
           sdp: message.sdp
         };
-        var connection = new DataConnection(options, self._socket, function(err, connection) {
+        var connection = new DataConnection(self._id, peer, self._socket, function(err, connection) {
           if (!err) {
             self.emit('connection', connection);
           }
-        });
+        }, options);
         self.connections[peer] = connection;
         break;
       case 'ANSWER':
-        if (connection) connection.handleAnswer(message);
+        if (connection) connection.handleSDP(message);
         break;
       case 'CANDIDATE':
         if (connection) connection.handleCandidate(message);
@@ -889,7 +903,7 @@ Peer.prototype.socketInit = function() {
         if (connection) connection.handleLeave(message);
         break;
       case 'PORT':
-        if (browserisms && browserisms == 'Firefox') {
+        if (browserisms == 'Firefox') {
           connection.handlePort(message);
           break;
         }
@@ -898,11 +912,12 @@ Peer.prototype.socketInit = function() {
         break;
     }
   };
-  // Announce as a PEER to receive an ID.
-  this._socket.send(JSON.stringify({
-    type: 'PEER'
-  }));
-
+  this._socket.onopen = function() {
+    // Announce as a PEER to receive an ID.
+    self._socket.send(JSON.stringify({
+      type: 'PEER'
+    }));
+  };
 };
 
 
@@ -910,29 +925,32 @@ Peer.prototype.connect = function(peer, metadata, cb) {
   if (typeof metadata === 'function' && !cb) cb = metadata; metadata = false;
 
   var options = {
-    metadata: metadata,
-    id: this._id,
-    peer: peer,
-    originator: true
+    metadata: metadata
   };
-  var connection = new DataConnection(options, this._socket, cb);
+  var connection = new DataConnection(this._id, peer, this._socket, cb, options);
   this.connections[peer] = connection;
 };
 
 
 exports.Peer = Peer;
 
-function DataConnection(options, socket, cb) {
+function DataConnection(id, peer, socket, cb, options) {
   if (!(this instanceof DataConnection)) return new DataConnection(options);
   EventEmitter.call(this);
 
+  options = util.extend({
+    debug: false,
+    ice: { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] }
+  }, options);
+  this.options = options;
+  
   // Is this the originator?
-  this._originator = options.originator || false;
+  
+  this._id = id;
+  this._peer = peer;
+  this._originator = (options.sdp == undefined);
   this._cb = cb;
-  this._peer = options.peer;
-  this._id = options.id;
-
-  var sdp = options.sdp;
+ 
   this.metadata = options.metadata;
 
   // Set up socket handlers.
@@ -940,60 +958,73 @@ function DataConnection(options, socket, cb) {
 
   // Firefoxism: connectDataConnection ports.
   if (browserisms == 'Firefox') {
-    if (!DataConnection.usedPorts) {
-      DataConnection.usedPorts = [];
-    }
-    this.localPort = util.randomPort();
-    while (DataConnection.usedPorts.indexOf(this.localPort) != -1) {
-      this.localPort = util.randomPort();
-    }
-    this.remotePort = util.randomPort();
-    while (this.remotePort == this.localPort ||
-        DataConnection.usedPorts.indexOf(this.localPort) != -1) {
-      this.remotePort = util.randomPort();
-    }
-    DataConnection.usedPorts.push(this.remotePort);
-    DataConnection.usedPorts.push(this.localPort);
+    this._firefoxPortSetup();
   }
-
+  //
+  
   // Set up PeerConnection.
   this._startPeerConnection();
+  
+  // Listen for ICE candidates
+  this._setupIce();
+  
+  // Listen for negotiation needed
+  this._setupOffer();
+  
+  // Listen or create a data channel
+  this._setupDataChannel();
+  
   var self = this;
-  if (this._originator) {
-    this._setupDataChannel();
-    this._maybeBrowserisms();
-  } else if (sdp) {
-    try {
-      sdp = new RTCSessionDescription(sdp);
-    } catch(e) {
-      util.log('Firefox');
+  
+  if (options.sdp) {
+    this.handleSDP({type: 'OFFER', sdp: options.sdp});
+    if (browserisms !== 'Firefox') { 
+      this._makeAnswer();
     }
-    this._pc.setRemoteDescription(sdp, function() {
-      util.log('setRemoteDescription: offer');
-      self._setupDataChannel();
-      self._maybeBrowserisms();
-
-    }, function(err) {
-      this._cb('failed to setRemoteDescription');
-      util.log('failed to setRemoteDescription with offer, ', err);
-    });
+  }
+  
+  if (browserisms == 'Firefox') {
+    this._firefoxAdditional();
   }
 };
 
 util.inherits(DataConnection, EventEmitter);
 
-DataConnection.prototype.handleAnswer = function(message) {
+DataConnection.prototype._setupOffer = function() {
+  var self = this;
+  util.log('Listening for `negotiationneeded`');
+  this._pc.onnegotiationneeded = function() {
+    util.log('`negotiationneeded` triggered');
+    self._makeOffer();
+  };
+}
+
+DataConnection.prototype._setupDataChannel = function() {
+  var self = this;
+  if (this._originator) {
+    util.log('Creating data channel');
+    this._dc = this._pc.createDataChannel(this._peer, { reliable: false });
+    this._configureDataChannel();
+  } else {
+    util.log('Listening for data channel');
+    this._pc.ondatachannel = function(evt) {
+      util.log('Received data channel');
+      self._dc = evt.channel;
+      self._configureDataChannel();
+    };
+  }
+};
+
+DataConnection.prototype.handleSDP = function(message) {
   var sdp = message.sdp;
-  try {
-    sdp = new RTCSessionDescription(message.sdp);
-  } catch(e) {
-    util.log('Firefox');
+  if (browserisms != 'Firefox') {
+    sdp = new RTCSessionDescription(sdp);
   }
   var self = this;
   this._pc.setRemoteDescription(sdp, function() {
-    util.log('setRemoteDescription: answer');
+    util.log('Set remoteDescription: ' + message.type);
     // Firefoxism
-    if (browserisms == 'Firefox') {
+    if (message.type == 'ANSWER' && browserisms == 'Firefox') {
       self._pc.connectDataConnection(self.localPort, self.remotePort);
       self._socket.send(JSON.stringify({
         type: 'PORT',
@@ -1003,23 +1034,21 @@ DataConnection.prototype.handleAnswer = function(message) {
         local: self.remotePort
       }));
     }
-    util.log('ORIGINATOR: PeerConnection success');
   }, function(err) {
-    this._cb('failed to setRemoteDescription');
-    util.log('failed to setRemoteDescription, ', err);
+    this._cb('Failed to setRemoteDescription');
+    util.log('Failed to setRemoteDescription, ', err);
   });
 };
 
 
 DataConnection.prototype.handleCandidate = function(message) {
-  util.log(message.candidate);
   var candidate = new RTCIceCandidate(message.candidate);
   this._pc.addIceCandidate(candidate);
 };
 
 
 DataConnection.prototype.handleLeave = function(message) {
-  util.log('counterpart disconnected');
+  util.log('Peer ' + this._peer + ' disconnected');
   if (!!this._pc && this._pc.readyState != 'closed') {
     this._pc.close();
     this._pc = null;
@@ -1043,42 +1072,41 @@ DataConnection.prototype.handlePort = function(message) {
 
 /** Starts a PeerConnection and sets up handlers. */
 DataConnection.prototype._startPeerConnection = function() {
-  this._pc = new RTCPeerConnection(this._config, { optional:[ { RtpDataChannels: true } ]});
-  this._setupIce();
+  util.log('Creating RTCPeerConnection: ', this.options.ice);
+  this._pc = new RTCPeerConnection(this.options.ice, { optional:[ { RtpDataChannels: true } ]});
 };
 
 
 /** Takes care of ice handlers. */
 DataConnection.prototype._setupIce = function() {
+  util.log('Listening for ICE candidates');
   var self = this;
-  this._pc.onicecandidate = function(event) {
-    util.log('candidates received');
-    if (event.candidate) {
+  this._pc.onicecandidate = function(evt) {
+    if (evt.candidate) {
+      util.log('Received ICE candidates');
       self._socket.send(JSON.stringify({
         type: 'CANDIDATE',
-        candidate: event.candidate,
+        candidate: evt.candidate,
         dst: self._peer,
         src: self._id
       }));
-    } else {
-      util.log("End of candidates.");
     }
   };
 };
 
 
-/** Sets up DataChannel handlers. */
+/** Sets up DataChannel handlers. 
 DataConnection.prototype._setupDataChannel = function() {
   var self = this;
   if (this._originator) {
-    /** ORIGINATOR SETUP */
+    
     if (browserisms == 'Webkit') {
 
       // TODO: figure out the right thing to do with this.
       this._pc.onstatechange = function() {
         util.log('State Change: ', self._pc.readyState);
       }
-
+      
     } else {
       this._pc.onconnection = function() {
         util.log('ORIGINATOR: onconnection triggered');
@@ -1087,17 +1115,7 @@ DataConnection.prototype._setupDataChannel = function() {
       };
     }
   } else {
-    /** TARGET SETUP */
-    this._pc.ondatachannel = function(dc) {
-      util.log('SINK: ondatachannel triggered');
-      self._dc = dc;
-      self._dc.binaryType = 'blob';
-      self._dc.onmessage = function(e) {
-        self._handleDataMessage(e);
-      };
-
-      self._cb(null, self);
-    };
+    
 
     this._pc.onconnection = function() {
       util.log('SINK: onconnection triggered');
@@ -1109,75 +1127,60 @@ DataConnection.prototype._setupDataChannel = function() {
     self.emit('close', self._peer);
   };
 };
+*/
 
+DataConnection.prototype._firefoxPortSetup = function() {
+  if (!DataConnection.usedPorts) {
+    DataConnection.usedPorts = [];
+  }
+  this.localPort = util.randomPort();
+  while (DataConnection.usedPorts.indexOf(this.localPort) != -1) {
+    this.localPort = util.randomPort();
+  }
+  this.remotePort = util.randomPort();
+  while (this.remotePort == this.localPort ||
+      DataConnection.usedPorts.indexOf(this.localPort) != -1) {
+    this.remotePort = util.randomPort();
+  }
+  DataConnection.usedPorts.push(this.remotePort);
+  DataConnection.usedPorts.push(this.localPort);
+}
 
-DataConnection.prototype._startDataChannel = function() {
+DataConnection.prototype._configureDataChannel = function() {
   var self = this;
-  this._dc = this._pc.createDataChannel(this._peer, { reliable: false });
-  this._dc.binaryType = 'blob';
+  
+  if (browserisms == 'Firefox') {
+    this._dc.binaryType = 'blob';
+  }
+  this._dc.onopen = function() {
+    util.log('Data channel connection success');
+    self._cb(null, self);
+  };
   this._dc.onmessage = function(e) {
     self._handleDataMessage(e);
   };
-
-  this._cb(null, self);
 };
 
 
 /** Decide whether to handle Firefoxisms. */
-DataConnection.prototype._maybeBrowserisms = function() {
+DataConnection.prototype._firefoxAdditional = function() {
   var self = this;
-  if (browserisms == 'Firefox') {
-    getUserMedia({ audio: true, fake: true }, function(s) {
-      self._pc.addStream(s);
-
-      if (self._originator) {
-        self._makeOffer();
-      } else {
-        self._makeAnswer();
-      }
-
-    }, function(err) { util.log('crap'); });
-  } else {
+  getUserMedia({ audio: true, fake: true }, function(s) {
+    self._pc.addStream(s);
     if (self._originator) {
-      this._makeOffer();
+      self._makeOffer();
     } else {
-      this._makeAnswer();
+      self._makeAnswer();
     }
-  }
+  }, function(err) { util.log('Could not getUserMedia'); });
 }
 
-
-/** Create an answer for PC. */
-DataConnection.prototype._makeAnswer = function() {
-  var self = this;
-
-  this._pc.createAnswer(function(answer) {
-    self._pc.setLocalDescription(answer, function() {
-      util.log('setLocalDescription: answer');
-      self._socket.send(JSON.stringify({
-        type: 'ANSWER',
-        src: self._id,
-        sdp: answer,
-        dst: self._peer
-      }));
-    }, function(err) {
-      self._cb('failed to setLocalDescription');
-      util.log('failed to setLocalDescription, ', err)
-    });
-  }, function(err) {
-    self._cb('failed to create answer');
-    util.log('failed to create answer, ', err)
-  });
-};
-
-
-/** Create an offer for PC. */
 DataConnection.prototype._makeOffer = function() {
   var self = this;
-
   this._pc.createOffer(function(offer) {
+    util.log('Created offer');
     self._pc.setLocalDescription(offer, function() {
-      util.log('setLocalDescription: offer');
+      util.log('Set localDescription to offer');
       self._socket.send(JSON.stringify({
         type: 'OFFER',
         sdp: offer,
@@ -1186,31 +1189,69 @@ DataConnection.prototype._makeOffer = function() {
         metadata: self._metadata
       }));
     }, function(err) {
-      self._cb('failed to setLocalDescription');
-      util.log('failed to setLocalDescription, ', err);
+      self._cb('Failed to setLocalDescription');
+      util.log('Failed to setLocalDescription, ', err);
     });
   });
 };
 
+/** Create an answer for PC. */
+DataConnection.prototype._makeAnswer = function() {
+  var self = this;
+  this._pc.createAnswer(function(answer) {
+    util.log('Created answer');
+    self._pc.setLocalDescription(answer, function() {
+      util.log('Set localDescription to answer');
+      self._socket.send(JSON.stringify({
+        type: 'ANSWER',
+        src: self._id,
+        sdp: answer,
+        dst: self._peer
+      }));
+    }, function(err) {
+      self._cb('Failed to setLocalDescription');
+      util.log('Failed to setLocalDescription, ', err)
+    });
+  }, function(err) {
+    self._cb('Failed to create answer');
+    util.log('Failed to create answer, ', err)
+  });
+};
+
+
+
+
 
 /** Allows user to send data. */
 DataConnection.prototype.send = function(data) {
-  var ab = BinaryPack.pack(data);
-  this._dc.send(ab);
+  var self = this;
+  var blob = BinaryPack.pack(data);
+  if (browserisms == 'Webkit') {
+    util.blobToBinaryString(blob, function(str){
+      self._dc.send(str);
+    });
+  } else {
+    this._dc.send(blob);
+  }
 };
 
 
 // Handles a DataChannel message.
 DataConnection.prototype._handleDataMessage = function(e) {
   var self = this;
-  var fr = new FileReader();
-  fr.onload = function(evt) {
-    var ab = evt.target.result;
-    var data = BinaryPack.unpack(ab);
-
-    self.emit('data', data);
-  };
-  fr.readAsArrayBuffer(e.data);
+  if (e.data.constructor == Blob) {
+    util.blobToArrayBuffer(e.data, function(ab) {
+      var data = BinaryPack.unpack(ab);
+      self.emit('data', data);
+    });
+  } else if (e.data.constructor == ArrayBuffer) {
+      var data = BinaryPack.unpack(e.data);
+      self.emit('data', data);
+  } else if (e.data.constructor == String) {
+      var ab = util.binaryStringToArrayBuffer(e.data);
+      var data = BinaryPack.unpack(ab);
+      self.emit('data', data);
+  }
 };
 
 })(this);
