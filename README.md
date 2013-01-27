@@ -1,6 +1,5 @@
 # Peers: a node.js PeerConnection library #
 
-New API in the works, nothing is ready yet.
 
 ## Chrome ##
 
@@ -8,6 +7,8 @@ New API in the works, nothing is ready yet.
 
 
 ## Firefox ##
+
+Currently awaiting next Firefox WebRTC update.
 
 * Firefox flags:
   `media.navigator.enabled: true`
