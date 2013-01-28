@@ -862,11 +862,14 @@ function Peer(options) {
   this._socket = new WebSocket(options.ws);
   this._socketInit();
 
-  // Connections
+  // Connections for this peer.
   this.connections = {};
 
-  // Queued connections to make
+  // Queued connections to make.
   this._queued = [];
+
+  // Make sure connections are cleaned up.
+  window.onbeforeunload = this._cleanup;
 };
 
 util.inherits(Peer, EventEmitter);
@@ -891,7 +894,7 @@ Peer.prototype._socketInit = function() {
         };
         var connection = new DataConnection(self._id, peer, self._socket, function(err, connection) {
           if (!err) {
-            self.emit('connection', connection);
+            self.emit('connection', connection, message.metadata);
           }
         }, options);
         self.connections[peer] = connection;
@@ -903,7 +906,7 @@ Peer.prototype._socketInit = function() {
         if (connection) connection.handleCandidate(message);
         break;
       case 'LEAVE':
-        if (connection) connection.handleLeave(message);
+        if (connection) connection.handleLeave();
         break;
       case 'PORT':
         if (browserisms == 'Firefox') {
@@ -928,6 +931,15 @@ Peer.prototype._processQueue = function() {
   while (this._queued.length > 0) {
     var cdata = this._queued.pop();
     this.connect.apply(this, cdata);
+  }
+};
+
+
+Peer.prototype._cleanup = function() {
+  for (var peer in this.connections) {
+    if (this.connections.hasOwnProperty(peer)) {
+      this.connections[peer].close();
+    }
   }
 };
 
@@ -1066,17 +1078,9 @@ DataConnection.prototype.handleCandidate = function(message) {
 };
 
 
-DataConnection.prototype.handleLeave = function(message) {
+DataConnection.prototype.handleLeave = function() {
   util.log('Peer ' + this._peer + ' disconnected');
-  if (!!this._pc && this._pc.readyState != 'closed') {
-    this._pc.close();
-    this._pc = null;
-  }
-  if (!!this._dc && this._dc.readyState != 'closed') {
-    this._dc.close();
-    this._dc = null;
-  }
-  this.emit('close', this._peer);
+  this._cleanup();
 };
 
 DataConnection.prototype.handlePort = function(message) {
@@ -1114,6 +1118,7 @@ DataConnection.prototype._setupIce = function() {
 };
 
 
+// Awaiting update in Firefox spec ***
 /** Sets up DataChannel handlers. 
 DataConnection.prototype._setupDataChannel = function() {
   var self = this;
@@ -1205,7 +1210,7 @@ DataConnection.prototype._makeOffer = function() {
         sdp: offer,
         dst: self._peer,
         src: self._id,
-        metadata: self._metadata
+        metadata: self.metadata
       }));
     }, function(err) {
       self._cb('Failed to setLocalDescription');
@@ -1238,7 +1243,30 @@ DataConnection.prototype._makeAnswer = function() {
 };
 
 
+DataConnection.prototype._cleanup = function() {
+  if (!!this._pc && this._pc.readyState != 'closed') {
+    this._pc.close();
+    this._pc = null;
+  }
+  if (!!this._dc && this._dc.readyState != 'closed') {
+    this._dc.close();
+    this._dc = null;
+  }
+  this.emit('close', this._peer);
+};
 
+
+
+/** Allows user to close connection. */
+DataConnection.prototype.close = function() {
+  this._cleanup();
+  var self = this;
+  this._socket.send(JSON.stringify({
+    type: 'LEAVE',
+    dst: self._peer,
+    src: self._id,
+  }));
+};
 
 
 /** Allows user to send data. */
