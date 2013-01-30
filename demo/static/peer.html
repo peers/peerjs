@@ -12,8 +12,8 @@
 <script>
 $(document).ready(function() {
   connections = {};
-  var REMOTE = 'ws://localhost:9000';
-  originator = new Peer({ ws: REMOTE, debug: true });
+  var REMOTE = 'localhost:9000';
+  originator = new Peer({ server: REMOTE, debug: true });
   originator.on('ready', function(id) {
     console.log(id);
   });
