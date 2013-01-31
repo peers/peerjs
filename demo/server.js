@@ -20,4 +20,4 @@ app.listen(8000);
 
 
 var peer = require('peer');
-s = new peer.PeerServer({port: 9000, debug: true});
+s = new peer.PeerServer({ debug: true, port: 9000 });
