@@ -862,7 +862,6 @@ function Peer(options) {
   this._apikey = options.apikey;
 
   // Check in with the server with ID or get an ID.
-//  this._startXhrStream();
   this._checkIn();
 
   // Connections for this peer.
@@ -1026,6 +1025,7 @@ Peer.prototype._socketInit = function() {
 };
 
 
+/** Process queued calls to connect. */
 Peer.prototype._processQueue = function() {
   while (this._queued.length > 0) {
     var cdata = this._queued.pop();
@@ -1043,6 +1043,8 @@ Peer.prototype._cleanup = function() {
 };
 
 
+/** Exposed connect function for users. Will try to connect later if user
+ * is waiting for an ID. */
 Peer.prototype.connect = function(peer, metadata, cb) {
   if (typeof metadata === 'function' && !cb) cb = metadata; metadata = false;
 
@@ -1142,59 +1144,6 @@ DataConnection.prototype._setupDataChannel = function() {
       self._configureDataChannel();
     };
   }
-};
-
-
-/** Exposed functions for Peer. */
-
-DataConnection.prototype.setSocketOpen = function() {
-  this._socketOpen = true;
-};
-
-DataConnection.prototype.handleSDP = function(message) {
-  var sdp = message.sdp;
-  if (util.browserisms != 'Firefox') {
-    sdp = new RTCSessionDescription(sdp);
-  }
-  var self = this;
-  this._pc.setRemoteDescription(sdp, function() {
-    util.log('Set remoteDescription: ' + message.type);
-    // Firefoxism
-    if (message.type === 'ANSWER' && util.browserisms === 'Firefox') {
-      self._pc.connectDataConnection(self.localPort, self.remotePort);
-      self._handleBroker('port', JSON.stringify({
-        type: 'PORT',
-        dst: self._peer,
-        src: self._id,
-        remote: self.localPort,
-        local: self.remotePort
-      }));
-    }
-  }, function(err) {
-    this._cb('Failed to setRemoteDescription');
-    util.log('Failed to setRemoteDescription, ', err);
-  });
-};
-
-
-DataConnection.prototype.handleCandidate = function(message) {
-  var candidate = new RTCIceCandidate(message.candidate);
-  this._pc.addIceCandidate(candidate);
-};
-
-
-DataConnection.prototype.handleLeave = function() {
-  util.log('Peer ' + this._peer + ' disconnected');
-  this._cleanup();
-};
-
-DataConnection.prototype.handlePort = function(message) {
-  if (!DataConnection.usedPorts) {
-    DataConnection.usedPorts = [];
-  }
-  DataConnection.usedPorts.push(message.local);
-  DataConnection.usedPorts.push(message.remote);
-  this._pc.connectDataConnection(message.local, message.remote);
 };
 
 
@@ -1376,6 +1325,29 @@ DataConnection.prototype._cleanup = function() {
 
 
 
+// Handles a DataChannel message.
+DataConnection.prototype._handleDataMessage = function(e) {
+  var self = this;
+  if (e.data.constructor === Blob) {
+    util.blobToArrayBuffer(e.data, function(ab) {
+      var data = BinaryPack.unpack(ab);
+      self.emit('data', data);
+    });
+  } else if (e.data.constructor === ArrayBuffer) {
+      var data = BinaryPack.unpack(e.data);
+      self.emit('data', data);
+  } else if (e.data.constructor === String) {
+      var ab = util.binaryStringToArrayBuffer(e.data);
+      var data = BinaryPack.unpack(ab);
+      self.emit('data', data);
+  }
+};
+
+
+/**
+ * Exposed functionality for users.
+ */
+
 /** Allows user to close connection. */
 DataConnection.prototype.close = function() {
   this._cleanup();
@@ -1402,22 +1374,60 @@ DataConnection.prototype.send = function(data) {
 };
 
 
-// Handles a DataChannel message.
-DataConnection.prototype._handleDataMessage = function(e) {
-  var self = this;
-  if (e.data.constructor === Blob) {
-    util.blobToArrayBuffer(e.data, function(ab) {
-      var data = BinaryPack.unpack(ab);
-      self.emit('data', data);
-    });
-  } else if (e.data.constructor === ArrayBuffer) {
-      var data = BinaryPack.unpack(e.data);
-      self.emit('data', data);
-  } else if (e.data.constructor === String) {
-      var ab = util.binaryStringToArrayBuffer(e.data);
-      var data = BinaryPack.unpack(ab);
-      self.emit('data', data);
-  }
+/**
+ * Exposed functions for Peer.
+ */
+
+DataConnection.prototype.setSocketOpen = function() {
+  this._socketOpen = true;
 };
+
+DataConnection.prototype.handleSDP = function(message) {
+  var sdp = message.sdp;
+  if (util.browserisms != 'Firefox') {
+    sdp = new RTCSessionDescription(sdp);
+  }
+  var self = this;
+  this._pc.setRemoteDescription(sdp, function() {
+    util.log('Set remoteDescription: ' + message.type);
+    // Firefoxism
+    if (message.type === 'ANSWER' && util.browserisms === 'Firefox') {
+      self._pc.connectDataConnection(self.localPort, self.remotePort);
+      self._handleBroker('port', JSON.stringify({
+        type: 'PORT',
+        dst: self._peer,
+        src: self._id,
+        remote: self.localPort,
+        local: self.remotePort
+      }));
+    }
+  }, function(err) {
+    this._cb('Failed to setRemoteDescription');
+    util.log('Failed to setRemoteDescription, ', err);
+  });
+};
+
+
+DataConnection.prototype.handleCandidate = function(message) {
+  var candidate = new RTCIceCandidate(message.candidate);
+  this._pc.addIceCandidate(candidate);
+};
+
+
+DataConnection.prototype.handleLeave = function() {
+  util.log('Peer ' + this._peer + ' disconnected');
+  this._cleanup();
+};
+
+DataConnection.prototype.handlePort = function(message) {
+  if (!DataConnection.usedPorts) {
+    DataConnection.usedPorts = [];
+  }
+  DataConnection.usedPorts.push(message.local);
+  DataConnection.usedPorts.push(message.remote);
+  this._pc.connectDataConnection(message.local, message.remote);
+};
+
+
 
 })(this);
