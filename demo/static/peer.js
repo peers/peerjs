@@ -729,6 +729,7 @@ EventEmitter.prototype.emit = function(type) {
 var util = {
   
   debug: false,
+  browserisms: '',
   
   inherits: function(ctor, superCtor) {
     ctor.super_ = superCtor;
@@ -757,9 +758,12 @@ var util = {
   
   log: function () {
     if (util.debug) {
+      var copy = [];
       for (var i = 0; i < arguments.length; i++) {
-        console.log('*', i, '-- ', arguments[i]);
+        copy[i] = arguments[i];
       }
+      copy.unshift('PeerJS: ');
+      console.log.apply(console, copy);
     }
   },
 
@@ -818,49 +822,48 @@ var util = {
 var RTCPeerConnection = null;
 var getUserMedia = null;
 var attachMediaStream = null;
-var browserisms = null;
 
 if (navigator.mozGetUserMedia) {
-  browserisms = 'Firefox'
+  util.browserisms = 'Firefox'
 
   RTCPeerConnection = mozRTCPeerConnection;
-
   getUserMedia = navigator.mozGetUserMedia.bind(navigator);
-  attachMediaStream = function(element, stream) {
-    console.log("Attaching media stream");
-    element.mozSrcObject = stream;
-    element.play();
-  };
 } else if (navigator.webkitGetUserMedia) {
-  browserisms = 'Webkit'
+  util.browserisms = 'Webkit'
 
   RTCPeerConnection = webkitRTCPeerConnection;
-
   getUserMedia = navigator.webkitGetUserMedia.bind(navigator);
-  attachMediaStream = function(element, stream) {
-    element.src = webkitURL.createObjectURL(stream);
-  };
 }
 
 exports.RTCPeerConnection = RTCPeerConnection;
 exports.getUserMedia = getUserMedia;
-exports.attachMediaStream = attachMediaStream;
-exports.browserisms = browserisms;
 function Peer(options) {
   if (!(this instanceof Peer)) return new Peer(options);
   EventEmitter.call(this);
 
   options = util.extend({
     debug: false,
-    peer: 'ws://localhost'
+    host: 'localhost',
+    protocol: 'http',
+    port: 80
   }, options);
   this.options = options;
   util.debug = options.debug;
 
-  this._id = null;
+  this._server = options.host + ':' + options.port;
+  this._protocol = options.protocol;
 
-  this._socket = new WebSocket(options.ws);
-  this._socketInit();
+  // Ensure alphanumeric_-
+  if (options.id && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.id))
+    throw new Error('Peer ID can only contain alphanumerics, "_", and "-".');
+
+  this._id = options.id;
+  // Not used unless using cloud server.
+  this._apikey = options.apikey;
+
+  // Check in with the server with ID or get an ID.
+//  this._startXhrStream();
+  this._checkIn();
 
   // Connections for this peer.
   this.connections = {};
@@ -874,8 +877,94 @@ function Peer(options) {
 
 util.inherits(Peer, EventEmitter);
 
+/** Check in with ID or get one from server. */
+Peer.prototype._checkIn = function() {
+  // If no ID provided, get a unique ID from server.
+  var self = this;
+  if (!this._id) {
+    try {
+      http = new XMLHttpRequest();
+      // If there's no ID we need to wait for one before trying to init socket.
+      http.open('get', this._protocol + '://' + this._server + '/id', true);
+      http.onreadystatechange = function() {
+        if (http.readyState > 2) {
+          if (!!http.responseText) {
+            try {
+              var response = JSON.parse(http.responseText.split('\n').shift());
+              if (!!response.id) {
+                self._id = response.id;
+                self.emit('ready', self._id);
+              }
+            } catch (e) {
+              // Ignore
+            }
+          }
+        }
+        self._socketInit();
+        self._handleStream(http, true);
+      };
+      http.send(null);
+    } catch(e) {
+      util.log('XMLHttpRequest not available; defaulting to WebSockets');
+      this._socketInit();
+    }
+  } else {
+    this._socketInit();
+    this._startXhrStream();
+  }
+  // TODO: may need to setInterval in case handleStream is not being called
+  // enough.
+};
+
+Peer.prototype._startXhrStream = function() {
+  try {
+    var http = new XMLHttpRequest();
+    var self = this;
+    http.open('post', this._protocol + '://' + this._server + '/id', true);
+    http.onreadystatechange = function() {
+      self._handleStream(http);
+    };
+    http.send('id=' + this._id);
+    // TODO: may need to setInterval in case handleStream is not being called
+    // enough.
+  } catch(e) {
+    util.log('XMLHttpRequest not available; defaulting to WebSockets');
+  }
+};
+
+/** Handles onreadystatechange response as a stream. */
+Peer.prototype._handleStream = function(http, pad) {
+  // 3 and 4 are loading/done state. All others are not relevant.
+  if (http.readyState < 3) {
+    return;
+  } else if (http.readyState == 3 && http.status != 200) {
+    return;
+  } else if (http.readyState == 4 && http.status != 200) {
+    // Clear setInterval here if using it.
+  }
+
+  if (this._index === undefined)
+    this._index = pad ? 2 : 1;
+
+  if (http.responseText === null)
+    return;
+
+  // TODO: handle
+  var message = http.responseText.split('\n')[this._index];
+  if (!!message)
+    this._index += 1;
+
+  if (http.readyState == 4 && !this._socketOpen)
+    this._startXhrStream();
+};
+
 /** Start up websocket communications. */
 Peer.prototype._socketInit = function() {
+  if (!!this._socket)
+    return;
+
+  this._socket = new WebSocket('ws://' + this._server + '/ws?id=' + this._id);
+
   var self = this;
   this._socket.onmessage = function(event) {
     var message = JSON.parse(event.data);
@@ -883,9 +972,12 @@ Peer.prototype._socketInit = function() {
     var connection = self.connections[peer];
     switch (message.type) {
       case 'ID':
-        self._id = message.id;
-        self._processQueue();
-        self.emit('ready', self._id);
+        if (!self._id) {
+          // If we're just now getting an ID then we may have a queue.
+          self._id = message.id;
+          self.emit('ready', self._id);
+          self._processQueue();
+        }
         break;
       case 'OFFER':
         var options = {
@@ -909,7 +1001,7 @@ Peer.prototype._socketInit = function() {
         if (connection) connection.handleLeave();
         break;
       case 'PORT':
-        if (browserisms == 'Firefox') {
+        if (util.browserisms === 'Firefox') {
           connection.handlePort(message);
           break;
         }
@@ -918,11 +1010,14 @@ Peer.prototype._socketInit = function() {
         break;
     }
   };
+
+  // Take care of the queue of connections if necessary and make sure Peer knows
+  // socket is open.
   this._socket.onopen = function() {
-    // Announce as a PEER to receive an ID.
-    self._socket.send(JSON.stringify({
-      type: 'PEER'
-    }));
+    util.log('Socket open');
+    self._socketOpen = true;
+    if (self._id)
+      self._processQueue();
   };
 };
 
@@ -977,7 +1072,7 @@ function DataConnection(id, peer, socket, cb, options) {
   
   this._id = id;
   this._peer = peer;
-  this._originator = (options.sdp == undefined);
+  this._originator = (options.sdp === undefined);
   this._cb = cb;
  
   this.metadata = options.metadata;
@@ -986,7 +1081,7 @@ function DataConnection(id, peer, socket, cb, options) {
   this._socket = socket;
 
   // Firefoxism: connectDataConnection ports.
-  if (browserisms == 'Firefox') {
+  if (util.browserisms === 'Firefox') {
     this._firefoxPortSetup();
   }
   //
@@ -999,7 +1094,7 @@ function DataConnection(id, peer, socket, cb, options) {
   
   // Listen for negotiation needed
   // ** Chrome only.
-  if (browserisms === 'Webkit') {
+  if (util.browserisms === 'Webkit') {
     this._setupOffer();
   }
   
@@ -1009,12 +1104,12 @@ function DataConnection(id, peer, socket, cb, options) {
   var self = this;
   if (options.sdp) {
     this.handleSDP({type: 'OFFER', sdp: options.sdp});
-    if (browserisms !== 'Firefox') { 
+    if (util.browserisms !== 'Firefox') { 
       this._makeAnswer();
     }
   }
   
-  if (browserisms === 'Firefox') {
+  if (util.browserisms === 'Firefox') {
     this._firefoxAdditional();
   }
 };
@@ -1048,14 +1143,14 @@ DataConnection.prototype._setupDataChannel = function() {
 
 DataConnection.prototype.handleSDP = function(message) {
   var sdp = message.sdp;
-  if (browserisms != 'Firefox') {
+  if (util.browserisms != 'Firefox') {
     sdp = new RTCSessionDescription(sdp);
   }
   var self = this;
   this._pc.setRemoteDescription(sdp, function() {
     util.log('Set remoteDescription: ' + message.type);
     // Firefoxism
-    if (message.type == 'ANSWER' && browserisms == 'Firefox') {
+    if (message.type === 'ANSWER' && util.browserisms === 'Firefox') {
       self._pc.connectDataConnection(self.localPort, self.remotePort);
       self._socket.send(JSON.stringify({
         type: 'PORT',
@@ -1124,7 +1219,7 @@ DataConnection.prototype._setupDataChannel = function() {
   var self = this;
   if (this._originator) {
     
-    if (browserisms == 'Webkit') {
+    if (util.browserisms === 'Webkit') {
 
       // TODO: figure out the right thing to do with this.
       this._pc.onstatechange = function() {
@@ -1162,7 +1257,7 @@ DataConnection.prototype._firefoxPortSetup = function() {
     this.localPort = util.randomPort();
   }
   this.remotePort = util.randomPort();
-  while (this.remotePort == this.localPort ||
+  while (this.remotePort === this.localPort ||
       DataConnection.usedPorts.indexOf(this.localPort) != -1) {
     this.remotePort = util.randomPort();
   }
@@ -1173,7 +1268,7 @@ DataConnection.prototype._firefoxPortSetup = function() {
 DataConnection.prototype._configureDataChannel = function() {
   var self = this;
   
-  if (browserisms === 'Firefox') {
+  if (util.browserisms === 'Firefox') {
     this._dc.binaryType = 'blob';
   }
   this._dc.onopen = function() {
@@ -1273,7 +1368,7 @@ DataConnection.prototype.close = function() {
 DataConnection.prototype.send = function(data) {
   var self = this;
   var blob = BinaryPack.pack(data);
-  if (browserisms == 'Webkit') {
+  if (util.browserisms === 'Webkit') {
     util.blobToBinaryString(blob, function(str){
       self._dc.send(str);
     });
@@ -1286,15 +1381,15 @@ DataConnection.prototype.send = function(data) {
 // Handles a DataChannel message.
 DataConnection.prototype._handleDataMessage = function(e) {
   var self = this;
-  if (e.data.constructor == Blob) {
+  if (e.data.constructor === Blob) {
     util.blobToArrayBuffer(e.data, function(ab) {
       var data = BinaryPack.unpack(ab);
       self.emit('data', data);
     });
-  } else if (e.data.constructor == ArrayBuffer) {
+  } else if (e.data.constructor === ArrayBuffer) {
       var data = BinaryPack.unpack(e.data);
       self.emit('data', data);
-  } else if (e.data.constructor == String) {
+  } else if (e.data.constructor === String) {
       var ab = util.binaryStringToArrayBuffer(e.data);
       var data = BinaryPack.unpack(ab);
       self.emit('data', data);
