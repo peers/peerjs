@@ -908,7 +908,6 @@ Peer.prototype._checkIn = function() {
       this._socketInit();
     }
   } else {
-    console.log('no id');
     this._socketInit();
     this._startXhrStream();
   }
@@ -960,7 +959,6 @@ Peer.prototype._handleStream = function(http, pad) {
 
 /** Start up websocket communications. */
 Peer.prototype._socketInit = function() {
-  console.log('socketInit');
   if (!!this._socket)
     return;
 
@@ -1225,17 +1223,14 @@ DataConnection.prototype._setupIce = function() {
 };
 
 DataConnection.prototype._handleBroker = function(type, data) {
-  console.log(type);
   if (this._socketOpen) {
     this._socket.send(data);
   } else {
-    console.log('http');
     var http = new XMLHttpRequest();
-    console.log(this._httpUrl);
     http.open('post', this._httpUrl + '/' + type, true);
     http.setRequestHeader('Content-Type', 'application/json');
     http.onload = function() {
-      console.log(http.responseText);
+      util.log(http.responseText);
     }
     http.send(data);
   }
