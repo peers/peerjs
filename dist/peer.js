@@ -851,7 +851,7 @@ function Peer(options) {
   util.debug = options.debug;
 
   this._server = options.host + ':' + options.port;
-  this._protocol = options.protocol;
+  this._httpUrl = options.protocol + '://' + this._server;
 
   // Ensure alphanumeric_-
   if (options.id && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.id))
@@ -883,24 +883,23 @@ Peer.prototype._checkIn = function() {
   var self = this;
   if (!this._id) {
     try {
-      http = new XMLHttpRequest();
+      var http = new XMLHttpRequest();
       // If there's no ID we need to wait for one before trying to init socket.
-      http.open('get', this._protocol + '://' + this._server + '/id', true);
+      http.open('get', this._httpUrl + '/id', true);
       http.onreadystatechange = function() {
-        if (http.readyState > 2) {
-          if (!!http.responseText) {
-            try {
-              var response = JSON.parse(http.responseText.split('\n').shift());
-              if (!!response.id) {
-                self._id = response.id;
-                self.emit('ready', self._id);
-              }
-            } catch (e) {
-              // Ignore
+        if (!self._id && http.readyState > 2 && !!http.responseText) {
+          try {
+            var response = JSON.parse(http.responseText.split('\n').shift());
+            if (!!response.id) {
+              self._id = response.id;
+              self._socketInit();
+              self.emit('ready', self._id);
+              self._processQueue();
             }
+          } catch (e) {
+            self._socketInit();
           }
         }
-        self._socketInit();
         self._handleStream(http, true);
       };
       http.send(null);
@@ -909,6 +908,7 @@ Peer.prototype._checkIn = function() {
       this._socketInit();
     }
   } else {
+    console.log('no id');
     this._socketInit();
     this._startXhrStream();
   }
@@ -920,7 +920,7 @@ Peer.prototype._startXhrStream = function() {
   try {
     var http = new XMLHttpRequest();
     var self = this;
-    http.open('post', this._protocol + '://' + this._server + '/id', true);
+    http.open('post', this._httpUrl + '/id', true);
     http.onreadystatechange = function() {
       self._handleStream(http);
     };
@@ -960,6 +960,7 @@ Peer.prototype._handleStream = function(http, pad) {
 
 /** Start up websocket communications. */
 Peer.prototype._socketInit = function() {
+  console.log('socketInit');
   if (!!this._socket)
     return;
 
@@ -984,7 +985,7 @@ Peer.prototype._socketInit = function() {
           metadata: message.metadata,
           sdp: message.sdp
         };
-        var connection = new DataConnection(self._id, peer, self._socket, function(err, connection) {
+        var connection = new DataConnection(self._id, peer, self._socket, self._httpUrl, function(err, connection) {
           if (!err) {
             self.emit('connection', connection, message.metadata);
           }
@@ -1016,6 +1017,11 @@ Peer.prototype._socketInit = function() {
   this._socket.onopen = function() {
     util.log('Socket open');
     self._socketOpen = true;
+    for (var connection in self._connections) {
+      if (self._connections.hasOwnProperty(connection)) {
+        self._connections.connection.setSocketOpen();
+      }
+    }
     if (self._id)
       self._processQueue();
   };
@@ -1051,14 +1057,14 @@ Peer.prototype.connect = function(peer, metadata, cb) {
     metadata: metadata
   };
 
-  var connection = new DataConnection(this._id, peer, this._socket, cb, options);
+  var connection = new DataConnection(this._id, peer, this._socket, this._httpUrl, cb, options);
   this.connections[peer] = connection;
 };
 
 
 exports.Peer = Peer;
 
-function DataConnection(id, peer, socket, cb, options) {
+function DataConnection(id, peer, socket, httpUrl, cb, options) {
   if (!(this instanceof DataConnection)) return new DataConnection(options);
   EventEmitter.call(this);
 
@@ -1068,12 +1074,11 @@ function DataConnection(id, peer, socket, cb, options) {
   }, options);
   this.options = options;
   
-  // Is this the originator?
-  
   this._id = id;
   this._peer = peer;
   this._originator = (options.sdp === undefined);
   this._cb = cb;
+  this._httpUrl = httpUrl;
  
   this.metadata = options.metadata;
 
@@ -1141,6 +1146,13 @@ DataConnection.prototype._setupDataChannel = function() {
   }
 };
 
+
+/** Exposed functions for Peer. */
+
+DataConnection.prototype.setSocketOpen = function() {
+  this._socketOpen = true;
+};
+
 DataConnection.prototype.handleSDP = function(message) {
   var sdp = message.sdp;
   if (util.browserisms != 'Firefox') {
@@ -1152,7 +1164,7 @@ DataConnection.prototype.handleSDP = function(message) {
     // Firefoxism
     if (message.type === 'ANSWER' && util.browserisms === 'Firefox') {
       self._pc.connectDataConnection(self.localPort, self.remotePort);
-      self._socket.send(JSON.stringify({
+      self._handleBroker('port', JSON.stringify({
         type: 'PORT',
         dst: self._peer,
         src: self._id,
@@ -1202,7 +1214,7 @@ DataConnection.prototype._setupIce = function() {
   this._pc.onicecandidate = function(evt) {
     if (evt.candidate) {
       util.log('Received ICE candidates');
-      self._socket.send(JSON.stringify({
+      self._handleBroker('ice', JSON.stringify({
         type: 'CANDIDATE',
         candidate: evt.candidate,
         dst: self._peer,
@@ -1210,6 +1222,23 @@ DataConnection.prototype._setupIce = function() {
       }));
     }
   };
+};
+
+DataConnection.prototype._handleBroker = function(type, data) {
+  console.log(type);
+  if (this._socketOpen) {
+    this._socket.send(data);
+  } else {
+    console.log('http');
+    var http = new XMLHttpRequest();
+    console.log(this._httpUrl);
+    http.open('post', this._httpUrl + '/' + type, true);
+    http.setRequestHeader('Content-Type', 'application/json');
+    http.onload = function() {
+      console.log(http.responseText);
+    }
+    http.send(data);
+  }
 };
 
 
@@ -1300,7 +1329,7 @@ DataConnection.prototype._makeOffer = function() {
     util.log('Created offer');
     self._pc.setLocalDescription(offer, function() {
       util.log('Set localDescription to offer');
-      self._socket.send(JSON.stringify({
+      self._handleBroker('offer', JSON.stringify({
         type: 'OFFER',
         sdp: offer,
         dst: self._peer,
@@ -1321,7 +1350,7 @@ DataConnection.prototype._makeAnswer = function() {
     util.log('Created answer');
     self._pc.setLocalDescription(answer, function() {
       util.log('Set localDescription to answer');
-      self._socket.send(JSON.stringify({
+      self._handleBroker('answer', JSON.stringify({
         type: 'ANSWER',
         src: self._id,
         sdp: answer,
@@ -1356,7 +1385,7 @@ DataConnection.prototype._cleanup = function() {
 DataConnection.prototype.close = function() {
   this._cleanup();
   var self = this;
-  this._socket.send(JSON.stringify({
+  this._handleBroker('leave', JSON.stringify({
     type: 'LEAVE',
     dst: self._peer,
     src: self._id,
