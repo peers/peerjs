@@ -978,10 +978,9 @@ Peer.prototype._socketInit = function() {
   this._socket.onopen = function() {
     util.log('Socket open');
     self._socketOpen = true;
-    for (var connection in self.connections) {
-      if (self.connections.hasOwnProperty(connection)) {
-        self.connections[connection].setSocketOpen();
-      }
+    var ids = Object.keys(self.connections)
+    for (var i = 0, ii = ids.length; i < ii; i += 1) {
+      self.connections[ids[i]].setSocketOpen();
     }
     if (self._id)
       self._processQueue();
@@ -1093,7 +1092,7 @@ Peer.prototype.connect = function(peer, metadata, cb) {
   this.connections[peer] = connection;
 };
 
-Peer.prototype.leave = function() {
+Peer.prototype.destroy = function() {
   this._cleanup();
 };
 
@@ -1105,6 +1104,7 @@ function DataConnection(id, peer, socket, httpUrl, cb, options) {
   EventEmitter.call(this);
 
   options = util.extend({
+    config: { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] },
     socketOpen: false
   }, options);
   this.options = options;
