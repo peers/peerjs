@@ -1038,7 +1038,10 @@ Peer.prototype._handleServerMessage = function(message) {
       if (connection) connection.handleCandidate(message);
       break;
     case 'LEAVE':
-      if (connection) connection.handleLeave();
+      if (connection) {
+        connection.handleLeave();
+        delete this.connections[peer];
+      }
       break;
     case 'PORT':
       if (util.browserisms === 'Firefox') {
@@ -1061,6 +1064,7 @@ Peer.prototype._processQueue = function() {
 
 
 Peer.prototype._cleanup = function() {
+  this._socket.send(JSON.stringify({ type: 'LEAVE', src: this._id }));
   for (var peer in this.connections) {
     if (this.connections.hasOwnProperty(peer)) {
       this.connections[peer].close();
@@ -1087,6 +1091,10 @@ Peer.prototype.connect = function(peer, metadata, cb) {
   var connection = new DataConnection(this._id, peer, this._socket, this._httpUrl, cb, options);
 
   this.connections[peer] = connection;
+};
+
+Peer.prototype.leave = function() {
+  this._cleanup();
 };
 
 
