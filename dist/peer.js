@@ -845,6 +845,7 @@ function Peer(options) {
     debug: false,
     host: 'localhost',
     protocol: 'http',
+    config: { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] },
     port: 80
   }, options);
   this.options = options;
@@ -852,6 +853,7 @@ function Peer(options) {
 
   this._server = options.host + ':' + options.port;
   this._httpUrl = options.protocol + '://' + this._server;
+  this._config = options.config;
 
   // Ensure alphanumeric_-
   if (options.id && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.id))
@@ -907,8 +909,8 @@ Peer.prototype._checkIn = function() {
       this._socketInit();
     }
   } else {
-    this._socketInit();
     this._startXhrStream();
+    this._socketInit();
   }
   // TODO: may need to setInterval in case handleStream is not being called
   // enough.
@@ -919,10 +921,11 @@ Peer.prototype._startXhrStream = function() {
     var http = new XMLHttpRequest();
     var self = this;
     http.open('post', this._httpUrl + '/id', true);
+    http.setRequestHeader('Content-Type', 'application/json');
     http.onreadystatechange = function() {
       self._handleStream(http);
     };
-    http.send('id=' + this._id);
+    http.send(JSON.stringify({ id: this._id }));
     // TODO: may need to setInterval in case handleStream is not being called
     // enough.
   } catch(e) {
@@ -949,8 +952,10 @@ Peer.prototype._handleStream = function(http, pad) {
 
   // TODO: handle
   var message = http.responseText.split('\n')[this._index];
-  if (!!message)
+  if (!!message) {
     this._index += 1;
+    this._handleServerMessage(message);
+  }
 
   if (http.readyState == 4 && !this._socketOpen)
     this._startXhrStream();
@@ -965,48 +970,7 @@ Peer.prototype._socketInit = function() {
 
   var self = this;
   this._socket.onmessage = function(event) {
-    var message = JSON.parse(event.data);
-    var peer = message.src;
-    var connection = self.connections[peer];
-    switch (message.type) {
-      case 'ID':
-        if (!self._id) {
-          // If we're just now getting an ID then we may have a queue.
-          self._id = message.id;
-          self.emit('ready', self._id);
-          self._processQueue();
-        }
-        break;
-      case 'OFFER':
-        var options = {
-          metadata: message.metadata,
-          sdp: message.sdp
-        };
-        var connection = new DataConnection(self._id, peer, self._socket, self._httpUrl, function(err, connection) {
-          if (!err) {
-            self.emit('connection', connection, message.metadata);
-          }
-        }, options);
-        self.connections[peer] = connection;
-        break;
-      case 'ANSWER':
-        if (connection) connection.handleSDP(message);
-        break;
-      case 'CANDIDATE':
-        if (connection) connection.handleCandidate(message);
-        break;
-      case 'LEAVE':
-        if (connection) connection.handleLeave();
-        break;
-      case 'PORT':
-        if (util.browserisms === 'Firefox') {
-          connection.handlePort(message);
-          break;
-        }
-      case 'DEFAULT':
-        util.log('PEER: unrecognized message ', message.type);
-        break;
-    }
+    self._handleServerMessage(event.data);
   };
 
   // Take care of the queue of connections if necessary and make sure Peer knows
@@ -1014,9 +978,9 @@ Peer.prototype._socketInit = function() {
   this._socket.onopen = function() {
     util.log('Socket open');
     self._socketOpen = true;
-    for (var connection in self._connections) {
-      if (self._connections.hasOwnProperty(connection)) {
-        self._connections.connection.setSocketOpen();
+    for (var connection in self.connections) {
+      if (self.connections.hasOwnProperty(connection)) {
+        self.connections[connection].setSocketOpen();
       }
     }
     if (self._id)
@@ -1024,6 +988,68 @@ Peer.prototype._socketInit = function() {
   };
 };
 
+
+Peer.prototype._handleServerMessage = function(message) {
+  var message;
+  try {
+    message = JSON.parse(message);
+  } catch(e) {
+    util.log('message unrecognizable:', message);
+    return;
+  }
+  var peer = message.src;
+  var connection = this.connections[peer];
+  switch (message.type) {
+    case 'ID':
+      if (!this._id) {
+        // If we're just now getting an ID then we may have a queue.
+        this._id = message.id;
+        this.emit('ready', this._id);
+        this._processQueue();
+      }
+      break;
+    case 'ERROR':
+      //throw new Error(message.msg);
+      this.emit('error', message.msg);
+      util.log(message.msg);
+      break;
+    case 'OFFER':
+      var options = {
+        metadata: message.metadata,
+        sdp: message.sdp,
+        socketOpen: this._socketOpen,
+        config: this._config
+      };
+      var self = this;
+      var connection = new DataConnection(this._id, peer, this._socket, this._httpUrl, function(err, connection) {
+        if (!err) {
+          self.emit('connection', connection, message.metadata);
+        }
+      }, options);
+      this.connections[peer] = connection;
+      break;
+    case 'PEER_READY':
+      //if (connection) connection.processQueuedIce();
+      break;
+    case 'ANSWER':
+      if (connection) connection.handleSDP(message);
+      break;
+    case 'CANDIDATE':
+      if (connection) connection.handleCandidate(message);
+      break;
+    case 'LEAVE':
+      if (connection) connection.handleLeave();
+      break;
+    case 'PORT':
+      if (util.browserisms === 'Firefox') {
+        connection.handlePort(message);
+        break;
+      }
+    case 'DEFAULT':
+      util.log('PEER: unrecognized message ', message.type);
+      break;
+  }
+};
 
 /** Process queued calls to connect. */
 Peer.prototype._processQueue = function() {
@@ -1054,10 +1080,12 @@ Peer.prototype.connect = function(peer, metadata, cb) {
   }
 
   var options = {
-    metadata: metadata
+    metadata: metadata,
+    socketOpen: this._socketOpen,
+    config: this._config
   };
-
   var connection = new DataConnection(this._id, peer, this._socket, this._httpUrl, cb, options);
+
   this.connections[peer] = connection;
 };
 
@@ -1069,8 +1097,7 @@ function DataConnection(id, peer, socket, httpUrl, cb, options) {
   EventEmitter.call(this);
 
   options = util.extend({
-    debug: false,
-    ice: { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] }
+    socketOpen: false
   }, options);
   this.options = options;
   
@@ -1079,8 +1106,9 @@ function DataConnection(id, peer, socket, httpUrl, cb, options) {
   this._originator = (options.sdp === undefined);
   this._cb = cb;
   this._httpUrl = httpUrl;
- 
+  //this._peerReady = true;
   this.metadata = options.metadata;
+  this._socketOpen = options.socketOpen;
 
   // Set up socket handlers.
   this._socket = socket;
@@ -1095,6 +1123,7 @@ function DataConnection(id, peer, socket, httpUrl, cb, options) {
   this._startPeerConnection();
   
   // Listen for ICE candidates
+  //this._queuedIce = [];
   this._setupIce();
   
   // Listen for negotiation needed
@@ -1108,7 +1137,7 @@ function DataConnection(id, peer, socket, httpUrl, cb, options) {
   
   var self = this;
   if (options.sdp) {
-    this.handleSDP({type: 'OFFER', sdp: options.sdp});
+    this.handleSDP({ type: 'OFFER', sdp: options.sdp });
     if (util.browserisms !== 'Firefox') { 
       this._makeAnswer();
     }
@@ -1149,8 +1178,8 @@ DataConnection.prototype._setupDataChannel = function() {
 
 /** Starts a PeerConnection and sets up handlers. */
 DataConnection.prototype._startPeerConnection = function() {
-  util.log('Creating RTCPeerConnection: ', this.options.ice);
-  this._pc = new RTCPeerConnection(this.options.ice, { optional:[ { RtpDataChannels: true } ]});
+  util.log('Creating RTCPeerConnection: ', this._config);
+  this._pc = new RTCPeerConnection(this._config, { optional:[ { RtpDataChannels: true } ]});
 };
 
 
@@ -1167,6 +1196,17 @@ DataConnection.prototype._setupIce = function() {
         dst: self._peer,
         src: self._id
       }));
+      /*var data = JSON.stringify({
+        type: 'CANDIDATE',
+        candidate: evt.candidate,
+        dst: self._peer,
+        src: self._id
+      });
+      if (self._peerReady) {
+        self._handleBroker('ice', data);
+      } else {
+        self._queuedIce.push(data);
+      }*/
     }
   };
 };
@@ -1175,16 +1215,35 @@ DataConnection.prototype._handleBroker = function(type, data) {
   if (this._socketOpen) {
     this._socket.send(data);
   } else {
+    var self = this;
     var http = new XMLHttpRequest();
     http.open('post', this._httpUrl + '/' + type, true);
     http.setRequestHeader('Content-Type', 'application/json');
     http.onload = function() {
-      util.log(http.responseText);
+      // If destination peer is not available...
+      if (http.responseText != 'OK') {
+        util.log('Destination peer not available. Connection closing...');
+        self.close();
+      }/* else {
+        if (type == 'offer') {
+          self.processQueuedIce();
+        }
+      }*/
     }
     http.send(data);
   }
 };
 
+/*
+DataConnection.prototype.processQueuedIce = function() {
+  this._peerReady = true;
+  console.log('processing ice');
+  while (this._queuedIce.length > 0) {
+    var data = this._queuedIce.shift();
+    this._handleBroker('ice', data);
+  }
+}
+*/
 
 // Awaiting update in Firefox spec ***
 /** Sets up DataChannel handlers. 
@@ -1273,6 +1332,7 @@ DataConnection.prototype._makeOffer = function() {
     util.log('Created offer');
     self._pc.setLocalDescription(offer, function() {
       util.log('Set localDescription to offer');
+      //self._peerReady = false;
       self._handleBroker('offer', JSON.stringify({
         type: 'OFFER',
         sdp: offer,
@@ -1350,6 +1410,8 @@ DataConnection.prototype._handleDataMessage = function(e) {
 
 /** Allows user to close connection. */
 DataConnection.prototype.close = function() {
+  // TODO: how to emit close to the Peer? Also, how to handle Websocket closing
+  // gracefully?
   this._cleanup();
   var self = this;
   this._handleBroker('leave', JSON.stringify({
@@ -1411,6 +1473,7 @@ DataConnection.prototype.handleSDP = function(message) {
 DataConnection.prototype.handleCandidate = function(message) {
   var candidate = new RTCIceCandidate(message.candidate);
   this._pc.addIceCandidate(candidate);
+  util.log('Added ice candidate');
 };
 
 
