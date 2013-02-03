@@ -1025,6 +1025,7 @@ Peer.prototype._handleServerMessage = function(message) {
           self.emit('connection', connection, message.metadata);
         }
       }, options);
+      this._attachConnectionListeners(connection);
       this.connections[peer] = connection;
       break;
     case 'PEER_READY':
@@ -1037,10 +1038,7 @@ Peer.prototype._handleServerMessage = function(message) {
       if (connection) connection.handleCandidate(message);
       break;
     case 'LEAVE':
-      if (connection) {
-        connection.handleLeave();
-        delete this.connections[peer];
-      }
+      if (connection) connection.handleLeave();
       break;
     case 'PORT':
       if (util.browserisms === 'Firefox') {
@@ -1071,6 +1069,15 @@ Peer.prototype._cleanup = function() {
   }
 };
 
+/** Listeners for DataConnection events. */
+Peer.prototype._attachConnectionListeners = function(connection) {
+  var self = this;
+  connection.on('close', function(peer) {
+    if (self.connections[peer]) delete self.connections[peer];
+  });
+};
+
+
 
 /** Exposed connect function for users. Will try to connect later if user
  * is waiting for an ID. */
@@ -1088,6 +1095,7 @@ Peer.prototype.connect = function(peer, metadata, cb) {
     config: this._config
   };
   var connection = new DataConnection(this._id, peer, this._socket, this._httpUrl, cb, options);
+  this._attachConnectionListeners(connection);
 
   this.connections[peer] = connection;
 };
@@ -1428,6 +1436,7 @@ DataConnection.prototype.close = function() {
     dst: self._peer,
     src: self._id,
   }));
+  this.emit('close', this._peer);
 };
 
 
