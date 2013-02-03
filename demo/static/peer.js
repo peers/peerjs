@@ -1117,6 +1117,7 @@ function DataConnection(id, peer, socket, httpUrl, cb, options) {
   //this._peerReady = true;
   this.metadata = options.metadata;
   this._socketOpen = options.socketOpen;
+  this._config = options.config;
 
   // Set up socket handlers.
   this._socket = socket;
