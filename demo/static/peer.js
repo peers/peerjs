@@ -837,34 +837,36 @@ if (navigator.mozGetUserMedia) {
 
 exports.RTCPeerConnection = RTCPeerConnection;
 exports.getUserMedia = getUserMedia;
+/**
+ * A peer who can initiate connections with other peers.
+ */
 function Peer(options) {
   if (!(this instanceof Peer)) return new Peer(options);
   EventEmitter.call(this);
 
   options = util.extend({
     debug: false,
-    host: 'localhost',
+    host: '0.peerjs.com',
     config: { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] },
     port: 80
   }, options);
-  this.options = options;
+  this._options = options;
   util.debug = options.debug;
 
   // TODO: default should be the cloud server.
   this._server = options.host + ':' + options.port;
-  this._httpUrl = 'http://' + this._server;
-  this._config = options.config;
 
   // Ensure alphanumeric_-
   if (options.id && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.id))
     throw new Error('Peer ID can only contain alphanumerics, "_", and "-".');
+  if (options.apikey && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.apikey))
+    throw new Error('API key can only contain alphanumerics, "_", and "-".');
 
   this._id = options.id;
   // Not used unless using cloud server.
   this._apikey = options.apikey;
 
-  // Check in with the server with ID or get an ID.
-  this._checkIn();
+  this._startSocket();
 
   // Connections for this peer.
   this.connections = {};
@@ -875,142 +877,31 @@ function Peer(options) {
 
 util.inherits(Peer, EventEmitter);
 
-/** Check in with ID or get one from server. */
-Peer.prototype._checkIn = function() {
-  // If no ID provided, get a unique ID from server.
+Peer.prototype._startSocket = function() {
   var self = this;
-  if (!this._id) {
-    try {
-      var http = new XMLHttpRequest();
-      var url = this._httpUrl + '/id';
-      if (!!this._apikey)
-        url += '?key=' + this._apikey;
-
-      // If there's no ID we need to wait for one before trying to init socket.
-      http.open('get', url, true);
-      http.onreadystatechange = function() {
-        if (!self._id && http.readyState > 2 && !!http.responseText) {
-          try {
-            var response = JSON.parse(http.responseText.split('\n').shift());
-            if (!!response.id) {
-              self._id = response.id;
-              self._socketInit();
-              self.emit('ready', self._id);
-              self._processQueue();
-            }
-          } catch (e) {
-            self._socketInit();
-          }
-        }
-        self._handleStream(http, true);
-      };
-      http.send(null);
-    } catch(e) {
-      util.log('XMLHttpRequest not available; defaulting to WebSockets');
-      this._socketInit();
-    }
-  } else {
-    this._startXhrStream();
-    this._socketInit();
-  }
-  // TODO: may need to setInterval in case handleStream is not being called
-  // enough.
-};
-
-Peer.prototype._startXhrStream = function() {
-  try {
-    var http = new XMLHttpRequest();
-    var self = this;
-    http.open('post', this._httpUrl + '/id', true);
-    http.setRequestHeader('Content-Type', 'application/json');
-    http.onreadystatechange = function() {
-      self._handleStream(http);
-    };
-    http.send(JSON.stringify({ id: this._id, key: this._apikey }));
-  } catch(e) {
-    util.log('XMLHttpRequest not available; defaulting to WebSockets');
-  }
-};
-
-/** Handles onreadystatechange response as a stream. */
-Peer.prototype._handleStream = function(http, pad) {
-  // 3 and 4 are loading/done state. All others are not relevant.
-  if (http.readyState < 3) {
-    return;
-  } else if (http.readyState == 3 && http.status != 200) {
-    return;
-  }
-
-  if (this._index === undefined)
-    this._index = pad ? 2 : 1;
-
-  if (http.responseText === null)
-    return;
-
-  // TODO: handle
-  var message = http.responseText.split('\n')[this._index];
-  if (!!message && http.readyState == 3) {
-    this._index += 1;
-    this._handleServerMessage(message);
-  } else if (http.readyState == 4) {
-    this._index = 1;
-  }
-
-};
-
-/** Start up websocket communications. */
-Peer.prototype._socketInit = function() {
-  if (!!this._socket)
-    return;
-
-  var wsurl = 'ws://' + this._server + '/ws';
-  if (!!this._id) {
-    wsurl += '?id=' + this._id;
-    if (!!this._apikey)
-      wsurl += '&key=' + this._apikey;
-  } else if (!!this._apikey) {
-    wsurl += '?key=' + this._apikey;
-  }
-  this._socket = new WebSocket(wsurl);
-
-  var self = this;
-  this._socket.onmessage = function(event) {
-    self._handleServerMessage(event.data);
-  };
-
-  // Take care of the queue of connections if necessary and make sure Peer knows
-  // socket is open.
-  this._socket.onopen = function() {
-    util.log('Socket open');
-    self._socketOpen = true;
-    var ids = Object.keys(self.connections)
-    for (var i = 0, ii = ids.length; i < ii; i += 1) {
-      self.connections[ids[i]].setSocketOpen();
-    }
-    if (self._id)
-      self._processQueue();
-  };
-};
+  this._socket = new Socket(this._server, this._id, this._apikey);
+  this._socket.on('message', function(data) {
+    self._handleServerJSONMessage(data);
+  });
+  this._socket.on('open', function() {
+    self._processQueue();
+  });
+  this._socket.on('unavailable', function(peer) {
+    util.log('Destination peer not available.', peer);
+    if (self.connections[peer])
+      self.connections[peer].close();
+  });
+  this._socket.on('error', function(error) {
+    util.log(error);
+  });
+  this._socket.start();
+}
 
 
-Peer.prototype._handleServerMessage = function(message) {
-  message = JSON.parse(message);
+Peer.prototype._handleServerJSONMessage = function(message) {
   var peer = message.src;
   var connection = this.connections[peer];
   switch (message.type) {
-    // XHR stream closed by timeout.
-    case 'HTTP-END':
-      util.log('XHR stream timed out.');
-      if (!this._socketOpen)
-        this._startXhrStream();
-      break;
-    // XHR stream closed by socket connect.
-    case 'HTTP-SOCKET':
-        util.log('XHR stream closed, WebSocket connected.');
-        break;
-    case 'HTTP-ERROR':
-        util.log('Something went wrong.');
-        break;
     case 'ID':
       if (!this._id) {
         // If we're just now getting an ID then we may have a queue.
@@ -1028,7 +919,8 @@ Peer.prototype._handleServerMessage = function(message) {
         metadata: message.metadata,
         sdp: message.sdp,
         socketOpen: this._socketOpen,
-        config: this._config
+        config: this._options.config,
+        apikey: this._apikey
       };
       var self = this;
       var connection = new DataConnection(this._id, peer, this._socket, this._httpUrl, function(err, connection) {
@@ -1074,9 +966,7 @@ Peer.prototype._cleanup = function() {
       this.connections[peer].close();
     }
   }
-
-  if (this._socketOpen)
-    this._socket.close();
+  this._socket.close();
 };
 
 /** Listeners for DataConnection events. */
@@ -1104,7 +994,8 @@ Peer.prototype.connect = function(peer, metadata, cb) {
   var options = {
     metadata: metadata,
     socketOpen: this._socketOpen,
-    config: this._config
+    config: this._options.config,
+    apikey: this._apikey
   };
   var connection = new DataConnection(this._id, peer, this._socket, this._httpUrl, cb, options);
   this._attachConnectionListeners(connection);
@@ -1118,26 +1009,25 @@ Peer.prototype.destroy = function() {
 
 
 exports.Peer = Peer;
+/**
+ * A DataChannel PeerConnection between two Peers.
+ */
 function DataConnection(id, peer, socket, httpUrl, cb, options) {
   if (!(this instanceof DataConnection)) return new DataConnection(options);
   EventEmitter.call(this);
 
   options = util.extend({
     config: { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] },
-    socketOpen: false
+    reliable: false
   }, options);
-  this.options = options;
+  this._options = options;
   
   this._id = id;
   this._peer = peer;
   this._originator = (options.sdp === undefined);
   this._cb = cb;
-  this._httpUrl = httpUrl;
-  this.metadata = options.metadata;
-  this._socketOpen = options.socketOpen;
-  this._config = options.config;
+  this._metadata = options.metadata;
 
-  // Set up socket handlers.
   this._socket = socket;
 
   // Firefoxism: connectDataConnection ports.
@@ -1188,7 +1078,7 @@ DataConnection.prototype._setupDataChannel = function() {
   var self = this;
   if (this._originator) {
     util.log('Creating data channel');
-    this._dc = this._pc.createDataChannel(this._peer, { reliable: false });
+    this._dc = this._pc.createDataChannel(this._peer, { reliable: this._options.reliable });
     this._configureDataChannel();
   } else {
     util.log('Listening for data channel');
@@ -1203,8 +1093,8 @@ DataConnection.prototype._setupDataChannel = function() {
 
 /** Starts a PeerConnection and sets up handlers. */
 DataConnection.prototype._startPeerConnection = function() {
-  util.log('Creating RTCPeerConnection: ', this._config);
-  this._pc = new RTCPeerConnection(this._config, { optional:[ { RtpDataChannels: true } ]});
+  util.log('Creating RTCPeerConnection');
+  this._pc = new RTCPeerConnection(this._options.config, { optional:[ { RtpDataChannels: true } ]});
 };
 
 
@@ -1215,33 +1105,14 @@ DataConnection.prototype._setupIce = function() {
   this._pc.onicecandidate = function(evt) {
     if (evt.candidate) {
       util.log('Received ICE candidates');
-      self._handleBroker('ice', JSON.stringify({
+      self._socket.send({
         type: 'CANDIDATE',
         candidate: evt.candidate,
         dst: self._peer,
         src: self._id
-      }));
+      });
     }
   };
-};
-
-DataConnection.prototype._handleBroker = function(type, data) {
-  if (this._socketOpen) {
-    this._socket.send(data);
-  } else {
-    var self = this;
-    var http = new XMLHttpRequest();
-    http.open('post', this._httpUrl + '/' + type, true);
-    http.setRequestHeader('Content-Type', 'application/json');
-    http.onload = function() {
-      // If destination peer is not available...
-      if (http.responseText != 'OK') {
-        util.log('Destination peer not available. Connection closing...');
-        self.close();
-      }
-    }
-    http.send(data);
-  }
 };
 
 // Awaiting update in Firefox spec ***
@@ -1332,13 +1203,13 @@ DataConnection.prototype._makeOffer = function() {
     self._pc.setLocalDescription(offer, function() {
       util.log('Set localDescription to offer');
       //self._peerReady = false;
-      self._handleBroker('offer', JSON.stringify({
+      self._socket.send({
         type: 'OFFER',
         sdp: offer,
         dst: self._peer,
         src: self._id,
         metadata: self.metadata
-      }));
+      });
     }, function(err) {
       self._cb('Failed to setLocalDescription');
       util.log('Failed to setLocalDescription, ', err);
@@ -1353,12 +1224,12 @@ DataConnection.prototype._makeAnswer = function() {
     util.log('Created answer');
     self._pc.setLocalDescription(answer, function() {
       util.log('Set localDescription to answer');
-      self._handleBroker('answer', JSON.stringify({
+      self._socket.send({
         type: 'ANSWER',
         src: self._id,
         sdp: answer,
         dst: self._peer
-      }));
+      });
     }, function(err) {
       self._cb('Failed to setLocalDescription');
       util.log('Failed to setLocalDescription, ', err)
@@ -1411,11 +1282,11 @@ DataConnection.prototype._handleDataMessage = function(e) {
 DataConnection.prototype.close = function() {
   this._cleanup();
   var self = this;
-  this._handleBroker('leave', JSON.stringify({
+  this._socket.send({
     type: 'LEAVE',
     dst: self._peer,
     src: self._id,
-  }));
+  });
 };
 
 
@@ -1432,14 +1303,10 @@ DataConnection.prototype.send = function(data) {
   }
 };
 
-
-/**
- * Exposed functions for Peer.
- */
-
-DataConnection.prototype.setSocketOpen = function() {
-  this._socketOpen = true;
+DataConnection.prototype.getMetadata = function() {
+  return this._metadata;
 };
+
 
 DataConnection.prototype.handleSDP = function(message) {
   var sdp = message.sdp;
@@ -1452,13 +1319,13 @@ DataConnection.prototype.handleSDP = function(message) {
     // Firefoxism
     if (message.type === 'ANSWER' && util.browserisms === 'Firefox') {
       self._pc.connectDataConnection(self.localPort, self.remotePort);
-      self._handleBroker('port', JSON.stringify({
+      self._socket.send({
         type: 'PORT',
         dst: self._peer,
         src: self._id,
         remote: self.localPort,
         local: self.remotePort
-      }));
+      });
     }
   }, function(err) {
     this._cb('Failed to setRemoteDescription');
@@ -1489,5 +1356,207 @@ DataConnection.prototype.handlePort = function(message) {
 };
 
 
+/**
+ * An abstraction on top of WebSockets and XHR streaming to provide fastest
+ * possible connection for peers.
+ */
+function Socket(server, id, key) {
+  if (!(this instanceof Socket)) return new Socket(server, id, key);
+  EventEmitter.call(this);
+
+  this._id = id;
+  this._server = server;
+  this._httpUrl = 'http://' + this._server;
+  this._key = key;
+};
+
+util.inherits(Socket, EventEmitter);
+
+/** Check in with ID or get one from server. */
+Socket.prototype._checkIn = function() {
+  // If no ID provided, get a unique ID from server.
+  var self = this;
+  if (!this._id) {
+    try {
+      var http = new XMLHttpRequest();
+      var url = this._httpUrl + '/id';
+      // Set API key if necessary.
+      if (!!this._key)
+        url += '/' + this._key;
+
+      // If there's no ID we need to wait for one before trying to init socket.
+      http.open('get', url, true);
+      http.onreadystatechange = function() {
+        if (!self._id && http.readyState > 2 && !!http.responseText) {
+          try {
+            var response = JSON.parse(http.responseText.split('\n').shift());
+            if (!!response.id) {
+              self._id = response.id;
+              self._startWebSocket();
+              self.emit('message', { type: 'ID', id: self._id });
+            }
+          } catch (e) {
+            self._startWebSocket();
+          }
+        }
+        self._handleStream(http, true);
+      };
+      http.send(null);
+    } catch(e) {
+      util.log('XMLHttpRequest not available; defaulting to WebSockets');
+      this._startWebSocket();
+    }
+  } else {
+    this._startXhrStream();
+    this._startWebSocket();
+  }
+};
+
+
+/** Start up websocket communications. */
+Socket.prototype._startWebSocket = function() {
+  if (!!this._socket)
+    return;
+
+  var wsurl = 'ws://' + this._server + '/ws';
+  if (!!this._id) {
+    wsurl += '?id=' + this._id;
+    if (!!this._key)
+      wsurl += '&key=' + this._key;
+  } else if (!!this._key) {
+    wsurl += '?key=' + this._key;
+  }
+  this._socket = new WebSocket(wsurl);
+
+  var self = this;
+  this._socket.onmessage = function(event) {
+    try {
+      self.emit('message', JSON.parse(event.data));
+    } catch(e) {
+      util.log('Invalid server message');
+    }
+  };
+
+  // Take care of the queue of connections if necessary and make sure Peer knows
+  // socket is open.
+  this._socket.onopen = function() {
+    util.log('Socket open');
+    if (self._id)
+      self.emit('open');
+  };
+};
+
+
+/** Start XHR streaming. */
+Socket.prototype._startXhrStream = function() {
+  try {
+    var self = this;
+
+    var http = new XMLHttpRequest();
+    var url = this._httpUrl + '/id';
+    // Set API key if necessary.
+    if (!!this._key)
+      url += '/' + this._key;
+
+    http.open('post', url, true);
+    http.setRequestHeader('Content-Type', 'application/json');
+    http.onreadystatechange = function() {
+      self._handleStream(http);
+    };
+    http.send(JSON.stringify({ id: this._id }));
+  } catch(e) {
+    util.log('XMLHttpRequest not available; defaulting to WebSockets');
+  }
+};
+
+
+/** Handles onreadystatechange response as a stream. */
+Socket.prototype._handleStream = function(http, pad) {
+  // 3 and 4 are loading/done state. All others are not relevant.
+  if (http.readyState < 3) {
+    return;
+  } else if (http.readyState == 3 && http.status != 200) {
+    return;
+  }
+
+  if (this._index === undefined)
+    this._index = pad ? 2 : 1;
+
+  if (http.responseText === null)
+    return;
+
+  var message = http.responseText.split('\n')[this._index];
+  if (!!message && http.readyState == 3) {
+    this._index += 1;
+    try {
+      this._handleHTTPErrors(JSON.parse(message));
+    } catch(e) {
+      util.log('Invalid server message');
+    }
+  } else if (http.readyState == 4) {
+    this._index = 1;
+  }
+};
+
+
+Socket.prototype._handleHTTPErrors = function(message) {
+  switch (message.type) {
+    // XHR stream closed by timeout.
+    case 'HTTP-END':
+      util.log('XHR stream timed out.');
+      if (!!this._socket && this._socket.readyState != 1)
+        this._startXhrStream();
+      break;
+    // XHR stream closed by socket connect.
+    case 'HTTP-SOCKET':
+        util.log('XHR stream closed, WebSocket connected.');
+        break;
+    case 'HTTP-ERROR':
+        this.emit('error', 'Something went wrong.');
+        break;
+    default:
+        this.emit('message', message);
+  }
+};
+
+
+
+/** Exposed send for DC & Peer. */
+Socket.prototype.send = function(data) {
+  var type = data.type;
+  message = JSON.stringify(data);
+  if (!type)
+    this.emit('error', 'Invalid message');
+
+  if (!!this._socket && this._socket.readyState == 1) {
+    this._socket.send(message);
+  } else {
+    var self = this;
+    var http = new XMLHttpRequest();
+    var url = this._httpUrl + '/' + type.toLowerCase();
+    // Set API key if necessary.
+    if (!!this._key)
+      url += '/' + this._key;
+
+    http.open('post', url, true);
+    http.setRequestHeader('Content-Type', 'application/json');
+    http.onload = function() {
+      // This happens if destination peer is not available...
+      if (http.responseText != 'OK') {
+        self.emit('unavailable', data.dst)
+      }
+    }
+    http.send(message);
+  }
+};
+
+Socket.prototype.close = function() {
+  if (!!this._socket && this._socket.readyState == 1)
+    this._socket.close();
+};
+
+Socket.prototype.start = function() {
+  this._checkIn();
+};
 
 })(this);
