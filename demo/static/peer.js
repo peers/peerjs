@@ -893,12 +893,12 @@ Peer.prototype._checkIn = function() {
             var response = JSON.parse(http.responseText.split('\n').shift());
             if (!!response.id) {
               self._id = response.id;
-              self._socketInit();
+              //self._socketInit();
               self.emit('ready', self._id);
               self._processQueue();
             }
           } catch (e) {
-            self._socketInit();
+            //self._socketInit();
           }
         }
         self._handleStream(http, true);
@@ -906,11 +906,11 @@ Peer.prototype._checkIn = function() {
       http.send(null);
     } catch(e) {
       util.log('XMLHttpRequest not available; defaulting to WebSockets');
-      this._socketInit();
+      //this._socketInit();
     }
   } else {
     this._startXhrStream();
-    this._socketInit();
+    //this._socketInit();
   }
   // TODO: may need to setInterval in case handleStream is not being called
   // enough.
@@ -926,8 +926,6 @@ Peer.prototype._startXhrStream = function() {
       self._handleStream(http);
     };
     http.send(JSON.stringify({ id: this._id }));
-    // TODO: may need to setInterval in case handleStream is not being called
-    // enough.
   } catch(e) {
     util.log('XMLHttpRequest not available; defaulting to WebSockets');
   }
@@ -940,8 +938,6 @@ Peer.prototype._handleStream = function(http, pad) {
     return;
   } else if (http.readyState == 3 && http.status != 200) {
     return;
-  } else if (http.readyState == 4 && http.status != 200) {
-    // Clear setInterval here if using it.
   }
 
   if (this._index === undefined)
@@ -952,13 +948,13 @@ Peer.prototype._handleStream = function(http, pad) {
 
   // TODO: handle
   var message = http.responseText.split('\n')[this._index];
-  if (!!message) {
+  if (!!message && http.readyState == 3) {
     this._index += 1;
     this._handleServerMessage(message);
+  } else if (http.readyState == 4) {
+    this._index = 1;
   }
 
-  if (http.readyState == 4 && !this._socketOpen)
-    this._startXhrStream();
 };
 
 /** Start up websocket communications. */
@@ -989,64 +985,75 @@ Peer.prototype._socketInit = function() {
 
 
 Peer.prototype._handleServerMessage = function(message) {
-  var message;
+  var msg;
   try {
-    message = JSON.parse(message);
+    msg = JSON.parse(message);
   } catch(e) {
-    util.log('message unrecognizable:', message);
+    switch (message) {
+      case 'end':
+        util.log('XHR stream timed out.');
+        if (!this._socketOpen)
+          this._startXhrStream();
+        break;
+      case 'socket':
+        util.log('XHR stream closed, WebSocket connected.');
+        break;
+      case 'error':
+        util.log('Something went wrong.');
+        break;
+      default:
+        util.log('Message unrecognized:', message);
+        break;
+    }
     return;
   }
-  var peer = message.src;
+  var peer = msg.src;
   var connection = this.connections[peer];
-  switch (message.type) {
+  switch (msg.type) {
     case 'ID':
       if (!this._id) {
         // If we're just now getting an ID then we may have a queue.
-        this._id = message.id;
+        this._id = msg.id;
         this.emit('ready', this._id);
         this._processQueue();
       }
       break;
     case 'ERROR':
-      //throw new Error(message.msg);
-      this.emit('error', message.msg);
-      util.log(message.msg);
+      this.emit('error', msg.msg);
+      util.log(msg.msg);
       break;
     case 'OFFER':
       var options = {
-        metadata: message.metadata,
-        sdp: message.sdp,
+        metadata: msg.metadata,
+        sdp: msg.sdp,
         socketOpen: this._socketOpen,
         config: this._config
       };
       var self = this;
       var connection = new DataConnection(this._id, peer, this._socket, this._httpUrl, function(err, connection) {
         if (!err) {
-          self.emit('connection', connection, message.metadata);
+          self.emit('connection', connection, msg.metadata);
         }
       }, options);
       this._attachConnectionListeners(connection);
       this.connections[peer] = connection;
       break;
-    case 'PEER_READY':
-      //if (connection) connection.processQueuedIce();
-      break;
     case 'ANSWER':
-      if (connection) connection.handleSDP(message);
+      if (connection) connection.handleSDP(msg);
       break;
     case 'CANDIDATE':
-      if (connection) connection.handleCandidate(message);
+      if (connection) connection.handleCandidate(msg);
       break;
     case 'LEAVE':
       if (connection) connection.handleLeave();
       break;
     case 'PORT':
       if (util.browserisms === 'Firefox') {
-        connection.handlePort(message);
+        connection.handlePort(msg);
         break;
       }
     case 'DEFAULT':
-      util.log('PEER: unrecognized message ', message.type);
+      util.log('Unrecognized message type:', msg.type);
       break;
   }
 };
@@ -1061,7 +1068,15 @@ Peer.prototype._processQueue = function() {
 
 
 Peer.prototype._cleanup = function() {
-  this._socket.send(JSON.stringify({ type: 'LEAVE', src: this._id }));
+  if (this._socketOpen) {
+    this._socket.send(JSON.stringify({ type: 'LEAVE', src: this._id }));
+  } else {
+    var http = new XMLHttpRequest();
+    http.open('post', this._httpUrl + '/leave', true);
+    http.setRequestHeader('Content-Type', 'application/json');
+    http.send(JSON.stringify({ type: 'LEAVE', src: this._id }));
+  }
+
   for (var peer in this.connections) {
     if (this.connections.hasOwnProperty(peer)) {
       this.connections[peer].close();
@@ -1122,7 +1137,6 @@ function DataConnection(id, peer, socket, httpUrl, cb, options) {
   this._originator = (options.sdp === undefined);
   this._cb = cb;
   this._httpUrl = httpUrl;
-  //this._peerReady = true;
   this.metadata = options.metadata;
   this._socketOpen = options.socketOpen;
   this._config = options.config;
@@ -1134,13 +1148,11 @@ function DataConnection(id, peer, socket, httpUrl, cb, options) {
   if (util.browserisms === 'Firefox') {
     this._firefoxPortSetup();
   }
-  //
   
   // Set up PeerConnection.
   this._startPeerConnection();
   
   // Listen for ICE candidates
-  //this._queuedIce = [];
   this._setupIce();
   
   // Listen for negotiation needed
@@ -1213,17 +1225,6 @@ DataConnection.prototype._setupIce = function() {
         dst: self._peer,
         src: self._id
       }));
-      /*var data = JSON.stringify({
-        type: 'CANDIDATE',
-        candidate: evt.candidate,
-        dst: self._peer,
-        src: self._id
-      });
-      if (self._peerReady) {
-        self._handleBroker('ice', data);
-      } else {
-        self._queuedIce.push(data);
-      }*/
     }
   };
 };
@@ -1241,26 +1242,11 @@ DataConnection.prototype._handleBroker = function(type, data) {
       if (http.responseText != 'OK') {
         util.log('Destination peer not available. Connection closing...');
         self.close();
-      }/* else {
-        if (type == 'offer') {
-          self.processQueuedIce();
-        }
-      }*/
+      }
     }
     http.send(data);
   }
 };
-
-/*
-DataConnection.prototype.processQueuedIce = function() {
-  this._peerReady = true;
-  console.log('processing ice');
-  while (this._queuedIce.length > 0) {
-    var data = this._queuedIce.shift();
-    this._handleBroker('ice', data);
-  }
-}
-*/
 
 // Awaiting update in Firefox spec ***
 /** Sets up DataChannel handlers. 
@@ -1427,8 +1413,6 @@ DataConnection.prototype._handleDataMessage = function(e) {
 
 /** Allows user to close connection. */
 DataConnection.prototype.close = function() {
-  // TODO: how to emit close to the Peer? Also, how to handle Websocket closing
-  // gracefully?
   this._cleanup();
   var self = this;
   this._handleBroker('leave', JSON.stringify({
@@ -1436,7 +1420,6 @@ DataConnection.prototype.close = function() {
     dst: self._peer,
     src: self._id,
   }));
-  this.emit('close', this._peer);
 };
 
 
