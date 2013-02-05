@@ -853,7 +853,6 @@ function Peer(options) {
   this._options = options;
   util.debug = options.debug;
 
-  // TODO: default should be the cloud server.
   this._server = options.host + ':' + options.port;
 
   // Ensure alphanumeric_-
@@ -918,12 +917,10 @@ Peer.prototype._handleServerJSONMessage = function(message) {
       var options = {
         metadata: message.metadata,
         sdp: message.sdp,
-        socketOpen: this._socketOpen,
         config: this._options.config,
-        apikey: this._apikey
       };
       var self = this;
-      var connection = new DataConnection(this._id, peer, this._socket, this._httpUrl, function(err, connection) {
+      var connection = new DataConnection(this._id, peer, this._socket, function(err, connection) {
         if (!err) {
           self.emit('connection', connection, message.metadata);
         }
@@ -993,11 +990,9 @@ Peer.prototype.connect = function(peer, metadata, cb) {
 
   var options = {
     metadata: metadata,
-    socketOpen: this._socketOpen,
     config: this._options.config,
-    apikey: this._apikey
   };
-  var connection = new DataConnection(this._id, peer, this._socket, this._httpUrl, cb, options);
+  var connection = new DataConnection(this._id, peer, this._socket, cb, options);
   this._attachConnectionListeners(connection);
 
   this.connections[peer] = connection;
@@ -1012,7 +1007,7 @@ exports.Peer = Peer;
 /**
  * A DataChannel PeerConnection between two Peers.
  */
-function DataConnection(id, peer, socket, httpUrl, cb, options) {
+function DataConnection(id, peer, socket, cb, options) {
   if (!(this instanceof DataConnection)) return new DataConnection(options);
   EventEmitter.call(this);
 
