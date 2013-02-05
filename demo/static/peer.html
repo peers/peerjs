@@ -11,7 +11,7 @@
 <script type="text/javascript" src="/peer.js"></script>
 <script>
 $(document).ready(function() {
-  originator = new Peer({ id: 'michelle', host: 'localhost', port: '9000', debug: true });
+  originator = new Peer({ apikey: 'abc', id: 'michelle', host: 'localhost', port: '9000', debug: true });
   originator.on('ready', function(id) {
     console.log(id);
   });

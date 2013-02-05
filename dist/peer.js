@@ -844,15 +844,15 @@ function Peer(options) {
   options = util.extend({
     debug: false,
     host: 'localhost',
-    protocol: 'http',
     config: { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] },
     port: 80
   }, options);
   this.options = options;
   util.debug = options.debug;
 
+  // TODO: default should be the cloud server.
   this._server = options.host + ':' + options.port;
-  this._httpUrl = options.protocol + '://' + this._server;
+  this._httpUrl = 'http://' + this._server;
   this._config = options.config;
 
   // Ensure alphanumeric_-
@@ -883,7 +883,6 @@ Peer.prototype._checkIn = function() {
     try {
       var http = new XMLHttpRequest();
       var url = this._httpUrl + '/id';
-      console.log(this._apikey);
       if (!!this._apikey)
         url += '?key=' + this._apikey;
 

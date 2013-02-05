@@ -844,15 +844,15 @@ function Peer(options) {
   options = util.extend({
     debug: false,
     host: 'localhost',
-    protocol: 'http',
     config: { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] },
     port: 80
   }, options);
   this.options = options;
   util.debug = options.debug;
 
+  // TODO: default should be the cloud server.
   this._server = options.host + ':' + options.port;
-  this._httpUrl = options.protocol + '://' + this._server;
+  this._httpUrl = 'http://' + this._server;
   this._config = options.config;
 
   // Ensure alphanumeric_-
@@ -882,8 +882,12 @@ Peer.prototype._checkIn = function() {
   if (!this._id) {
     try {
       var http = new XMLHttpRequest();
+      var url = this._httpUrl + '/id';
+      if (!!this._apikey)
+        url += '?key=' + this._apikey;
+
       // If there's no ID we need to wait for one before trying to init socket.
-      http.open('get', this._httpUrl + '/id', true);
+      http.open('get', url, true);
       http.onreadystatechange = function() {
         if (!self._id && http.readyState > 2 && !!http.responseText) {
           try {
@@ -922,7 +926,7 @@ Peer.prototype._startXhrStream = function() {
     http.onreadystatechange = function() {
       self._handleStream(http);
     };
-    http.send(JSON.stringify({ id: this._id }));
+    http.send(JSON.stringify({ id: this._id, key: this._apikey }));
   } catch(e) {
     util.log('XMLHttpRequest not available; defaulting to WebSockets');
   }
@@ -960,8 +964,13 @@ Peer.prototype._socketInit = function() {
     return;
 
   var wsurl = 'ws://' + this._server + '/ws';
-  if (!!this._id)
+  if (!!this._id) {
     wsurl += '?id=' + this._id;
+    if (!!this._apikey)
+      wsurl += '&key=' + this._apikey;
+  } else if (!!this._apikey) {
+    wsurl += '?key=' + this._apikey;
+  }
   this._socket = new WebSocket(wsurl);
 
   var self = this;
