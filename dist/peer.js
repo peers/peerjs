@@ -1048,7 +1048,7 @@ function DataConnection(id, peer, socket, cb, options) {
   
   // Listen for negotiation needed
   // ** Chrome only.
-  if (util.browserisms === 'Webkit') {
+  if (util.browserisms !== 'Firefox') {
     this._setupOffer();
   }
   
@@ -1139,8 +1139,8 @@ DataConnection.prototype._setupIce = function() {
 DataConnection.prototype._configureDataChannel = function() {
   var self = this;
   
-  if (util.browserisms === 'Firefox') {
-    this._dc.binaryType = 'blob';
+  if (util.browserisms !== 'Webkit') {
+    this._dc.binaryType = 'arraybuffer';
   }
   this._dc.onopen = function() {
     util.log('Data channel connection success');
