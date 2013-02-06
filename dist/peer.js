@@ -858,12 +858,12 @@ function Peer(options) {
   // Ensure alphanumeric_-
   if (options.id && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.id))
     throw new Error('Peer ID can only contain alphanumerics, "_", and "-".');
-  if (options.apikey && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.apikey))
+  if (options.key && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.key))
     throw new Error('API key can only contain alphanumerics, "_", and "-".');
 
   this._id = options.id;
   // Not used unless using cloud server.
-  this._apikey = options.apikey;
+  this._key = options.key;
 
   this._startSocket();
 
@@ -878,7 +878,7 @@ util.inherits(Peer, EventEmitter);
 
 Peer.prototype._startSocket = function() {
   var self = this;
-  this._socket = new Socket(this._server, this._id, this._apikey);
+  this._socket = new Socket(this._server, this._id, this._key);
   this._socket.on('message', function(data) {
     self._handleServerJSONMessage(data);
   });
