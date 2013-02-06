@@ -856,11 +856,13 @@ function Peer(options) {
   this._server = options.host + ':' + options.port;
 
   // Ensure alphanumeric_-
-  if (options.id && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.id))
+  if (options.id && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.id)) {
     throw new Error('Peer ID can only contain alphanumerics, "_", and "-".');
-  if (options.key && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.key))
+  }
+  if (options.key && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.key)) {
     throw new Error('API key can only contain alphanumerics, "_", and "-".');
-
+  }
+  
   this._id = options.id;
   // Not used unless using cloud server.
   this._key = options.key;
@@ -887,8 +889,9 @@ Peer.prototype._startSocket = function() {
   });
   this._socket.on('unavailable', function(peer) {
     util.log('Destination peer not available.', peer);
-    if (self.connections[peer])
+    if (self.connections[peer]) {
       self.connections[peer].close();
+    }
   });
   this._socket.on('error', function(error) {
     util.log(error);
@@ -929,19 +932,25 @@ Peer.prototype._handleServerJSONMessage = function(message) {
       this.connections[peer] = connection;
       break;
     case 'ANSWER':
-      if (connection) connection.handleSDP(message);
+      if (connection) {
+        connection.handleSDP(message);
+      }
       break;
     case 'CANDIDATE':
-      if (connection) connection.handleCandidate(message);
+      if (connection) {
+        connection.handleCandidate(message);
+      }
       break;
     case 'LEAVE':
-      if (connection) connection.handleLeave();
+      if (connection) {
+        connection.handleLeave();
+      }
       break;
     case 'PORT':
-      if (util.browserisms === 'Firefox') {
-        connection.handlePort(message);
-        break;
-      }
+      //if (util.browserisms === 'Firefox') {
+      //  connection.handlePort(message);
+      //  break;
+      //}
     case 'DEFAULT':
       util.log('Unrecognized message type:', message.type);
       break;
@@ -958,10 +967,9 @@ Peer.prototype._processQueue = function() {
 
 
 Peer.prototype._cleanup = function() {
-  for (var peer in this.connections) {
-    if (this.connections.hasOwnProperty(peer)) {
-      this.connections[peer].close();
-    }
+  var peers = Object.keys(this.connections);
+  for (var i = 0, ii = peers.length; i < ii; i++) {
+    this.connections[peers[i]].close();
   }
   this._socket.close();
 };
@@ -970,7 +978,9 @@ Peer.prototype._cleanup = function() {
 Peer.prototype._attachConnectionListeners = function(connection) {
   var self = this;
   connection.on('close', function(peer) {
-    if (self.connections[peer]) delete self.connections[peer];
+    if (self.connections[peer]) { 
+      delete self.connections[peer]; 
+    }
   });
 };
 
@@ -1026,9 +1036,9 @@ function DataConnection(id, peer, socket, cb, options) {
   this._socket = socket;
 
   // Firefoxism: connectDataConnection ports.
-  if (util.browserisms === 'Firefox') {
+  /*if (util.browserisms === 'Firefox') {
     this._firefoxPortSetup();
-  }
+  }*/
   
   // Set up PeerConnection.
   this._startPeerConnection();
@@ -1048,14 +1058,12 @@ function DataConnection(id, peer, socket, cb, options) {
   var self = this;
   if (options.sdp) {
     this.handleSDP({ type: 'OFFER', sdp: options.sdp });
-    if (util.browserisms !== 'Firefox') { 
-      this._makeAnswer();
-    }
   }
   
-  if (util.browserisms === 'Firefox') {
+  // Makes offer if Firefox
+  /*if (util.browserisms === 'Firefox') {
     this._firefoxAdditional();
-  }
+  }*/
 };
 
 util.inherits(DataConnection, EventEmitter);
@@ -1110,42 +1118,8 @@ DataConnection.prototype._setupIce = function() {
   };
 };
 
-// Awaiting update in Firefox spec ***
-/** Sets up DataChannel handlers. 
-DataConnection.prototype._setupDataChannel = function() {
-  var self = this;
-  if (this._originator) {
-    
-    if (util.browserisms === 'Webkit') {
 
-      // TODO: figure out the right thing to do with this.
-      this._pc.onstatechange = function() {
-        util.log('State Change: ', self._pc.readyState);
-      }
-      
-    } else {
-      this._pc.onconnection = function() {
-        util.log('ORIGINATOR: onconnection triggered');
-
-        self._startDataChannel();
-      };
-    }
-  } else {
-    
-
-    this._pc.onconnection = function() {
-      util.log('SINK: onconnection triggered');
-    };
-  }
-
-  this._pc.onclosedconnection = function() {
-    // Remove socket handlers perhaps.
-    self.emit('close', self._peer);
-  };
-};
-*/
-
-DataConnection.prototype._firefoxPortSetup = function() {
+/*DataConnection.prototype._firefoxPortSetup = function() {
   if (!DataConnection.usedPorts) {
     DataConnection.usedPorts = [];
   }
@@ -1160,7 +1134,7 @@ DataConnection.prototype._firefoxPortSetup = function() {
   }
   DataConnection.usedPorts.push(this.remotePort);
   DataConnection.usedPorts.push(this.localPort);
-}
+}*/
 
 DataConnection.prototype._configureDataChannel = function() {
   var self = this;
@@ -1179,17 +1153,15 @@ DataConnection.prototype._configureDataChannel = function() {
 
 
 /** Decide whether to handle Firefoxisms. */
-DataConnection.prototype._firefoxAdditional = function() {
+/*DataConnection.prototype._firefoxAdditional = function() {
   var self = this;
   getUserMedia({ audio: true, fake: true }, function(s) {
     self._pc.addStream(s);
     if (self._originator) {
       self._makeOffer();
-    } else {
-      self._makeAnswer();
     }
   }, function(err) { util.log('Could not getUserMedia'); });
-}
+};*/
 
 DataConnection.prototype._makeOffer = function() {
   var self = this;
@@ -1237,13 +1209,13 @@ DataConnection.prototype._makeAnswer = function() {
 
 
 DataConnection.prototype._cleanup = function() {
-  if (!!this._pc && this._pc.readyState != 'closed') {
-    this._pc.close();
-    this._pc = null;
-  }
   if (!!this._dc && this._dc.readyState != 'closed') {
     this._dc.close();
     this._dc = null;
+  }
+  if (!!this._pc && this._pc.readyState != 'closed') {
+    this._pc.close();
+    this._pc = null;
   }
   this.emit('close', this._peer);
 };
@@ -1321,9 +1293,11 @@ DataConnection.prototype.handleSDP = function(message) {
         remote: self.localPort,
         local: self.remotePort
       });
+    } else if (message.type === 'OFFER') {
+      self._makeAnswer();
     }
   }, function(err) {
-    this._cb('Failed to setRemoteDescription');
+    self._cb('Failed to setRemoteDescription');
     util.log('Failed to setRemoteDescription, ', err);
   });
 };
@@ -1341,6 +1315,7 @@ DataConnection.prototype.handleLeave = function() {
   this._cleanup();
 };
 
+/*
 DataConnection.prototype.handlePort = function(message) {
   if (!DataConnection.usedPorts) {
     DataConnection.usedPorts = [];
@@ -1349,7 +1324,7 @@ DataConnection.prototype.handlePort = function(message) {
   DataConnection.usedPorts.push(message.remote);
   this._pc.connectDataConnection(message.local, message.remote);
 };
-
+*/
 
 /**
  * An abstraction on top of WebSockets and XHR streaming to provide fastest
@@ -1376,8 +1351,9 @@ Socket.prototype._checkIn = function() {
       var http = new XMLHttpRequest();
       var url = this._httpUrl + '/id';
       // Set API key if necessary.
-      if (!!this._key)
+      if (!!this._key) {
         url += '/' + this._key;
+      }
 
       // If there's no ID we need to wait for one before trying to init socket.
       http.open('get', url, true);
@@ -1410,14 +1386,16 @@ Socket.prototype._checkIn = function() {
 
 /** Start up websocket communications. */
 Socket.prototype._startWebSocket = function() {
-  if (!!this._socket)
+  if (!!this._socket) {
     return;
+  }
 
   var wsurl = 'ws://' + this._server + '/ws';
   if (!!this._id) {
     wsurl += '?id=' + this._id;
-    if (!!this._key)
+    if (!!this._key) {
       wsurl += '&key=' + this._key;
+    }
   } else if (!!this._key) {
     wsurl += '?key=' + this._key;
   }
@@ -1428,7 +1406,7 @@ Socket.prototype._startWebSocket = function() {
     try {
       self.emit('message', JSON.parse(event.data));
     } catch(e) {
-      util.log('Invalid server message');
+      util.log('Invalid server message', event.data);
     }
   };
 
@@ -1436,8 +1414,9 @@ Socket.prototype._startWebSocket = function() {
   // socket is open.
   this._socket.onopen = function() {
     util.log('Socket open');
-    if (self._id)
+    if (self._id) {
       self.emit('open');
+    }
   };
 };
 
@@ -1450,9 +1429,9 @@ Socket.prototype._startXhrStream = function() {
     var http = new XMLHttpRequest();
     var url = this._httpUrl + '/id';
     // Set API key if necessary.
-    if (!!this._key)
+    if (!!this._key) {
       url += '/' + this._key;
-
+    }
     http.open('post', url, true);
     http.setRequestHeader('Content-Type', 'application/json');
     http.onreadystatechange = function() {
@@ -1474,19 +1453,21 @@ Socket.prototype._handleStream = function(http, pad) {
     return;
   }
 
-  if (this._index === undefined)
+  if (this._index === undefined) {
     this._index = pad ? 2 : 1;
-
-  if (http.responseText === null)
+  }
+  
+  if (http.responseText === null) {
     return;
-
+  }
+  
   var message = http.responseText.split('\n')[this._index];
   if (!!message && http.readyState == 3) {
     this._index += 1;
     try {
       this._handleHTTPErrors(JSON.parse(message));
     } catch(e) {
-      util.log('Invalid server message');
+      util.log('Invalid server message', message);
     }
   } else if (http.readyState == 4) {
     this._index = 1;
@@ -1499,18 +1480,19 @@ Socket.prototype._handleHTTPErrors = function(message) {
     // XHR stream closed by timeout.
     case 'HTTP-END':
       util.log('XHR stream timed out.');
-      if (!!this._socket && this._socket.readyState != 1)
+      if (!!this._socket && this._socket.readyState != 1) {
         this._startXhrStream();
+      }
       break;
     // XHR stream closed by socket connect.
     case 'HTTP-SOCKET':
-        util.log('XHR stream closed, WebSocket connected.');
-        break;
+      util.log('XHR stream closed, WebSocket connected.');
+      break;
     case 'HTTP-ERROR':
-        this.emit('error', 'Something went wrong.');
-        break;
+      this.emit('error', 'Something went wrong.');
+      break;
     default:
-        this.emit('message', message);
+      this.emit('message', message);
   }
 };
 
@@ -1520,8 +1502,9 @@ Socket.prototype._handleHTTPErrors = function(message) {
 Socket.prototype.send = function(data) {
   var type = data.type;
   message = JSON.stringify(data);
-  if (!type)
+  if (!type) {
     this.emit('error', 'Invalid message');
+  }
 
   if (!!this._socket && this._socket.readyState == 1) {
     this._socket.send(message);
@@ -1530,9 +1513,10 @@ Socket.prototype.send = function(data) {
     var http = new XMLHttpRequest();
     var url = this._httpUrl + '/' + type.toLowerCase();
     // Set API key if necessary.
-    if (!!this._key)
+    if (!!this._key) {
       url += '/' + this._key;
-
+    }
+      
     http.open('post', url, true);
     http.setRequestHeader('Content-Type', 'application/json');
     http.onload = function() {
@@ -1546,8 +1530,9 @@ Socket.prototype.send = function(data) {
 };
 
 Socket.prototype.close = function() {
-  if (!!this._socket && this._socket.readyState == 1)
+  if (!!this._socket && this._socket.readyState == 1) {
     this._socket.close();
+  }
 };
 
 Socket.prototype.start = function() {
