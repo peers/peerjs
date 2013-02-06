@@ -916,6 +916,10 @@ Peer.prototype._handleServerJSONMessage = function(message) {
       this.emit('error', message.msg);
       util.log(message.msg);
       break;
+    case 'ID-TAKEN':
+      this.emit('error', message.msg);
+      this.destroy('ID `'+this._id+'` is taken');
+      break;
     case 'OFFER':
       var options = {
         metadata: message.metadata,
@@ -930,6 +934,11 @@ Peer.prototype._handleServerJSONMessage = function(message) {
       }, options);
       this._attachConnectionListeners(connection);
       this.connections[peer] = connection;
+      break;
+    case 'EXPIRE':
+      if (connection) {
+        connection.close('Could not connect to peer ' + connection._peer);
+      }
       break;
     case 'ANSWER':
       if (connection) {
@@ -966,11 +975,11 @@ Peer.prototype._processQueue = function() {
 };
 
 
-Peer.prototype._cleanup = function() {
+Peer.prototype._cleanup = function(reason) {
   var self = this;
   var peers = Object.keys(this.connections);
   for (var i = 0, ii = peers.length; i < ii; i++) {
-    this.connections[peers[i]].close();
+    this.connections[peers[i]].close(reason);
   }
   util.setZeroTimeout(function(){
     self._socket.close();
@@ -1011,8 +1020,8 @@ Peer.prototype.connect = function(peer, metadata, cb) {
   this.connections[peer] = connection;
 };
 
-Peer.prototype.destroy = function() {
-  this._cleanup();
+Peer.prototype.destroy = function(reason) {
+  this._cleanup(reason);
 };
 
 
@@ -1029,6 +1038,9 @@ function DataConnection(id, peer, socket, cb, options) {
     reliable: false
   }, options);
   this._options = options;
+  
+  // Connection is not open yet
+  this._open = false;
   
   this._id = id;
   this._peer = peer;
@@ -1147,7 +1159,8 @@ DataConnection.prototype._configureDataChannel = function() {
   }
   this._dc.onopen = function() {
     util.log('Data channel connection success');
-    self._cb(null, self);
+    self._open = true;
+    self._callback(null, self);
   };
   this._dc.onmessage = function(e) {
     self._handleDataMessage(e);
@@ -1181,7 +1194,7 @@ DataConnection.prototype._makeOffer = function() {
         metadata: self.metadata
       });
     }, function(err) {
-      self._cb('Failed to setLocalDescription');
+      self._callback('Failed to setLocalDescription');
       util.log('Failed to setLocalDescription, ', err);
     });
   });
@@ -1201,11 +1214,11 @@ DataConnection.prototype._makeAnswer = function() {
         dst: self._peer
       });
     }, function(err) {
-      self._cb('Failed to setLocalDescription');
+      self._callback('Failed to setLocalDescription');
       util.log('Failed to setLocalDescription, ', err)
     });
   }, function(err) {
-    self._cb('Failed to create answer');
+    self._callback('Failed to create answer');
     util.log('Failed to create answer, ', err)
   });
 };
@@ -1223,6 +1236,13 @@ DataConnection.prototype._cleanup = function() {
   this.emit('close', this._peer);
 };
 
+// Make sure _cb only gets called once
+DataConnection.prototype._callback = function(err, dc) {
+  if (this._cb) {
+    this._cb(err, dc);
+    delete this._cb;
+  }
+}
 
 
 // Handles a DataChannel message.
@@ -1249,14 +1269,19 @@ DataConnection.prototype._handleDataMessage = function(e) {
  */
 
 /** Allows user to close connection. */
-DataConnection.prototype.close = function() {
+DataConnection.prototype.close = function(reason) {
   this._cleanup();
   var self = this;
-  this._socket.send({
-    type: 'LEAVE',
-    dst: self._peer,
-    src: self._id,
-  });
+  if (this._open) {
+    this._socket.send({
+      type: 'LEAVE',
+      dst: self._peer,
+      src: self._id,
+    });
+  } else {
+    this._callback(reason);
+  }
+  this._open = false;
 };
 
 
@@ -1300,7 +1325,7 @@ DataConnection.prototype.handleSDP = function(message) {
       self._makeAnswer();
     }
   }, function(err) {
-    self._cb('Failed to setRemoteDescription');
+    self._callback('Failed to setRemoteDescription');
     util.log('Failed to setRemoteDescription, ', err);
   });
 };
