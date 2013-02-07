@@ -55,6 +55,8 @@ Close the server and terminate all connections.
 
 When a new connection is established from another peer to this peer, the `DataConnection` object is emitted with this event. The `meta` argument contains whatever metadata values passed into `peer.connection(...)` by the remote peer.
 
+Note that the `open` event must fire on the `DataConnection` before it is ready to read/write.
+
 ### Event: 'open'
 
 `function(id) { }`
@@ -68,13 +70,14 @@ This event does not need to fire before creating or receiving connections.
 
 `function (error) { }`
 
-Emitted when an unexpected event occurs. May or may not be fatal. This is the event emitted if you attempt to connect with an ID that is already being used.
+Emitted when an unexpected event occurs. May or may not be fatal. Errors from the underlying socket are forwarded here.
 
-Errors from the underlying socket are forwarded here.
+This is the event emitted if you attempt to connect with an ID that is already being used.
+
 
 ### Event: 'close'
 
-`function (error) { }`
+`function () { }`
 
 Emitted when the Peer object has closed it's connection with PeerServer so no more remote peer connections can be made or received..
 
@@ -122,7 +125,7 @@ The `data` parameter contains values exactly as put into the `connection.send(..
 
 `function () { }`
 
-Emitted when the connection is established.
+Emitted when the connection is established and ready for writing. `data` from the remote peer will also start to be emitted.
 
 ### Event: 'error'
 
