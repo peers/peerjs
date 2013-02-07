@@ -959,12 +959,17 @@ Peer.prototype._handleServerJSONMessage = function(message) {
         connection.handleLeave();
       }
       break;
+    case 'INVALID-KEY':
+      this.emit('error', 'API KEY "' + this._key + '" is invalid');
+      this.destroy();
+      this.emit('close');
+      break;
     case 'PORT':
       //if (util.browserisms === 'Firefox') {
       //  connection.handlePort(message);
       //  break;
       //}
-    case 'DEFAULT':
+    default:
       util.log('Unrecognized message type:', message.type);
       break;
   }

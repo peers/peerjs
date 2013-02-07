@@ -11,9 +11,12 @@
 <script type="text/javascript" src="/peer.js"></script>
 <script>
 $(document).ready(function() {
-  originator = new Peer({ id: 'michelle', host: 'localhost', port: '9000', debug: true });
-  originator.on('ready', function(id) {
+  originator = new Peer('michelle', { key: 'r6l1dggn5hebqpvi', host: 'localhost', port: '9000', debug: true });
+  originator.on('open', function(id) {
     console.log(id);
+  });
+  originator.on('error', function(msg) {
+    console.log(msg);
   });
   originator.on('connection', function(connection) {
     x = connection;

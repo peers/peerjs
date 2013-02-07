@@ -840,7 +840,11 @@ exports.getUserMedia = getUserMedia;
 /**
  * A peer who can initiate connections with other peers.
  */
-function Peer(options) {
+function Peer(id, options) {
+  if (id.constructor == Object) {
+    options = id;
+    id = undefined;
+  }
   if (!(this instanceof Peer)) return new Peer(options);
   EventEmitter.call(this);
 
@@ -856,12 +860,14 @@ function Peer(options) {
   this._server = options.host + ':' + options.port;
 
   // Ensure alphanumeric_-
-  if (options.id && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.id))
+  if (id && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(id)) {
     throw new Error('Peer ID can only contain alphanumerics, "_", and "-".');
-  if (options.key && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.key))
+  }
+  if (options.key && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.key)) {
     throw new Error('API key can only contain alphanumerics, "_", and "-".');
-
-  this._id = options.id;
+  }
+  
+  this.id = id;
   // Not used unless using cloud server.
   this._key = options.key;
 
@@ -878,20 +884,23 @@ util.inherits(Peer, EventEmitter);
 
 Peer.prototype._startSocket = function() {
   var self = this;
-  this._socket = new Socket(this._server, this._id, this._key);
+  this._socket = new Socket(this._server, this.id, this._key);
   this._socket.on('message', function(data) {
     self._handleServerJSONMessage(data);
   });
   this._socket.on('open', function() {
     self._processQueue();
   });
-  this._socket.on('unavailable', function(peer) {
-    util.log('Destination peer not available.', peer);
-    if (self.connections[peer])
-      self.connections[peer].close();
-  });
   this._socket.on('error', function(error) {
     util.log(error);
+    self.emit('error', error);
+    self.emit('close');
+  });
+  this._socket.on('close', function() {
+    var msg = 'Underlying socket has closed';
+    util.log('error', msg);
+    self.emit('error', msg);
+    self.emit('close');
   });
   this._socket.start();
 }
@@ -902,10 +911,10 @@ Peer.prototype._handleServerJSONMessage = function(message) {
   var connection = this.connections[peer];
   switch (message.type) {
     case 'ID':
-      if (!this._id) {
+      if (!this.id) {
         // If we're just now getting an ID then we may have a queue.
-        this._id = message.id;
-        this.emit('ready', this._id);
+        this.id = message.id;
+        this.emit('open', this.id);
         this._processQueue();
       }
       break;
@@ -913,36 +922,54 @@ Peer.prototype._handleServerJSONMessage = function(message) {
       this.emit('error', message.msg);
       util.log(message.msg);
       break;
+    case 'ID-TAKEN':
+      this.emit('error', 'ID `'+this.id+'` is taken');
+      this.destroy();
+      this.emit('close');
+      break;
     case 'OFFER':
       var options = {
         metadata: message.metadata,
         sdp: message.sdp,
         config: this._options.config,
       };
-      var self = this;
-      var connection = new DataConnection(this._id, peer, this._socket, function(err, connection) {
-        if (!err) {
-          self.emit('connection', connection, message.metadata);
-        }
-      }, options);
+      var connection = new DataConnection(this.id, peer, this._socket, options);
       this._attachConnectionListeners(connection);
       this.connections[peer] = connection;
+      this.emit('connection', connection, message.metadata);
+      break;
+    case 'EXPIRE':
+      if (connection) {
+        connection.close();
+        connection.emit('Could not connect to peer ' + connection.peer);
+      }
       break;
     case 'ANSWER':
-      if (connection) connection.handleSDP(message);
+      if (connection) {
+        connection.handleSDP(message);
+      }
       break;
     case 'CANDIDATE':
-      if (connection) connection.handleCandidate(message);
+      if (connection) {
+        connection.handleCandidate(message);
+      }
       break;
     case 'LEAVE':
-      if (connection) connection.handleLeave();
+      if (connection) {
+        connection.handleLeave();
+      }
+      break;
+    case 'INVALID-KEY':
+      this.emit('error', 'API KEY "' + this._key + '" is invalid');
+      this.destroy();
+      this.emit('close');
       break;
     case 'PORT':
-      if (util.browserisms === 'Firefox') {
-        connection.handlePort(message);
-        break;
-      }
-    case 'DEFAULT':
+      //if (util.browserisms === 'Firefox') {
+      //  connection.handlePort(message);
+      //  break;
+      //}
+    default:
       util.log('Unrecognized message type:', message.type);
       break;
   }
@@ -958,19 +985,23 @@ Peer.prototype._processQueue = function() {
 
 
 Peer.prototype._cleanup = function() {
-  for (var peer in this.connections) {
-    if (this.connections.hasOwnProperty(peer)) {
-      this.connections[peer].close();
-    }
+  var self = this;
+  var peers = Object.keys(this.connections);
+  for (var i = 0, ii = peers.length; i < ii; i++) {
+    this.connections[peers[i]].close();
   }
-  this._socket.close();
+  util.setZeroTimeout(function(){
+    self._socket.close();
+  });
 };
 
 /** Listeners for DataConnection events. */
 Peer.prototype._attachConnectionListeners = function(connection) {
   var self = this;
   connection.on('close', function(peer) {
-    if (self.connections[peer]) delete self.connections[peer];
+    if (self.connections[peer]) { 
+      delete self.connections[peer]; 
+    }
   });
 };
 
@@ -980,22 +1011,21 @@ Peer.prototype._attachConnectionListeners = function(connection) {
  * is waiting for an ID. */
 // TODO: pause XHR streaming when not in use and start again when this is
 // called.
-Peer.prototype.connect = function(peer, metadata, cb) {
-  if (typeof metadata === 'function' && !cb) cb = metadata; metadata = false;
-
-  if (!this._id) {
+Peer.prototype.connect = function(peer, metadata, options) {
+  if (!this.id) {
     this._queued.push(Array.prototype.slice.apply(arguments));
     return;
   }
 
-  var options = {
+  options = util.extend({
     metadata: metadata,
     config: this._options.config,
-  };
-  var connection = new DataConnection(this._id, peer, this._socket, cb, options);
+  }, options);
+  var connection = new DataConnection(this.id, peer, this._socket, options);
   this._attachConnectionListeners(connection);
 
   this.connections[peer] = connection;
+  return connection;
 };
 
 Peer.prototype.destroy = function() {
@@ -1007,7 +1037,7 @@ exports.Peer = Peer;
 /**
  * A DataChannel PeerConnection between two Peers.
  */
-function DataConnection(id, peer, socket, cb, options) {
+function DataConnection(id, peer, socket, options) {
   if (!(this instanceof DataConnection)) return new DataConnection(options);
   EventEmitter.call(this);
 
@@ -1017,18 +1047,20 @@ function DataConnection(id, peer, socket, cb, options) {
   }, options);
   this._options = options;
   
-  this._id = id;
-  this._peer = peer;
-  this._originator = (options.sdp === undefined);
-  this._cb = cb;
-  this._metadata = options.metadata;
+  // Connection is not open yet
+  this.open = false;
+  
+  this.id = id;
+  this.peer = peer;
+  this.metadata = options.metadata;
 
+  this._originator = (options.sdp === undefined);
   this._socket = socket;
 
   // Firefoxism: connectDataConnection ports.
-  if (util.browserisms === 'Firefox') {
+  /*if (util.browserisms === 'Firefox') {
     this._firefoxPortSetup();
-  }
+  }*/
   
   // Set up PeerConnection.
   this._startPeerConnection();
@@ -1038,7 +1070,7 @@ function DataConnection(id, peer, socket, cb, options) {
   
   // Listen for negotiation needed
   // ** Chrome only.
-  if (util.browserisms === 'Webkit') {
+  if (util.browserisms !== 'Firefox') {
     this._setupOffer();
   }
   
@@ -1048,14 +1080,12 @@ function DataConnection(id, peer, socket, cb, options) {
   var self = this;
   if (options.sdp) {
     this.handleSDP({ type: 'OFFER', sdp: options.sdp });
-    if (util.browserisms !== 'Firefox') { 
-      this._makeAnswer();
-    }
   }
   
-  if (util.browserisms === 'Firefox') {
+  // Makes offer if Firefox
+  /*if (util.browserisms === 'Firefox') {
     this._firefoxAdditional();
-  }
+  }*/
 };
 
 util.inherits(DataConnection, EventEmitter);
@@ -1073,7 +1103,7 @@ DataConnection.prototype._setupDataChannel = function() {
   var self = this;
   if (this._originator) {
     util.log('Creating data channel');
-    this._dc = this._pc.createDataChannel(this._peer, { reliable: this._options.reliable });
+    this._dc = this._pc.createDataChannel(this.peer, { reliable: this._options.reliable });
     this._configureDataChannel();
   } else {
     util.log('Listening for data channel');
@@ -1103,49 +1133,15 @@ DataConnection.prototype._setupIce = function() {
       self._socket.send({
         type: 'CANDIDATE',
         candidate: evt.candidate,
-        dst: self._peer,
-        src: self._id
+        dst: self.peer,
+        src: self.id
       });
     }
   };
 };
 
-// Awaiting update in Firefox spec ***
-/** Sets up DataChannel handlers. 
-DataConnection.prototype._setupDataChannel = function() {
-  var self = this;
-  if (this._originator) {
-    
-    if (util.browserisms === 'Webkit') {
 
-      // TODO: figure out the right thing to do with this.
-      this._pc.onstatechange = function() {
-        util.log('State Change: ', self._pc.readyState);
-      }
-      
-    } else {
-      this._pc.onconnection = function() {
-        util.log('ORIGINATOR: onconnection triggered');
-
-        self._startDataChannel();
-      };
-    }
-  } else {
-    
-
-    this._pc.onconnection = function() {
-      util.log('SINK: onconnection triggered');
-    };
-  }
-
-  this._pc.onclosedconnection = function() {
-    // Remove socket handlers perhaps.
-    self.emit('close', self._peer);
-  };
-};
-*/
-
-DataConnection.prototype._firefoxPortSetup = function() {
+/*DataConnection.prototype._firefoxPortSetup = function() {
   if (!DataConnection.usedPorts) {
     DataConnection.usedPorts = [];
   }
@@ -1160,17 +1156,18 @@ DataConnection.prototype._firefoxPortSetup = function() {
   }
   DataConnection.usedPorts.push(this.remotePort);
   DataConnection.usedPorts.push(this.localPort);
-}
+}*/
 
 DataConnection.prototype._configureDataChannel = function() {
   var self = this;
   
-  if (util.browserisms === 'Firefox') {
-    this._dc.binaryType = 'blob';
+  if (util.browserisms !== 'Webkit') {
+    this._dc.binaryType = 'arraybuffer';
   }
   this._dc.onopen = function() {
     util.log('Data channel connection success');
-    self._cb(null, self);
+    self.open = true;
+    self.emit('open');
   };
   this._dc.onmessage = function(e) {
     self._handleDataMessage(e);
@@ -1179,17 +1176,15 @@ DataConnection.prototype._configureDataChannel = function() {
 
 
 /** Decide whether to handle Firefoxisms. */
-DataConnection.prototype._firefoxAdditional = function() {
+/*DataConnection.prototype._firefoxAdditional = function() {
   var self = this;
   getUserMedia({ audio: true, fake: true }, function(s) {
     self._pc.addStream(s);
     if (self._originator) {
       self._makeOffer();
-    } else {
-      self._makeAnswer();
     }
   }, function(err) { util.log('Could not getUserMedia'); });
-}
+};*/
 
 DataConnection.prototype._makeOffer = function() {
   var self = this;
@@ -1197,16 +1192,15 @@ DataConnection.prototype._makeOffer = function() {
     util.log('Created offer');
     self._pc.setLocalDescription(offer, function() {
       util.log('Set localDescription to offer');
-      //self._peerReady = false;
       self._socket.send({
         type: 'OFFER',
         sdp: offer,
-        dst: self._peer,
-        src: self._id,
+        dst: self.peer,
+        src: self.id,
         metadata: self.metadata
       });
     }, function(err) {
-      self._cb('Failed to setLocalDescription');
+      self.emit('error', 'Failed to setLocalDescription');
       util.log('Failed to setLocalDescription, ', err);
     });
   });
@@ -1221,33 +1215,31 @@ DataConnection.prototype._makeAnswer = function() {
       util.log('Set localDescription to answer');
       self._socket.send({
         type: 'ANSWER',
-        src: self._id,
+        src: self.id,
         sdp: answer,
-        dst: self._peer
+        dst: self.peer
       });
     }, function(err) {
-      self._cb('Failed to setLocalDescription');
+      self.emit('error', 'Failed to setLocalDescription');
       util.log('Failed to setLocalDescription, ', err)
     });
   }, function(err) {
-    self._cb('Failed to create answer');
+    self.emit('error', 'Failed to create answer');
     util.log('Failed to create answer, ', err)
   });
 };
 
 
 DataConnection.prototype._cleanup = function() {
-  if (!!this._pc && this._pc.readyState != 'closed') {
-    this._pc.close();
-    this._pc = null;
-  }
   if (!!this._dc && this._dc.readyState != 'closed') {
     this._dc.close();
     this._dc = null;
   }
-  this.emit('close', this._peer);
+  if (!!this._pc && this._pc.readyState != 'closed') {
+    this._pc.close();
+    this._pc = null;
+  }
 };
-
 
 
 // Handles a DataChannel message.
@@ -1277,11 +1269,15 @@ DataConnection.prototype._handleDataMessage = function(e) {
 DataConnection.prototype.close = function() {
   this._cleanup();
   var self = this;
-  this._socket.send({
-    type: 'LEAVE',
-    dst: self._peer,
-    src: self._id,
-  });
+  if (this.open) {
+    this._socket.send({
+      type: 'LEAVE',
+      dst: self.peer,
+      src: self.id,
+    });
+  }
+  this.open = false;
+  this.emit('close', this.peer);
 };
 
 
@@ -1298,11 +1294,6 @@ DataConnection.prototype.send = function(data) {
   }
 };
 
-DataConnection.prototype.getMetadata = function() {
-  return this._metadata;
-};
-
-
 DataConnection.prototype.handleSDP = function(message) {
   var sdp = message.sdp;
   if (util.browserisms != 'Firefox') {
@@ -1316,14 +1307,16 @@ DataConnection.prototype.handleSDP = function(message) {
       self._pc.connectDataConnection(self.localPort, self.remotePort);
       self._socket.send({
         type: 'PORT',
-        dst: self._peer,
-        src: self._id,
+        dst: self.peer,
+        src: self.id,
         remote: self.localPort,
         local: self.remotePort
       });
+    } else if (message.type === 'OFFER') {
+      self._makeAnswer();
     }
   }, function(err) {
-    this._cb('Failed to setRemoteDescription');
+    self.emit('error', 'Failed to setRemoteDescription');
     util.log('Failed to setRemoteDescription, ', err);
   });
 };
@@ -1337,10 +1330,11 @@ DataConnection.prototype.handleCandidate = function(message) {
 
 
 DataConnection.prototype.handleLeave = function() {
-  util.log('Peer ' + this._peer + ' disconnected');
-  this._cleanup();
+  util.log('Peer ' + this.peer + ' disconnected');
+  this.close();
 };
 
+/*
 DataConnection.prototype.handlePort = function(message) {
   if (!DataConnection.usedPorts) {
     DataConnection.usedPorts = [];
@@ -1349,7 +1343,7 @@ DataConnection.prototype.handlePort = function(message) {
   DataConnection.usedPorts.push(message.remote);
   this._pc.connectDataConnection(message.local, message.remote);
 };
-
+*/
 
 /**
  * An abstraction on top of WebSockets and XHR streaming to provide fastest
@@ -1376,8 +1370,9 @@ Socket.prototype._checkIn = function() {
       var http = new XMLHttpRequest();
       var url = this._httpUrl + '/id';
       // Set API key if necessary.
-      if (!!this._key)
+      if (!!this._key) {
         url += '/' + this._key;
+      }
 
       // If there's no ID we need to wait for one before trying to init socket.
       http.open('get', url, true);
@@ -1410,14 +1405,16 @@ Socket.prototype._checkIn = function() {
 
 /** Start up websocket communications. */
 Socket.prototype._startWebSocket = function() {
-  if (!!this._socket)
+  if (!!this._socket) {
     return;
+  }
 
   var wsurl = 'ws://' + this._server + '/ws';
   if (!!this._id) {
     wsurl += '?id=' + this._id;
-    if (!!this._key)
+    if (!!this._key) {
       wsurl += '&key=' + this._key;
+    }
   } else if (!!this._key) {
     wsurl += '?key=' + this._key;
   }
@@ -1428,7 +1425,7 @@ Socket.prototype._startWebSocket = function() {
     try {
       self.emit('message', JSON.parse(event.data));
     } catch(e) {
-      util.log('Invalid server message');
+      util.log('Invalid server message', event.data);
     }
   };
 
@@ -1436,8 +1433,9 @@ Socket.prototype._startWebSocket = function() {
   // socket is open.
   this._socket.onopen = function() {
     util.log('Socket open');
-    if (self._id)
+    if (self._id) {
       self.emit('open');
+    }
   };
 };
 
@@ -1450,9 +1448,9 @@ Socket.prototype._startXhrStream = function() {
     var http = new XMLHttpRequest();
     var url = this._httpUrl + '/id';
     // Set API key if necessary.
-    if (!!this._key)
+    if (!!this._key) {
       url += '/' + this._key;
-
+    }
     http.open('post', url, true);
     http.setRequestHeader('Content-Type', 'application/json');
     http.onreadystatechange = function() {
@@ -1474,19 +1472,21 @@ Socket.prototype._handleStream = function(http, pad) {
     return;
   }
 
-  if (this._index === undefined)
+  if (this._index === undefined) {
     this._index = pad ? 2 : 1;
-
-  if (http.responseText === null)
+  }
+  
+  if (http.responseText === null) {
     return;
-
+  }
+  
   var message = http.responseText.split('\n')[this._index];
   if (!!message && http.readyState == 3) {
     this._index += 1;
     try {
       this._handleHTTPErrors(JSON.parse(message));
     } catch(e) {
-      util.log('Invalid server message');
+      util.log('Invalid server message', message);
     }
   } else if (http.readyState == 4) {
     this._index = 1;
@@ -1499,18 +1499,20 @@ Socket.prototype._handleHTTPErrors = function(message) {
     // XHR stream closed by timeout.
     case 'HTTP-END':
       util.log('XHR stream timed out.');
-      if (!!this._socket && this._socket.readyState != 1)
+      if (!!this._socket && this._socket.readyState != 1) {
         this._startXhrStream();
+      }
       break;
     // XHR stream closed by socket connect.
     case 'HTTP-SOCKET':
-        util.log('XHR stream closed, WebSocket connected.');
-        break;
+      util.log('XHR stream closed, WebSocket connected.');
+      break;
     case 'HTTP-ERROR':
-        this.emit('error', 'Something went wrong.');
-        break;
+      // this.emit('error', 'Something went wrong.');
+      util.log('XHR ended in error state');
+      break;
     default:
-        this.emit('message', message);
+      this.emit('message', message);
   }
 };
 
@@ -1520,8 +1522,9 @@ Socket.prototype._handleHTTPErrors = function(message) {
 Socket.prototype.send = function(data) {
   var type = data.type;
   message = JSON.stringify(data);
-  if (!type)
+  if (!type) {
     this.emit('error', 'Invalid message');
+  }
 
   if (!!this._socket && this._socket.readyState == 1) {
     this._socket.send(message);
@@ -1530,24 +1533,20 @@ Socket.prototype.send = function(data) {
     var http = new XMLHttpRequest();
     var url = this._httpUrl + '/' + type.toLowerCase();
     // Set API key if necessary.
-    if (!!this._key)
+    if (!!this._key) {
       url += '/' + this._key;
-
+    }
+      
     http.open('post', url, true);
     http.setRequestHeader('Content-Type', 'application/json');
-    http.onload = function() {
-      // This happens if destination peer is not available...
-      if (http.responseText != 'OK') {
-        self.emit('unavailable', data.dst)
-      }
-    }
     http.send(message);
   }
 };
 
 Socket.prototype.close = function() {
-  if (!!this._socket && this._socket.readyState == 1)
+  if (!!this._socket && this._socket.readyState == 1) {
     this._socket.close();
+  }
 };
 
 Socket.prototype.start = function() {
