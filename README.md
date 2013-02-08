@@ -30,7 +30,7 @@ Each peer simply provides a identifier with which other peers using the same API
        conn.on('open', function(){
          conn.send('hi!');
        }); 
-     </script>`
+     </script>
 
 
 ### [Getting started](http://peerjs.com/start)
