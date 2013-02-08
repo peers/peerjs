@@ -12,25 +12,29 @@ Each peer simply provides a identifier with which other peers using the same API
 
 **Peer**
 
-     <script>
-       var peer = new Peer('someid', {key: 'apikey'});
-       peer.on('connection', function(conn) {
-         conn.on('data', function(data){
-           // Will print 'hi!'
-           console.log(data);
-         });
-       });
-     </script>
+```js
+<script>
+  var peer = new Peer('someid', {key: 'apikey'});
+  peer.on('connection', function(conn) {
+    conn.on('data', function(data){
+      // Will print 'hi!'
+      console.log(data);
+    });
+  });
+</script>
+```
 
 **Connecting peer**
 
-     <script>
-       var peer = new Peer('anotherid', {key: 'apikey'});
-       var conn = peer.connect('someid');
-       conn.on('open', function(){
-         conn.send('hi!');
-       }); 
-     </script>
+```js
+<script>
+  var peer = new Peer('anotherid', {key: 'apikey'});
+  var conn = peer.connect('someid');
+  conn.on('open', function(){
+    conn.send('hi!');
+  }); 
+</script>
+```
 
 
 ### [Getting started](http://peerjs.com/start)
