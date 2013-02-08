@@ -911,8 +911,8 @@ Peer.prototype._handleServerJSONMessage = function(message) {
       if (!this.id) {
         // If we're just now getting an ID then we may have a queue.
         this.id = message.id;
+        this.emit('id', this.id);
       }
-      this.emit('open', this.id);
       this._processQueue();
       break;
     case 'ERROR':
@@ -1395,7 +1395,7 @@ Socket.prototype._checkIn = function() {
             if (!!response.id) {
               self._id = response.id;
               self._startWebSocket();
-              self.emit('message', { type: 'ID', id: self._id });
+              self.emit('message', { type: 'OPEN', id: self._id });
             }
           } catch (e) {
             self._startWebSocket();
