@@ -1,11 +1,16 @@
 # PeerJS: Peer-to-peer data in the browser #
 
+PeerJS provides a complete, configurable, and easy-to-use peer-to-peer data API built on top of WebRTC.   
+Each peer simply provides a identifier with which other peers using the same API key can connect.
+
 ##[http://peerjs.com](http://peerjs.com)
 
-PeerJS wraps the WebRTC implementation to provide a complete, configurable, and easy-to-use peer-to-peer data API. Each peer simply provides a identifier with which other peers using the same API key can connect.
 
+**Include the library**
 
-Peer
+     <script src="http://cdn.peerjs.com/0/peer.js"></script>
+
+**Peer**
 
      <script>
        var peer = new Peer('someid', {key: 'apikey'});
@@ -17,7 +22,7 @@ Peer
        });
      </script>
 
-Connecting peer
+**Connecting peer**
 
      <script>
        var peer = new Peer('anotherid', {key: 'apikey'});
@@ -28,7 +33,11 @@ Connecting peer
      </script>`
 
 
+### [Getting started](http://peerjs.com/start)
 
+### [Browser compatibility status](http://peerjs.com/status)
+
+### [PeerServer](https://github.com/peers/peer-server)
 
 
 
