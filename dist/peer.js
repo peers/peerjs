@@ -889,7 +889,9 @@ Peer.prototype._startSocket = function() {
     self._handleServerJSONMessage(data);
   });
   this._socket.on('open', function() {
-    self._processQueue();
+    if (this.id) {
+      self._processQueue();
+    }
   });
   this._socket.on('error', function(error) {
     util.log(error);
@@ -939,6 +941,7 @@ Peer.prototype._handleServerJSONMessage = function(message) {
       this.emit('connection', connection, message.metadata);
       break;
     case 'EXPIRE':
+      connection = this.connections[message.expired];
       if (connection) {
         connection.close();
         connection.emit('Could not connect to peer ' + connection.peer);
@@ -978,8 +981,8 @@ Peer.prototype._handleServerJSONMessage = function(message) {
 /** Process queued calls to connect. */
 Peer.prototype._processQueue = function() {
   while (this._queued.length > 0) {
-    var cdata = this._queued.pop();
-    this.connect.apply(this, cdata);
+    var conn = this._queued.pop();
+    conn.initialize(this.id);
   }
 };
 
@@ -1012,19 +1015,18 @@ Peer.prototype._attachConnectionListeners = function(connection) {
 // TODO: pause XHR streaming when not in use and start again when this is
 // called.
 Peer.prototype.connect = function(peer, metadata, options) {
-  if (!this.id) {
-    this._queued.push(Array.prototype.slice.apply(arguments));
-    return;
-  }
-
   options = util.extend({
     metadata: metadata,
     config: this._options.config,
   }, options);
+
   var connection = new DataConnection(this.id, peer, this._socket, options);
   this._attachConnectionListeners(connection);
 
   this.connections[peer] = connection;
+  if (!this.id) {
+    this._queued.push(connection);
+  }
   return connection;
 };
 
@@ -1056,7 +1058,20 @@ function DataConnection(id, peer, socket, options) {
 
   this._originator = (options.sdp === undefined);
   this._socket = socket;
+  this._sdp = options.sdp;
 
+  // TODO: consider no-oping this method:
+  if (!!this.id) {
+    this.initialize();
+  }
+};
+
+util.inherits(DataConnection, EventEmitter);
+
+DataConnection.prototype.initialize = function(id) {
+  if (!!id) {
+    this.id = id;
+  }
   // Firefoxism: connectDataConnection ports.
   /*if (util.browserisms === 'Firefox') {
     this._firefoxPortSetup();
@@ -1070,7 +1085,7 @@ function DataConnection(id, peer, socket, options) {
   
   // Listen for negotiation needed
   // ** Chrome only.
-  if (util.browserisms !== 'Firefox') {
+  if (util.browserisms !== 'Firefox' && !!this.id) {
     this._setupOffer();
   }
   
@@ -1078,17 +1093,18 @@ function DataConnection(id, peer, socket, options) {
   this._setupDataChannel();
   
   var self = this;
-  if (options.sdp) {
-    this.handleSDP({ type: 'OFFER', sdp: options.sdp });
+  if (this._sdp) {
+    this.handleSDP({ type: 'OFFER', sdp: this._sdp });
   }
   
   // Makes offer if Firefox
   /*if (util.browserisms === 'Firefox') {
     this._firefoxAdditional();
   }*/
-};
 
-util.inherits(DataConnection, EventEmitter);
+  // No-op this.
+  this.initialize = function() {};
+}
 
 DataConnection.prototype._setupOffer = function() {
   var self = this;
@@ -1422,9 +1438,15 @@ Socket.prototype._startWebSocket = function() {
 
   var self = this;
   this._socket.onmessage = function(event) {
+    var data;
     try {
-      self.emit('message', JSON.parse(event.data));
+      data = JSON.parse(event.data);
     } catch(e) {
+      data = event.data;
+    }
+    if (data.constructor == Object) {
+      self.emit('message', data);
+    } else {
       util.log('Invalid server message', event.data);
     }
   };
@@ -1473,7 +1495,9 @@ Socket.prototype._handleStream = function(http, pad) {
   }
 
   if (this._index === undefined) {
-    this._index = pad ? 2 : 1;
+    // TODO
+    this._index = 2;
+    //this._index = pad ? 2 : 1;
   }
   
   if (http.responseText === null) {
@@ -1509,7 +1533,7 @@ Socket.prototype._handleHTTPErrors = function(message) {
       break;
     case 'HTTP-ERROR':
       // this.emit('error', 'Something went wrong.');
-      util.log('XHR ended in error state');
+      util.log('XHR ended in error or the websocket connected first.');
       break;
     default:
       this.emit('message', message);

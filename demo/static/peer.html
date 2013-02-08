@@ -21,10 +21,13 @@ $(document).ready(function() {
   originator.on('connection', function(connection) {
     x = connection;
     console.log('connection');
+
+    connection.on('open', function() {
+      connection.send('What is going on?');
+    });
     connection.on('data', function(data) {
       console.log(data);
     });
-    connection.send('What is going on?');
   });
 });
 
