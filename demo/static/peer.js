@@ -866,7 +866,7 @@ function Peer(id, options) {
   if (options.key && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.key)) {
     throw new Error('API key can only contain alphanumerics, "_", and "-".');
   }
-  
+
   this.id = id;
   // Not used unless using cloud server.
   this._key = options.key;
@@ -1031,7 +1031,7 @@ Peer.prototype.destroy = function() {
 
 exports.Peer = Peer;
 /**
- * A DataChannel PeerConnection between two Peers.
+ * A DataChannel|PeerConnection between two Peers.
  */
 function DataConnection(id, peer, socket, options) {
   if (!(this instanceof DataConnection)) return new DataConnection(options);
@@ -1042,19 +1042,17 @@ function DataConnection(id, peer, socket, options) {
     reliable: false
   }, options);
   this._options = options;
-  
-  // Connection is not open yet
+
+  // Connection is not open yet.
   this.open = false;
-  
+
   this.id = id;
   this.peer = peer;
   this.metadata = options.metadata;
 
-  this._originator = (options.sdp === undefined);
   this._socket = socket;
   this._sdp = options.sdp;
 
-  // TODO: consider no-oping this method:
   if (!!this.id) {
     this.initialize();
   }
@@ -1070,27 +1068,27 @@ DataConnection.prototype.initialize = function(id) {
   /*if (util.browserisms === 'Firefox') {
     this._firefoxPortSetup();
   }*/
-  
+
   // Set up PeerConnection.
   this._startPeerConnection();
-  
+
   // Listen for ICE candidates
   this._setupIce();
-  
+
   // Listen for negotiation needed
   // ** Chrome only.
   if (util.browserisms !== 'Firefox' && !!this.id) {
     this._setupOffer();
   }
-  
-  // Listen or create a data channel
+
+  // Listen for or create a data channel
   this._setupDataChannel();
-  
+
   var self = this;
-  if (this._sdp) {
+  if (!!this._sdp) {
     this.handleSDP({ type: 'OFFER', sdp: this._sdp });
   }
-  
+
   // Makes offer if Firefox
   /*if (util.browserisms === 'Firefox') {
     this._firefoxAdditional();
@@ -1100,6 +1098,7 @@ DataConnection.prototype.initialize = function(id) {
   this.initialize = function() {};
 }
 
+
 DataConnection.prototype._setupOffer = function() {
   var self = this;
   util.log('Listening for `negotiationneeded`');
@@ -1108,6 +1107,7 @@ DataConnection.prototype._setupOffer = function() {
     self._makeOffer();
   };
 }
+
 
 DataConnection.prototype._setupDataChannel = function() {
   var self = this;
@@ -1529,7 +1529,6 @@ Socket.prototype._handleHTTPErrors = function(message) {
       util.log('XHR stream closed, WebSocket connected.');
       break;
     case 'HTTP-ERROR':
-      // this.emit('error', 'Something went wrong.');
       util.log('XHR ended in error or the websocket connected first.');
       break;
     default:
@@ -1553,12 +1552,13 @@ Socket.prototype.send = function(data) {
     var self = this;
     var http = new XMLHttpRequest();
     var url = this._httpUrl;
+
     // Set API key if necessary.
     if (!!this._key) {
       url += '/' + this._key;
     }
     url += '/' + type.toLowerCase();
-      
+
     http.open('post', url, true);
     http.setRequestHeader('Content-Type', 'application/json');
     http.send(message);
