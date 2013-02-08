@@ -1,5 +1,8 @@
 # PeerJS API Reference
 
+**Due to browsers' incomplete support of the WebRTC DataChannel specification, many features of PeerJS have caveats.
+[View the status page for full details](http://peerjs.com/status).**
+
 ## Class: peerjs.Peer
 
 This class is a the BinaryJS websocket server. It is an `EventEmitter`.
