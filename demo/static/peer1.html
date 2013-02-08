@@ -14,7 +14,7 @@ $(document).ready(function() {
   $('#connect').click(function() {
     var source = $('#source').val();
 
-    sink = new Peer({ key: 'x8w1becrbresif6r', host: 'localhost', port: '9000', debug: true });
+    sink = new Peer({ key: '3lcmbh31bezpk3xr', host: 'localhost', port: '9000', debug: true });
     connection = sink.connect(source, { username: 'michelle_spoof' })
     connection.on('data', function(data) {
       console.log(data);
