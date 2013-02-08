@@ -1384,11 +1384,12 @@ Socket.prototype._checkIn = function() {
   if (!this._id) {
     try {
       var http = new XMLHttpRequest();
-      var url = this._httpUrl + '/id';
+      var url = this._httpUrl;
       // Set API key if necessary.
       if (!!this._key) {
         url += '/' + this._key;
       }
+      url += '/id';
 
       // If there's no ID we need to wait for one before trying to init socket.
       http.open('get', url, true);
@@ -1468,11 +1469,12 @@ Socket.prototype._startXhrStream = function() {
     var self = this;
 
     var http = new XMLHttpRequest();
-    var url = this._httpUrl + '/id';
+    var url = this._httpUrl;
     // Set API key if necessary.
     if (!!this._key) {
       url += '/' + this._key;
     }
+    url += '/id';
     http.open('post', url, true);
     http.setRequestHeader('Content-Type', 'application/json');
     http.onreadystatechange = function() {
@@ -1495,9 +1497,7 @@ Socket.prototype._handleStream = function(http, pad) {
   }
 
   if (this._index === undefined) {
-    // TODO
-    this._index = 2;
-    //this._index = pad ? 2 : 1;
+    this._index = pad ? 2 : 1;
   }
   
   if (http.responseText === null) {
@@ -1555,11 +1555,12 @@ Socket.prototype.send = function(data) {
   } else {
     var self = this;
     var http = new XMLHttpRequest();
-    var url = this._httpUrl + '/' + type.toLowerCase();
+    var url = this._httpUrl;
     // Set API key if necessary.
     if (!!this._key) {
       url += '/' + this._key;
     }
+    url += '/' + type.toLowerCase();
       
     http.open('post', url, true);
     http.setRequestHeader('Content-Type', 'application/json');
