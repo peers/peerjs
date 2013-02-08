@@ -59,7 +59,7 @@
 			$('#connectbtn').click(function()
 				{
 					var username = $('#i_username').val();
-					var peer = new Peer({key: 'x7fwx2kavpy6tj4i'});
+					var peer = new Peer(username, {key: 'x7fwx2kavpy6tj4i', debug: true});
 					peer.on('error',function(error)
 					{
 						alert(error);
