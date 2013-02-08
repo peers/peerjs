@@ -888,12 +888,6 @@ Peer.prototype._startSocket = function() {
   this._socket.on('message', function(data) {
     self._handleServerJSONMessage(data);
   });
-  this._socket.on('open', function() {
-    if (self.id) {
-      self.emit('open', self.id);
-      self._processQueue();
-    }
-  });
   this._socket.on('error', function(error) {
     util.log(error);
     self.emit('error', error);
@@ -913,13 +907,13 @@ Peer.prototype._handleServerJSONMessage = function(message) {
   var peer = message.src;
   var connection = this.connections[peer];
   switch (message.type) {
-    case 'ID':
+    case 'OPEN':
       if (!this.id) {
         // If we're just now getting an ID then we may have a queue.
         this.id = message.id;
-        this.emit('open', this.id);
-        this._processQueue();
       }
+      this.emit('open', this.id);
+      this._processQueue();
       break;
     case 'ERROR':
       this.emit('error', message.msg);
@@ -1401,7 +1395,7 @@ Socket.prototype._checkIn = function() {
             if (!!response.id) {
               self._id = response.id;
               self._startWebSocket();
-              self.emit('message', { type: 'ID', id: self._id });
+              self.emit('message', { type: 'OPEN', id: self._id });
             }
           } catch (e) {
             self._startWebSocket();
