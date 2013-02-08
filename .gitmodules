@@ -3,4 +3,4 @@
 	url = git://github.com/ericz/EventEmitter.git
 [submodule "deps/js-binarypack"]
 	path = deps/js-binarypack
-	url = git://github.com/binaryjs/js-binarypack.git
+	url = git://github.com/peers/js-binarypack.git
