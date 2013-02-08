@@ -35,7 +35,7 @@ Each peer simply provides a identifier with which other peers using the same API
 
 ### [Getting started](http://peerjs.com/start)
 
-### [API Reference](https://github.com/peers/peerjs/blob/master/docs/api.md)
+### [API reference](https://github.com/peers/peerjs/blob/master/docs/api.md)
 
 ### [Browser compatibility status](http://peerjs.com/status)
 
