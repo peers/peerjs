@@ -852,7 +852,7 @@ function Peer(id, options) {
     debug: false,
     host: '0.peerjs.com',
     config: { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] },
-    port: 80
+    port: 9000
   }, options);
   this._options = options;
   util.debug = options.debug;

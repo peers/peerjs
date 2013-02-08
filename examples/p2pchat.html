@@ -1,0 +1,117 @@
+<html>
+	<head>
+		<link href="http://peerjs.com/css/style.css" rel="stylesheet" type="text/css"> 
+		<link href="http://peerjs.com/css/fonts.css" rel="stylesheet" type="text/css"> 
+		<link href="http://peerjs.com/css/button.css" rel="stylesheet" type="text/css"> 
+		<link href="http://peerjs.com/css/reveal.css" rel="stylesheet" type="text/css"> 
+		<style>
+		html,body{margin:0px;padding:0px;background:#efefef;}
+		#wrapper{padding:30px;width:600px;margin:0 auto;text-align: center;}
+		#stage
+		{
+			display:none;
+			text-align:left;
+			background:#fff;
+			overflow-y:auto;
+		}
+		#submitbar
+		{
+			border:solid 1px #ddd;
+		}
+		#submitbar input[type=text]
+		{
+			width:530px;
+		}
+		#chatlog
+		{
+			height:550px;
+			padding:10px;
+		}
+		#enter{
+			padding:20px;
+			border-radius: 15px;
+			background:#ddd;
+		}
+		</style>
+		<title>P2P Web Chat with PeerJS</title>
+	</head>
+	<body>
+		<div id="wrapper">
+	      <h1>P2P Web Chat with PeerJS</h1>
+	      <div id="enter">
+	      	  <div class="step1">
+		      	<input id="i_username" type="text" placeholder="Username"/> <input id="connectbtn" type="button" class="btn btn-danger" value="Set Username"/>
+		      </div>
+		      <div class="step2" style="display:none;">
+		      		<h2>Waiting for Friend to connect...</h2>
+		      		<h3>---<br/>OR connect to a Friend:</h3>
+			      <input id="i_peer" type="text" placeholder="Friend's Username"/> <input id="peerbtn" type="button" class="btn btn-danger" value="Connect"/>
+			  </div>
+		  </div>
+	      <div id="stage">
+	      	<div id="chatlog"></div>
+	      	<div id="submitbar"><input id="message" type="text"/> <input id="sendbtn" type="button" class="btn btn-danger" value="Send"/></div>
+	      </div>
+	  	</div>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js" type="text/javascript"></script>
+		<script src="http://cdn.peerjs.com/0/peer.min.js" ></script>
+		<script type="text/javascript">
+			$('#connectbtn').click(function()
+				{
+					var username = $('#i_username').val();
+					var peer = new Peer(username, {key: 'x7fwx2kavpy6tj4i', debug: true});
+					peer.on('error',function(error)
+					{
+						alert(error);
+						$('#enter .step2').hide();
+						$('#enter .step1').show();
+					});
+					peer.on('open',function()
+					{
+						console.log('Connected to PeerJS Server.');
+						$('#enter .step1').hide();
+						$('#enter .step2').show();
+						function log(data)
+						{
+							$('#chatlog').append("<b>"+data.origin+"</b>:"+data.message+"<br/>");
+						}
+						var connection = null;
+						function handleConnect(connection)
+						{
+								$('#enter').hide();
+								$('#stage').show();
+								console.log('Connected to Peer');
+								connection.on('data',function(data)
+								{
+									log(data);
+								}).on('close',function()
+								{
+									alert('Peer has disconnected.');
+								});
+							$('#sendbtn').click(function()
+							{
+								var data = {origin:username,message:$('#message').val()};
+								connection.send(data);
+								log(data);
+							});
+						}
+						peer.on('connection',function(connection)
+							{
+								$('#peerbtn').off('click');
+								handleConnect(connection);
+							});
+						$('#peerbtn').click(function()
+							{
+								var connection = peer.connect($('#i_peer').val()).on('error',function(error)
+									{
+										alert(error);
+									}).on('open',function()
+									{
+										handleConnect(connection);
+									});
+							});
+					});
+				});
+		</script>
+	</body>
+</html>
