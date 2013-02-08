@@ -11,26 +11,17 @@
 <script type="text/javascript" src="/peer.js"></script>
 <script>
 $(document).ready(function() {
-  connections = {};
   $('#connect').click(function() {
     var source = $('#source').val();
 
-    sink = new Peer({ host: 'localhost', port: '9000', debug: true });
-      sink.connect(source, { username: 'michelle' }, function(err, connection) {
-        x = connection;
-        console.log('got connection');
-        console.log(connection);
-
-        connection.on('data', function(data) {
-          console.log(data);
-        });
-
-        connection.send('Hi there!');
-        connections[source] = connection;
-      });
-    sink.on('ready', function() {
+    sink = new Peer({ key: 'x8w1becrbresif6r', host: 'localhost', port: '9000', debug: true });
+    connection = sink.connect(source, { username: 'michelle_spoof' })
+    connection.on('data', function(data) {
+      console.log(data);
+      connection.send('Hi there!');
     });
   });
+
 });
 
 </script>
