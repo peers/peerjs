@@ -604,7 +604,7 @@ EventEmitter.prototype.addListener = function(type, listener, scope, once) {
     // Adding the second element, need to change to array.
     this._events[type] = [this._events[type], listener];
   }
-  
+  return this;
 };
 
 EventEmitter.prototype.on = EventEmitter.prototype.addListener;
