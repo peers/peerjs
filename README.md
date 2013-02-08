@@ -37,7 +37,7 @@ Each peer simply provides a identifier with which other peers using the same API
 
 ### [Browser compatibility status](http://peerjs.com/status)
 
-### [PeerServer](https://github.com/peers/peer-server)
+### [PeerServer](https://github.com/peers/peerjs-server)
 
 
 
