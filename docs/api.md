@@ -28,7 +28,7 @@ The `config` object is passed straight into instances of `RTCPeerConnection`. Fo
 
 The given id of this peer.
 
-If no id was specified in the constructor, this value will be `undefined` util the `id` event fires.
+If no id was specified in the constructor, this value will be `undefined` util the `open` event fires.
 
 ### peer.connections
 
@@ -57,13 +57,15 @@ When a new connection is established from another peer to this peer, the `DataCo
 
 Note that the `open` event must fire on the `DataConnection` before it is ready to read/write.
 
-### Event: 'id'
+### Event: 'open'
 
 `function(id) { }`
 
-If the `Peer` object was created with no id, this event fires once the server has assigned an id. If an id was provided to the constructor of the `Peer` object, this event will not fire.
+Fired when the PeerServer connection is succesfully, fully, open.
+This event does not need to fire before creating or receiving connections.
+You should not wait for open before connecting to other peers or expecting to receive connections if connection speed is important.
 
-`id` is the id of this `Peer` object.
+`id` is the id of this `Peer` object, either provided in the constructor, or generated automatically by the PeerServer.
 
 ### Event: 'error'
 
