@@ -7,25 +7,25 @@ PeerJS wraps the WebRTC implementation to provide a complete, configurable, and 
 
 Peer
 
-`<script>
-  var peer = new Peer('someid', {key: 'apikey'});
-  peer.on('connection', function(conn) {
-    conn.on('data', function(data){
-      // Will print 'hi!'
-      console.log(data);
-    });
-  });
-</script>`
+     <script>
+       var peer = new Peer('someid', {key: 'apikey'});
+       peer.on('connection', function(conn) {
+         conn.on('data', function(data){
+           // Will print 'hi!'
+           console.log(data);
+         });
+       });
+     </script>
 
 Connecting peer
 
-`<script>
-  var peer = new Peer('anotherid', {key: 'apikey'});
-  var conn = peer.connect('someid');
-  conn.on('open', function(){
-    conn.send('hi!');
-  }); 
-</script>`
+     <script>
+       var peer = new Peer('anotherid', {key: 'apikey'});
+       var conn = peer.connect('someid');
+       conn.on('open', function(){
+         conn.send('hi!');
+       }); 
+     </script>`
 
 
 
