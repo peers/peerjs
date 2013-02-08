@@ -891,13 +891,13 @@ Peer.prototype._startSocket = function() {
   this._socket.on('error', function(error) {
     util.log(error);
     self.emit('error', error);
-    self.emit('close');
+    self.destroy();
   });
   this._socket.on('close', function() {
     var msg = 'Underlying socket has closed';
     util.log('error', msg);
     self.emit('error', msg);
-    self.emit('close');
+    self.destroy();
   });
   this._socket.start();
 }
@@ -922,7 +922,6 @@ Peer.prototype._handleServerJSONMessage = function(message) {
     case 'ID-TAKEN':
       this.emit('error', 'ID `'+this.id+'` is taken');
       this.destroy();
-      this.emit('close');
       break;
     case 'OFFER':
       var options = {
@@ -960,7 +959,6 @@ Peer.prototype._handleServerJSONMessage = function(message) {
     case 'INVALID-KEY':
       this.emit('error', 'API KEY "' + this._key + '" is invalid');
       this.destroy();
-      this.emit('close');
       break;
     case 'PORT':
       //if (util.browserisms === 'Firefox') {
@@ -991,6 +989,7 @@ Peer.prototype._cleanup = function() {
   util.setZeroTimeout(function(){
     self._socket.close();
   });
+  this.emit('close');
 };
 
 /** Listeners for DataConnection events. */
@@ -1182,6 +1181,9 @@ DataConnection.prototype._configureDataChannel = function() {
   };
   this._dc.onmessage = function(e) {
     self._handleDataMessage(e);
+  };
+  this._dc.onclose = function(e) {
+    self.emit('close');
   };
 };
 
