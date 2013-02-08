@@ -8,7 +8,7 @@ Each peer simply provides a identifier with which other peers using the same API
 
 **Include the library**
 
-     <script src="http://cdn.peerjs.com/0/peer.js"></script>
+    <script src="http://cdn.peerjs.com/0/peer.js"></script>
 
 **Peer**
 
@@ -36,8 +36,9 @@ Each peer simply provides a identifier with which other peers using the same API
 </script>
 ```
 
-
 ### [Getting started](http://peerjs.com/start)
+
+### [API reference](https://github.com/peers/peerjs/blob/master/docs/api.md)
 
 ### [Browser compatibility status](http://peerjs.com/status)
 
