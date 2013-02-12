@@ -932,7 +932,7 @@ Peer.prototype._handleServerJSONMessage = function(message) {
       break;
     case 'ANSWER':
       if (connection) {
-        connection.handleSDP(payload);
+        connection.handleSDP(payload.sdp, message.type);
       }
       break;
     case 'CANDIDATE':
@@ -1075,7 +1075,7 @@ DataConnection.prototype.initialize = function(id) {
 
   var self = this;
   if (!!this._sdp) {
-    this.handleSDP({ type: 'OFFER', sdp: this._sdp });
+    this.handleSDP(this._sdp, 'OFFER');
   }
 
   // Makes offer if Firefox
@@ -1298,16 +1298,15 @@ DataConnection.prototype.send = function(data) {
   }
 };
 
-DataConnection.prototype.handleSDP = function(message) {
-  var sdp = message.sdp;
+DataConnection.prototype.handleSDP = function(sdp, type) {
   if (util.browserisms != 'Firefox') {
     sdp = new RTCSessionDescription(sdp);
   }
   var self = this;
   this._pc.setRemoteDescription(sdp, function() {
-    util.log('Set remoteDescription: ' + message.type);
+    util.log('Set remoteDescription: ' + type);
     // Firefoxism
-    /**if (message.type === 'ANSWER' && util.browserisms === 'Firefox') {
+    /**if (type === 'ANSWER' && util.browserisms === 'Firefox') {
       self._pc.connectDataConnection(self.localPort, self.remotePort);
       self._socket.send({
         type: 'PORT',
@@ -1317,7 +1316,7 @@ DataConnection.prototype.handleSDP = function(message) {
           local: self.remotePort
         }
       });
-    } else*/ if (message.type === 'OFFER') {
+    } else*/ if (type === 'OFFER') {
       self._makeAnswer();
     }
   }, function(err) {
