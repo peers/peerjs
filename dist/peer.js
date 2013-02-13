@@ -1382,7 +1382,7 @@ function Socket(host, port, key, id) {
   var token = util.randomToken();
   
   this._httpUrl = 'http://' + host + ':' + port + '/' + key + '/' + id + '/' + token;
-  this._wsUrl = 'ws://' + host + ':' + port + '/'+key+'?key='+key+'&id='+id+'&token='+token;
+  this._wsUrl = 'ws://' + host + ':' + port + '/peerjs?key='+key+'&id='+id+'&token='+token;
 };
 
 util.inherits(Socket, EventEmitter);
