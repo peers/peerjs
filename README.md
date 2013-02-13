@@ -12,7 +12,7 @@ Each peer simply provides a identifier with which other peers using the same API
 
 **Peer**
 
-```js
+```html
 <script>
   var peer = new Peer('someid', {key: 'apikey'});
   peer.on('connection', function(conn) {
@@ -26,7 +26,7 @@ Each peer simply provides a identifier with which other peers using the same API
 
 **Connecting peer**
 
-```js
+```html
 <script>
   var peer = new Peer('anotherid', {key: 'apikey'});
   var conn = peer.connect('someid');
