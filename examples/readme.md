@@ -3,8 +3,8 @@
 **Due to browsers' incomplete support of the WebRTC DataChannel specification, many features of PeerJS have caveats.
 [View the status page for full details](http://peerjs.com/status).**
 
-###[API Reference](https://github.com/peers/peerjs/blob/master/docs/api.md)
+Live demo:
+###[Simple chat demo ](http://cdn.peerjs.com/demo/chat.html)
 
-###[Getting started](http://peerjs.com/start)
 
-###[Browser compatibility and limitations](http://peerjs.com/status)
+As we build more examples and demos they will be posted here. If you have built something cool, feel free to make a pull request to this directory.
