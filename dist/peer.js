@@ -872,7 +872,7 @@ function Peer(id, options) {
 util.inherits(Peer, EventEmitter);
 
 Peer.prototype._getId = function(cb) {  
-  var self;
+  var self = this;
   try {
     var http = new XMLHttpRequest();
     var url = 'http://' + this._options.host + ':' + this._options.port + '/' + this._options.key + '/id';
@@ -880,7 +880,7 @@ Peer.prototype._getId = function(cb) {
     http.open('get', url, true);
     http.onreadystatechange = function() {
       if (http.readyState === 4) {
-        self.id = id;
+        self.id = http.responseText;
         self._init();
       }
     };
@@ -918,12 +918,8 @@ Peer.prototype._handleServerJSONMessage = function(message) {
   payload = message.payload;
   switch (message.type) {
     case 'OPEN':
-      if (!this.id) {
-        // If we're just now getting an ID then we may have a queue.
-        this.id = payload.id;
-      }
-      this.emit('open', this.id);
       this._processQueue();
+      this.emit('open', this.id);
       break;
     case 'ERROR':
       this.emit('error', payload.msg);
@@ -945,10 +941,10 @@ Peer.prototype._handleServerJSONMessage = function(message) {
       this.emit('connection', connection, payload.metadata);
       break;
     case 'EXPIRE':
-      connection = this.connections[payload.expired];
+      connection = this.connections[peer];
       if (connection) {
         connection.close();
-        connection.emit('Could not connect to peer ' + connection.peer);
+        connection.emit('error', 'Could not connect to peer ' + connection.peer);
       }
       break;
     case 'ANSWER':
@@ -985,7 +981,7 @@ Peer.prototype._handleServerJSONMessage = function(message) {
 Peer.prototype._processQueue = function() {
   while (this._queued.length > 0) {
     var conn = this._queued.pop();
-    conn.initialize(this.id);
+    conn.initialize(this.id, this._socket);
   }
 };
 
@@ -1060,6 +1056,7 @@ function DataConnection(id, peer, socket, options) {
   this.peer = peer;
   this.metadata = options.metadata;
 
+  this._originator = (options.sdp === undefined);
   this._socket = socket;
   this._sdp = options.sdp;
 
@@ -1070,9 +1067,12 @@ function DataConnection(id, peer, socket, options) {
 
 util.inherits(DataConnection, EventEmitter);
 
-DataConnection.prototype.initialize = function(id) {
+DataConnection.prototype.initialize = function(id, socket) {
   if (!!id) {
     this.id = id;
+  }
+  if (!!socket) {
+    this._socket = socket;
   }
   // Firefoxism: connectDataConnection ports.
   /*if (util.browserisms === 'Firefox') {
@@ -1382,9 +1382,7 @@ function Socket(host, port, key, id) {
   var token = util.randomToken();
   
   this._httpUrl = 'http://' + host + ':' + port + '/' + key + '/' + id + '/' + token;
-  this._wsUrl = 'ws://' + this._server + '/ws?key='+key+'id='+id+'token='+token;
-  
-  this._index = 1;
+  this._wsUrl = 'ws://' + host + ':' + port + '/'+key+'?key='+key+'&id='+id+'&token='+token;
 };
 
 util.inherits(Socket, EventEmitter);
@@ -1405,7 +1403,7 @@ Socket.prototype._startWebSocket = function() {
     return;
   }
 
-  this._socket = new WebSocket(wsurl);
+  this._socket = new WebSocket(this._wsUrl);
   
   this._socket.onmessage = function(event) {
     var data;
@@ -1430,20 +1428,21 @@ Socket.prototype._startWebSocket = function() {
   };
 };
 
-
 /** Start XHR streaming. */
-Socket.prototype._startXhrStream = function() {
+Socket.prototype._startXhrStream = function(n) {
   try {
     var self = this;
     this._http = new XMLHttpRequest();
-    this._http.open('post', this._httpUrl + '/id', true);
+    this._http._index = 1;
+    this._http._streamIndex = n || 0;
+    this._http.open('post', this._httpUrl + '/id?i=' + this._http._streamIndex, true);
     this._http.onreadystatechange = function() {
-      if (!!self._http.old) {
-        self._http.old.abort();
-        delete self._http.old;
+      if (this.readyState == 2 && !!this.old) {
+        this.old.abort();
+        delete this.old;
       }
-      if (self._http.readyState > 2 && self._http.status == 200 && !!self._http.responseText) {
-        self._handleStream();
+      if (this.readyState > 2 && this.status == 200 && !!this.responseText) {
+        self._handleStream(this);
       }
     };
     this._http.send(null);
@@ -1455,12 +1454,12 @@ Socket.prototype._startXhrStream = function() {
 
 
 /** Handles onreadystatechange response as a stream. */
-Socket.prototype._handleStream = function() {
+Socket.prototype._handleStream = function(http) {
   var self = this;
   // 3 and 4 are loading/done state. All others are not relevant.
-  var message = this._http.responseText.split('\n')[this._index];
+  var message = http.responseText.split('\n')[http._index];
   if (!!message) {
-    this._index += 1;
+    http._index += 1;
     try {
       message = JSON.parse(message);
     } catch(e) {
@@ -1476,13 +1475,12 @@ Socket.prototype._setHTTPTimeout = function() {
   this._timeout = setTimeout(function() {
     var old = self._http;
     if (!self._wsOpen()) {
-      self._index = 1;
-      self._startXhrStream();
+      self._startXhrStream(old._streamIndex + 1);
       self._http.old = old;        
     } else {
       old.abort();
     }
-  }, 30000);
+  }, 5000);
 };
 
 /** Exposed send for DC & Peer. */
@@ -1492,12 +1490,11 @@ Socket.prototype.send = function(data) {
   }
   
   message = JSON.stringify(data);
-  
   if (this._wsOpen()) {
     this._socket.send(message);
   } else {
     var http = new XMLHttpRequest();
-    var url = this._httpUrl + '/' + type.toLowerCase();
+    var url = this._httpUrl + '/' + data.type.toLowerCase();
     http.open('post', url, true);
     http.setRequestHeader('Content-Type', 'application/json');
     http.send(message);
