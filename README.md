@@ -49,9 +49,9 @@ Each peer simply provides a identifier with which other peers using the same API
 
 ## In the future
 
-** Tests
-** Firefox support
-** Stream API
-** Video/audio support
+* Tests
+* Firefox support
+* Stream API
+* Video/audio support
 
 
