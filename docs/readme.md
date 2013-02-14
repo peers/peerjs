@@ -9,8 +9,4 @@
 
 ###[Browser compatibility and limitations](http://peerjs.com/status)
 
-
-## Problems?
-
-Discuss PeerJS on our Google Group:
-https://groups.google.com/forum/?fromgroups#!forum/peerjs
+### [Discuss PeerJS on our Google Group](https://groups.google.com/forum/?fromgroups#!forum/peerjs)
