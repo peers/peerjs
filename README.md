@@ -44,12 +44,14 @@ Each peer simply provides a identifier with which other peers using the same API
 
 ### [PeerServer](https://github.com/peers/peerjs-server)
 
+### [Discuss PeerJS on our Google Group](https://groups.google.com/forum/?fromgroups#!forum/peerjs)
 
-## Problems?
 
-Discuss PeerJS on our Google Group:
-https://groups.google.com/forum/?fromgroups#!forum/peerjs
+## In the future
 
-Post any bugs as Github issues.
+** Tests
+** Firefox support
+** Stream API
+** Video/audio support
 
 
