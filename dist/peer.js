@@ -1482,13 +1482,14 @@ Socket.prototype._setHTTPTimeout = function() {
     } else {
       old.abort();
     }
-  }, 5000);
+  }, 25000);
 };
 
 /** Exposed send for DC & Peer. */
 Socket.prototype.send = function(data) {
   if (!data.type) {
     this.emit('error', 'Invalid message');
+    return;
   }
   
   message = JSON.stringify(data);
