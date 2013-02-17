@@ -1,4 +1,4 @@
-/*! peerjs.js build:0.0.1, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
+/*! peerjs.js build:0.1.0, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
 (function(exports){
 var binaryFeatures = {};
 binaryFeatures.useBlobBuilder = (function(){
@@ -589,7 +589,7 @@ EventEmitter.prototype.addListener = function(type, listener, scope, once) {
     // Adding the second element, need to change to array.
     this._events[type] = [this._events[type], listener];
   }
-  
+  return this;
 };
 
 EventEmitter.prototype.on = EventEmitter.prototype.addListener;
@@ -932,6 +932,7 @@ Peer.prototype._handleServerJSONMessage = function(message) {
     case 'OFFER':
       var options = {
         metadata: payload.metadata,
+        serialization: payload.serialization,
         sdp: payload.sdp,
         config: this._options.config,
       };
@@ -1045,7 +1046,8 @@ function DataConnection(id, peer, socket, options) {
 
   options = util.extend({
     config: { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] },
-    reliable: false
+    reliable: false,
+    serialization: 'binary'
   }, options);
   this._options = options;
 
@@ -1055,6 +1057,7 @@ function DataConnection(id, peer, socket, options) {
   this.id = id;
   this.peer = peer;
   this.metadata = options.metadata;
+  this.serialization = options.serialization;
 
   this._originator = (options.sdp === undefined);
   this._socket = socket;
@@ -1106,7 +1109,7 @@ DataConnection.prototype.initialize = function(id, socket) {
 
   // No-op this.
   this.initialize = function() {};
-}
+};
 
 
 DataConnection.prototype._setupOffer = function() {
@@ -1116,7 +1119,7 @@ DataConnection.prototype._setupOffer = function() {
     util.log('`negotiationneeded` triggered');
     self._makeOffer();
   };
-}
+};
 
 
 DataConnection.prototype._setupDataChannel = function() {
@@ -1220,6 +1223,7 @@ DataConnection.prototype._makeOffer = function() {
         type: 'OFFER',
         payload: {
           sdp: offer,
+          serialization: self.serialization,
           metadata: self.metadata
         },
         dst: self.peer
@@ -1271,19 +1275,25 @@ DataConnection.prototype._cleanup = function() {
 // Handles a DataChannel message.
 DataConnection.prototype._handleDataMessage = function(e) {
   var self = this;
-  if (e.data.constructor === Blob) {
-    util.blobToArrayBuffer(e.data, function(ab) {
-      var data = BinaryPack.unpack(ab);
-      self.emit('data', data);
-    });
-  } else if (e.data.constructor === ArrayBuffer) {
-      var data = BinaryPack.unpack(e.data);
-      self.emit('data', data);
-  } else if (e.data.constructor === String) {
-      var ab = util.binaryStringToArrayBuffer(e.data);
-      var data = BinaryPack.unpack(ab);
-      self.emit('data', data);
+  var data = e.data;
+  var datatype = data.constructor;
+  if (this.serialization === 'binary') {
+    if (datatype === Blob) {
+      util.blobToArrayBuffer(data, function(ab) {
+        data = BinaryPack.unpack(ab);
+        self.emit('data', data);
+      });
+      return;
+    } else if (datatype === ArrayBuffer) {
+      data = BinaryPack.unpack(data);
+    } else if (datatype === String) {
+      var ab = util.binaryStringToArrayBuffer(data);
+      data = BinaryPack.unpack(ab);
+    }
+  } else if (this.serialization === 'json') {
+    data = JSON.parse(data);
   }
+  this.emit('data', data);
 };
 
 
@@ -1309,13 +1319,20 @@ DataConnection.prototype.close = function() {
 /** Allows user to send data. */
 DataConnection.prototype.send = function(data) {
   var self = this;
-  var blob = BinaryPack.pack(data);
-  if (util.browserisms === 'Webkit') {
-    util.blobToBinaryString(blob, function(str){
-      self._dc.send(str);
-    });
+  if (this.serialization === 'none') {
+    this._dc.send(data);
+  } else if (this.serialization === 'json') {
+    this._dc.send(JSON.stringify(data));
   } else {
-    this._dc.send(blob);
+    var blob = BinaryPack.pack(data);
+    // DataChannel currently only supports strings.
+    if (util.browserisms === 'Webkit') {
+      util.blobToBinaryString(blob, function(str){
+        self._dc.send(str);
+      });
+    } else {
+      this._dc.send(blob);
+    }
   }
 };
 
