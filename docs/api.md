@@ -37,9 +37,10 @@ If no id was specified in the constructor, this value will be `undefined` util t
 
 A hash of all current connections with the current peer. Keys are ids and values are instances of `DataConnection`.
 
-### peer.connect(id, [meta])
+### peer.connect(id, [serialization], [meta])
 
-Connects to the remote peer specified by `id`.
+Connects to the remote peer specified by `id`. Optionally takes a serialization
+format, which can be `json`, `binary`, or `none`. Defaults to `binary`.
 
 Returns a `DataConnection` object.
 
@@ -106,6 +107,11 @@ Whether the connection is open (ready for read and write).
 ### connection.metadata
 
 The metadata passed in when the connection was created with `peer.connect(...)`.
+
+### connection.serialization
+
+The serialization format of the connection. Can be `binary`, `json`, or `none`
+for no serialization. Default serialization format is `binary`.
 
 ### connection.send(data)
 
