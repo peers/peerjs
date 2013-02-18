@@ -118,7 +118,7 @@ for no serialization. Default serialization format is `binary`.
 
 Accepts data of any JSON type or binary type.
 
-To configure which serialization format to use, specify `binary`, `json`, or `none` as the `serialization` property of the `options` object in `peer.connect`.
+To configure which serialization format to use, specify `binary`, `json`, or `none` as the `serialization` property of the `options` object in `peer.connect(...)`.
 
 Data is serialized using BinaryPack (`binary`) by default and then sent to the remote peer.
 
