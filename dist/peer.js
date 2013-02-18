@@ -63,8 +63,8 @@ exports.BinaryPack = {
     var unpacker = new Unpacker(data);
     return unpacker.unpack();
   },
-  pack: function(data){
-    var packer = new Packer();
+  pack: function(data, utf8){
+    var packer = new Packer(utf8);
     var buffer = packer.pack(data);
     return buffer;
   }
@@ -308,7 +308,8 @@ Unpacker.prototype.read = function(length){
   }
 }
   
-function Packer (){
+function Packer(utf8){
+  this.utf8 = utf8;
   this.bufferBuilder = new BufferBuilder();
 }
 
@@ -386,7 +387,13 @@ Packer.prototype.pack_bin = function(blob){
 }
 
 Packer.prototype.pack_string = function(str){
-  var length = str.length;
+  var length;
+  if (this.utf8) {
+    var blob = new Blob([str]);
+    length = blob.size;
+  } else {
+    length = str.length;
+  }
   if (length <= 0x0f){
     this.pack_uint8(0xb0 + length);
   } else if (length <= 0xffff){
@@ -1276,7 +1283,7 @@ DataConnection.prototype._handleDataMessage = function(e) {
   var self = this;
   var data = e.data;
   var datatype = data.constructor;
-  if (this.serialization === 'binary') {
+  if (this.serialization === 'binary' || this.serialization === 'binary-utf8') {
     if (datatype === Blob) {
       util.blobToArrayBuffer(data, function(ab) {
         data = BinaryPack.unpack(ab);
@@ -1323,7 +1330,8 @@ DataConnection.prototype.send = function(data) {
   } else if (this.serialization === 'json') {
     this._dc.send(JSON.stringify(data));
   } else {
-    var blob = BinaryPack.pack(data);
+    var utf8 = (this.serialization === 'binary-utf8');
+    var blob = BinaryPack.pack(data, utf8);
     // DataChannel currently only supports strings.
     if (util.browserisms === 'Webkit') {
       util.blobToBinaryString(blob, function(str){
