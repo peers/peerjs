@@ -46,7 +46,7 @@ Returns a `DataConnection` object.
 * `id` String. The id of the remote peer to connect to.
 * `options` Object.
   * `metadata` Optional metadata to pass to the remote peer. Can be any serializable type.
-  * `serialization` String, which can be `binary`, `json`, or `none`. This will be the serialization format of all data sent over the P2P DataConnection. Defaults to `binary`.
+  * `serialization` String, which can be `binary`, `binary-utf8`, `json`, or `none`. This will be the serialization format of all data sent over the P2P DataConnection. Defaults to `binary`.
 
 Before writing to / data will be emitted from the `DataConnection` object that is returned, the `open` event must fire. Also the `error` event should be checked in case a connection cannot be made.
 
@@ -111,14 +111,16 @@ The metadata passed in when the connection was created with `peer.connect(...)`.
 
 ### connection.serialization
 
-The serialization format of the connection. Can be `binary`, `json`, or `none`
+The serialization format of the connection. Can be `binary`, `binary-utf8`, `json`, or `none`
 for no serialization. Default serialization format is `binary`.
+
+Note: `binary-utf8` will take a performance hit because of the way utf8 strings are packed into binary.
 
 ### connection.send(data)
 
 Accepts data of any JSON type or binary type.
 
-To configure which serialization format to use, specify `binary`, `json`, or `none` as the `serialization` property of the `options` object in `peer.connect(...)`.
+To configure which serialization format to use, specify `binary`, `binary-utf8`, `json`, or `none` as the `serialization` property of the `options` object in `peer.connect(...)`.
 
 Data is serialized using BinaryPack (`binary`) by default and then sent to the remote peer.
 
