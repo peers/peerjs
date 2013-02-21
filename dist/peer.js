@@ -854,12 +854,17 @@ function Peer(id, options) {
   util.debug = options.debug;
 
   // Ensure alphanumeric_-
+  var self = this;
   if (id && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(id)) {
-    this._abort('invalid-id', 'ID "' + id + '" is invalid');
+    util.setZeroTimeout(function() {
+      self._abort('invalid-id', 'ID "' + id + '" is invalid');
+    });
     return
   }
   if (options.key && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.key)) {
-    this._abort('invalid-key', 'API KEY "' + options.key + '" is invalid');
+    util.setZeroTimeout(function() {
+      self._abort('invalid-key', 'API KEY "' + options.key + '" is invalid');
+    });
     return
   }
 
@@ -995,21 +1000,22 @@ Peer.prototype._processQueue = function() {
 Peer.prototype._abort = function(type, message) {
   var err = new Error(message);
   err.type = type;
-  this.emit('error', err);
   this.destroy();
+  this.emit('error', err);
 };
 
 Peer.prototype._cleanup = function() {
   var self = this;
-  var peers = Object.keys(this.connections);
-  for (var i = 0, ii = peers.length; i < ii; i++) {
-    this.connections[peers[i]].close();
+  if (!!this.connections) {
+    var peers = Object.keys(this.connections);
+    for (var i = 0, ii = peers.length; i < ii; i++) {
+      this.connections[peers[i]].close();
+    }
+    util.setZeroTimeout(function(){
+      self._socket.close();
+    });
   }
-  util.setZeroTimeout(function(){
-    self._socket.close();
-  });
   this.emit('close');
-  this.destroyed = true;
 };
 
 /** Listeners for DataConnection events. */
@@ -1029,6 +1035,11 @@ Peer.prototype._attachConnectionListeners = function(connection) {
 // TODO: pause XHR streaming when not in use and start again when this is
 // called.
 Peer.prototype.connect = function(peer, options) {
+  if (this.destroyed) {
+    this._abort('peer-destroyed', 'This Peer has been destroyed and is no longer able to make connections.');
+    return;
+  }
+
   options = util.extend({
     config: this._options.config
   }, options);
@@ -1044,7 +1055,10 @@ Peer.prototype.connect = function(peer, options) {
 };
 
 Peer.prototype.destroy = function() {
-  this._cleanup();
+  if (!this.destroyed) {
+    this._cleanup();
+    this.destroyed = true;
+  }
 };
 
 
