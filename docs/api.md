@@ -93,7 +93,9 @@ The `error` object also has a `type` parameter that may be helpful in responding
 
 `function () { }`
 
-Emitted when the Peer object has closed it's connection with PeerServer so no more remote peer connections can be made or received..
+Emitted when the Peer object has closed it's connection with PeerServer so no more remote peer connections can be made or received.
+
+To be extra certain that Peer objects clean up cleanly (and because it takes the WS server and DataChannel some time to realize that a Peer has disconnected), it is best to call `destroy()` on a Peer when it is no longer needed.
 
 ## Class: peerjs.DataConnection
 
