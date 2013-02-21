@@ -819,17 +819,19 @@ var getUserMedia = null;
 var attachMediaStream = null;
 
 if (navigator.mozGetUserMedia) {
-  util.browserisms = 'Firefox'
+  util.browserisms = 'Firefox';
 
-  RTCPeerConnection = mozRTCPeerConnection;
+  RTCSessionDescription = window.mozRTCSessionDescription;
+  RTCPeerConnection = window.mozRTCPeerConnection;
   getUserMedia = navigator.mozGetUserMedia.bind(navigator);
 } else if (navigator.webkitGetUserMedia) {
-  util.browserisms = 'Webkit'
+  util.browserisms = 'Webkit';
 
-  RTCPeerConnection = webkitRTCPeerConnection;
+  RTCPeerConnection = window.webkitRTCPeerConnection;
   getUserMedia = navigator.webkitGetUserMedia.bind(navigator);
 }
 
+exports.RTCSessionDescription = RTCSessionDescription;
 exports.RTCPeerConnection = RTCPeerConnection;
 exports.getUserMedia = getUserMedia;
 /**
