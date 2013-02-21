@@ -86,7 +86,7 @@ The `error` object also has a `type` parameter that may be helpful in responding
   * `server-error`: Unable to reach the server.
   * `socket-error`: An error from the underlying socket.
   * `socket-closed`: The underlying socket closed unexpectedly.
-(The Peer object is destroyed after one of the errors above are emitted.)
+* (The Peer object is destroyed after one of the errors above are emitted.)
 * `peer-destroyed`: A Peer that has been destroyed is being used to try to connect.
 
 ### Event: 'close'
