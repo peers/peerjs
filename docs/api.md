@@ -23,7 +23,7 @@ The Peer object is used to connect to other Peer clients and also to receive con
 
 The first argument is the id that other peers will use to connect to this peer, thus it must be unique for the given `key` (if you're using PeerServer cloud) or server.
 
-In the options, either a PeerServer Cloud `key` must be provided or `host` and `port` for your own PeerServer. Note that the server is only for brokering connections and does not proxy data between peers.
+In the options, either a PeerServer Cloud `key` must be provided or `host` and `port` for your own PeerServer. **Note that the server is only for brokering connections and does not proxy data between peers.**
 
 The `config` object is passed straight into instances of `RTCPeerConnection`. For compatibility with symmetric NATs, you can provide your own TURN server. By default the STUN server provided by Google is used.
 
@@ -60,7 +60,7 @@ Close the server and terminate all connections.
 
 When a new connection is established from another peer to this peer, the `DataConnection` object is emitted with this event. The `meta` argument contains whatever metadata values passed into `peer.connection(...)` by the remote peer.
 
-Note that the `open` event must fire on the `DataConnection` before it is ready to read/write.
+**Note:** the `open` event must fire on the `DataConnection` before it is ready to read/write.
 
 ### Event: 'open'
 
@@ -68,7 +68,7 @@ Note that the `open` event must fire on the `DataConnection` before it is ready 
 
 Fired when the PeerServer connection is succesfully, fully, open.
 This event does not need to fire before creating or receiving connections.
-You should not wait for open before connecting to other peers or expecting to receive connections if connection speed is important.
+**You should not wait for open before connecting to other peers or expecting to receive connections if connection speed is important.**
 
 `id` is the id of this `Peer` object, either provided in the constructor, or generated automatically by the PeerServer.
 
@@ -76,10 +76,18 @@ You should not wait for open before connecting to other peers or expecting to re
 
 `function (error) { }`
 
-Emitted when an unexpected event occurs. May or may not be fatal. Errors from the underlying socket are forwarded here.
+Emitted when an unexpected event occurs. Errors on the Peer are **always fatal**. Errors from the underlying socket are forwarded here.
 
-This is the event emitted if you attempt to connect with an ID that is already being used.
+The `error` object also has a `type` parameter that may be helpful in responding to client errors properly:
+* `invalid-id`: The ID passed into the Peer constructor contains illegal characters.
+* `invalid-key`: The API key passed into the Peer constructor contains illegal characters or is not in the system (cloud server only).
+* `unavailable-id`: The ID passed into the Peer constructor is already taken.
+* Errors types that shouldn't regularly appear:
+  * `server-error`: Unable to reach the server.
+  * `socket-error`: An error from the underlying socket.
+  * `socket-closed`: The underlying socket closed unexpectedly.
 
+The Peer object is destroyed after one of the errors above are emitted.
 
 ### Event: 'close'
 
@@ -114,7 +122,7 @@ The metadata passed in when the connection was created with `peer.connect(...)`.
 The serialization format of the connection. Can be `binary`, `binary-utf8`, `json`, or `none`
 for no serialization. Default serialization format is `binary`.
 
-Note: `binary-utf8` will take a performance hit because of the way utf8 strings are packed into binary.
+**Note:** `binary-utf8` will take a performance hit because of the way utf8 strings are packed into binary.
 
 ### connection.send(data)
 
@@ -147,6 +155,8 @@ Emitted when the connection is established and ready for writing. `data` from th
 `function (error) { }`
 
 If the client emits an error, this event is emitted (errors from the underlying `RTCPeerConnection` and `DataChannel` are forwarded here).
+
+`error` is an `Error` object.
 
 ### Event: 'close'
 
