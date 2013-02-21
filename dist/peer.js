@@ -855,10 +855,12 @@ function Peer(id, options) {
 
   // Ensure alphanumeric_-
   if (id && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(id)) {
-    throw new Error('Peer ID can only contain alphanumerics, "_", and "-".');
+    this._abort('invalid-id', 'ID "' + id + '" is invalid');
+    return
   }
   if (options.key && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.key)) {
-    throw new Error('API key can only contain alphanumerics, "_", and "-".');
+    this._abort('invalid-key', 'API KEY "' + options.key + '" is invalid');
+    return
   }
 
   // Connections for this peer.
@@ -893,7 +895,7 @@ Peer.prototype._getId = function(cb) {
     };
     http.send(null);
   } catch(e) {
-    this.emit('error', 'Could not get an ID from the server');
+    this._abort('server-error', 'Could not get an ID from the server');
   }
 };
 
@@ -906,14 +908,12 @@ Peer.prototype._init = function() {
   });
   this._socket.on('error', function(error) {
     util.log(error);
-    self.emit('error', error);
-    self.destroy();
+    self._abort('socket-error', error);
   });
   this._socket.on('close', function() {
     var msg = 'Underlying socket has closed';
     util.log('error', msg);
-    self.emit('error', msg);
-    self.destroy();
+    self._abort('socket-closed', msg);
   });
   this._socket.start();
 }
@@ -929,12 +929,11 @@ Peer.prototype._handleServerJSONMessage = function(message) {
       this.emit('open', this.id);
       break;
     case 'ERROR':
-      this.emit('error', payload.msg);
       util.log(payload.msg);
+      this._abort('server-error', payload.msg);
       break;
     case 'ID-TAKEN':
-      this.emit('error', 'ID `'+this.id+'` is taken');
-      this.destroy();
+      this._abort('unavailable-id', 'ID `'+this.id+'` is taken');
       break;
     case 'OFFER':
       var options = {
@@ -952,7 +951,7 @@ Peer.prototype._handleServerJSONMessage = function(message) {
       connection = this.connections[peer];
       if (connection) {
         connection.close();
-        connection.emit('error', 'Could not connect to peer ' + connection.peer);
+        connection.emit('error', new Error('Could not connect to peer ' + connection.peer));
       }
       break;
     case 'ANSWER':
@@ -971,8 +970,7 @@ Peer.prototype._handleServerJSONMessage = function(message) {
       }
       break;
     case 'INVALID-KEY':
-      this.emit('error', 'API KEY "' + this._key + '" is invalid');
-      this.destroy();
+      this._abort('invalid-key', 'API KEY "' + this._key + '" is invalid');
       break;
     case 'PORT':
       //if (util.browserisms === 'Firefox') {
@@ -993,6 +991,13 @@ Peer.prototype._processQueue = function() {
   }
 };
 
+/** Destroys the Peer and emits an error message. */
+Peer.prototype._abort = function(type, message) {
+  var err = new Error(message);
+  err.type = type;
+  this.emit('error', err);
+  this.destroy();
+};
 
 Peer.prototype._cleanup = function() {
   var self = this;
@@ -1004,6 +1009,7 @@ Peer.prototype._cleanup = function() {
     self._socket.close();
   });
   this.emit('close');
+  this.destroyed = true;
 };
 
 /** Listeners for DataConnection events. */
@@ -1235,7 +1241,7 @@ DataConnection.prototype._makeOffer = function() {
         dst: self.peer
       });
     }, function(err) {
-      self.emit('error', 'Failed to setLocalDescription');
+      self.emit('error', err);
       util.log('Failed to setLocalDescription, ', err);
     });
   });
@@ -1256,11 +1262,11 @@ DataConnection.prototype._makeAnswer = function() {
         dst: self.peer
       });
     }, function(err) {
-      self.emit('error', 'Failed to setLocalDescription');
+      self.emit('error', err);
       util.log('Failed to setLocalDescription, ', err)
     });
   }, function(err) {
-    self.emit('error', 'Failed to create answer');
+    self.emit('error', err);
     util.log('Failed to create answer, ', err)
   });
 };
@@ -1365,7 +1371,7 @@ DataConnection.prototype.handleSDP = function(sdp, type) {
       self._makeAnswer();
     }
   }, function(err) {
-    self.emit('error', 'Failed to setRemoteDescription');
+    self.emit('error', err);
     util.log('Failed to setRemoteDescription, ', err);
   });
 };
