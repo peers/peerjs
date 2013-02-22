@@ -47,28 +47,49 @@ describe('util', function() {
     testRandom(util.randomPort);
   })
 
-  it('log', function() {
-    var called = false
-      , consolelog = console.log;
+  // FF no like
+  it('log', function(done) {
+    var consolelog = console.log;
     // default is false
     expect(util.debug).to.be.equal(false);
     util.debug = true;
     console.log = function() {
       var arg = Array.prototype.slice.call(arguments);
-      called = true;
       expect(arg.join(' ')).to.be.equal('PeerJS:  hi');
+      done();
     }
     util.log('hi');
-    expect(called).to.be.equal(true);
     // reset
     console.log = consolelog;
     util.debug = false;
   })
 
   it('setZeroTimeout')
-  it('blobToArrayBuffer')
-  it('blobToBinaryString')
-  it('binaryStringToArrayBuffer')
+
+  it('blobToArrayBuffer', function(done) {
+    var blob = new Blob(['hi']);
+    util.blobToArrayBuffer(blob, function(result) {
+      expect(result.byteLength).to.be.equal(2);
+      expect(result.slice).to.be.a('function');
+      expect(result instanceof ArrayBuffer).to.be.equal(true);
+      done();
+    });
+  })
+
+  it('blobToBinaryString', function(done) {
+    var blob = new Blob(['hi']);
+    util.blobToBinaryString(blob, function(result) {
+      expect(result).to.equal('hi');
+      done();
+    });
+  })
+
+  it('binaryStringToArrayBuffer', function() {
+    var ba = util.binaryStringToArrayBuffer('\0\0');
+    expect(ba.byteLength).to.be.equal(2);
+    expect(ba.slice).to.be.a('function');
+    expect(ba instanceof ArrayBuffer).to.be.equal(true);
+  })
 
   it('randomToken', function() {
     testRandom(util.randomToken);
