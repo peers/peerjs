@@ -1,7 +1,23 @@
 describe('util', function() {
 
-  it('inherits', function() {
+  var testRandom = function(fn) {
+    var i = 0
+      , generated = {};
+    while(i < 25) {
+      var p = fn();
+      if (generated[p]) throw new Error('not so random')
+      generated[p] = 1;
+      i++;
+    }
+  }
 
+  it('inherits', function() {
+    function ctor() {}
+    function superCtor() {}
+    superCtor.prototype.test = function() { return 5; }
+    util.inherits(ctor, superCtor);
+    expect(new ctor()).to.be.a(superCtor);
+    expect(new ctor().test()).to.be.equal(5);
   })
 
   /*
@@ -28,21 +44,34 @@ describe('util', function() {
   })
 
   it('randomPort', function() {
-    var i = 0
-      , ports = {};
-    while(i < 25) {
-      var p = util.randomPort();
-      if (ports[p]) throw new Error('randomPort not so random')
-      ports[p] = 1;
-      i++;
-    }
+    testRandom(util.randomPort);
   })
 
-  it('log')
+  it('log', function() {
+    var called = false
+      , consolelog = console.log;
+    // default is false
+    expect(util.debug).to.be.equal(false);
+    util.debug = true;
+    console.log = function() {
+      var arg = Array.prototype.slice.call(arguments);
+      called = true;
+      expect(arg.join(' ')).to.be.equal('PeerJS:  hi');
+    }
+    util.log('hi');
+    expect(called).to.be.equal(true);
+    // reset
+    console.log = consolelog;
+    util.debug = false;
+  })
+
   it('setZeroTimeout')
   it('blobToArrayBuffer')
   it('blobToBinaryString')
   it('binaryStringToArrayBuffer')
-  it('randomToken')
+
+  it('randomToken', function() {
+    testRandom(util.randomToken);
+  })
 
 });
