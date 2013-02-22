@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "PeerJS client library",
   "devDependencies": {
+    "uglify-js": "*",
     "mocha": "*",
     "expect.js": "*"
   }
