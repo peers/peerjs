@@ -63,8 +63,8 @@ exports.BinaryPack = {
     var unpacker = new Unpacker(data);
     return unpacker.unpack();
   },
-  pack: function(data, utf8){
-    var packer = new Packer(utf8);
+  pack: function(data){
+    var packer = new Packer();
     var buffer = packer.pack(data);
     return buffer;
   }
@@ -308,8 +308,7 @@ Unpacker.prototype.read = function(length){
   }
 }
   
-function Packer(utf8){
-  this.utf8 = utf8;
+function Packer (){
   this.bufferBuilder = new BufferBuilder();
 }
 
@@ -387,13 +386,7 @@ Packer.prototype.pack_bin = function(blob){
 }
 
 Packer.prototype.pack_string = function(str){
-  var length;
-  if (this.utf8) {
-    var blob = new Blob([str]);
-    length = blob.size;
-  } else {
-    length = str.length;
-  }
+  var length = str.length;
   if (length <= 0x0f){
     this.pack_uint8(0xb0 + length);
   } else if (length <= 0xffff){
@@ -596,7 +589,7 @@ EventEmitter.prototype.addListener = function(type, listener, scope, once) {
     // Adding the second element, need to change to array.
     this._events[type] = [this._events[type], listener];
   }
-  return this;
+  
 };
 
 EventEmitter.prototype.on = EventEmitter.prototype.addListener;
@@ -838,11 +831,11 @@ exports.getUserMedia = getUserMedia;
  * A peer who can initiate connections with other peers.
  */
 function Peer(id, options) {
-  if (id.constructor == Object) {
+  if (id && id.constructor == Object) {
     options = id;
     id = undefined;
   }
-  if (!(this instanceof Peer)) return new Peer(options);
+  if (!(this instanceof Peer)) return new Peer(id, options);
   EventEmitter.call(this);
 
   options = util.extend({
