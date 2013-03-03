@@ -1224,7 +1224,7 @@ Peer.prototype._init = function() {
 Peer.prototype._handleServerJSONMessage = function(message) {
   var peer = message.src;
   var connection = this.connections[peer];
-  payload = message.payload;
+  var payload = message.payload;
   switch (message.type) {
     case 'OPEN':
       this._processQueue();
@@ -1454,7 +1454,7 @@ DataConnection.prototype._setupDataChannel = function() {
     this._dc = this._pc.createDataChannel(this.peer, { reliable: false });
     // Experimental reliable wrapper.
     if (this._options.reliable) {
-      this._reliable = new Reliable(this._dc);
+      this._reliable = new Reliable(this._dc, util.debug);
     }
     this._configureDataChannel();
   } else {
@@ -1464,7 +1464,7 @@ DataConnection.prototype._setupDataChannel = function() {
       self._dc = evt.channel;
       // Experimental reliable wrapper.
       if (self._options.reliable) {
-        self._reliable = new Reliable(self._dc);
+        self._reliable = new Reliable(self._dc, util.debug);
       }
       self._configureDataChannel();
     };
@@ -1856,7 +1856,7 @@ Socket.prototype.send = function(data) {
     return;
   }
   
-  message = JSON.stringify(data);
+  var message = JSON.stringify(data);
   if (this._wsOpen()) {
     this._socket.send(message);
   } else {
