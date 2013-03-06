@@ -1147,7 +1147,6 @@ function Peer(id, options) {
   // Detect relative URL host.
   if (options.host === '/') {
     options.host = window.location.hostname;
-    console.log('wat')
   }
 
   options = util.extend({
