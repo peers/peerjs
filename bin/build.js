@@ -42,6 +42,7 @@ var base = [
   , '../deps/js-binarypack/lib/binarypack.js'
   , '../deps/EventEmitter/EventEmitter.js'
   , 'util.js'
+  , '../deps/reliable/lib/reliable.js'
   , 'adapter.js' 
   , 'peer.js'
   , 'connection.js'
