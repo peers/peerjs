@@ -6,7 +6,9 @@
 <meta http-equiv="Content-Language" content="en-us"> 
 
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> 
-<script type="text/javascript" src="http://cdn.peerjs.com/0/peer.js"></script>
+<!--script type="text/javascript"
+src="http://cdn.peerjs.com/0/peer.js"></script-->
+<script type="text/javascript" src="../dist/peer.js"></script>
 <script>
   // This is a very simple code example. See chat.html for a more involved
   // example.
@@ -17,6 +19,8 @@
     // Create a new Peer with our demo API key, with debug set to true so we can
     // see what's going on.
     peer1 = new Peer({ key: 'lwjd5qra8257b9', debug: true });
+    // Create another Peer with our demo API key to connect to.
+    peer2 = new Peer({ key: 'lwjd5qra8257b9', debug: true });
 
     // The `open` event signifies that the Peer is ready to connect with other
     // Peers and, if we didn't provide the Peer with an ID, that an ID has been
@@ -24,15 +28,11 @@
     peer1.on('open', function(id){
       peerId1 = id;
 
-      // Create another Peer with our demo API key to connect to.
-      peer2 = new Peer({ key: 'lwjd5qra8257b9', debug: true });
-
-      // Connect to the first peer.
-      var connection = peer2.connect(peerId1);
-      connection.on('data', function(data) {
+      var c = peer2.connect(peerId1);
+      c.on('data', function(data) {
         // When we receive 'Hello', send ' world'.
         $('body').append(data);
-        connection.send(' world');
+        c.send(' world');
       });
     });
 
