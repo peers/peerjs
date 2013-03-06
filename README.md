@@ -46,6 +46,8 @@ Each peer simply provides a identifier with which other peers using the same API
 
 ### [Discuss PeerJS on our Google Group](https://groups.google.com/forum/?fromgroups#!forum/peerjs)
 
+### [Changelog](https://github.com/peers/peerjs/blob/master/changelog.md)
+
 
 ## In the future
 
