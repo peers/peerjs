@@ -1,53 +1,55 @@
 <!DOCTYPE HTML> 
 <html lang="en"> 
 <head>
-<title>PeerJS chat demo</title>
+<title>PeerJS Simple Chat demo</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
 <meta http-equiv="Content-Language" content="en-us"> 
 
-<style>
-  
-  body {
-    font-family: sans-serif;
-  }
-
-  #messages > div { margin-bottom: 8px; }
-
-</style>
-
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> 
-<script type="text/javascript" src="http://cdn.peerjs.com/0/peer.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script> 
+<script src="http://cdn.peerjs.com/0/peer.js"></script>
 <script>
   
-  var conn;
-  // Connect to PeerJS, have server assign an ID instead of providing one
+  // Connect to PeerJS server
   var peer = new Peer({key: 'lwjd5qra8257b9', debug: true});
+  var conn;
+
+  // Receive ID from the server
   peer.on('open', function(id){
     $('#pid').text(id);
   });  
+
+  // Initialize a new chat
+  var connect = function(connection) {
+    // Close existing connection
+    if( conn ) conn.close();
+    conn = connection;
+    $('#chat').show();
+    $('#messages').empty().append('<h3>Now chatting with ' + connection.peer + '</h3>');
+    // Draw an incoming message
+    connection.on('data', function(data){
+      $('#messages').append('<div><strong>' + connection.peer + ':</strong><br>' + data + '</div>');
+    });
+    // Draw a leaving message
+    connection.on('close', function(err){
+      $('#messages').append('<div><em>' + connection.peer + ' has left the chat.</em></div>');
+    });
+  };
+
   // Await connections from others
   peer.on('connection', connect);
-  function connect(c) {
-    $('#chat_area').show();
-    conn = c;
-    $('#messages').empty().append('<h2>Now chatting with ' + conn.peer +'</h2>');
-    conn.on('data', function(data){
-      $('#messages').append('<div><strong>' + conn.peer + ':</strong><br>' + data +'</div>');
-    });
-    conn.on('close', function(err){ alert(conn.peer + ' has left the chat.') });
-  }
-  $(document).ready(function() {
+
+  $(function() {
     // Conect to a peer
-    $('#connect').submit(function(e){
+    $('#connect').on('submit', function(e){
       e.preventDefault();
-      var c = peer.connect($('#rid').val());
-      c.on('open', function(){
-        connect(c);
+      var connection = peer.connect($('#rid').val());
+      connection.on('open', function(){console.log('connection open',arguments);
+        connect(connection);
       });
-      c.on('error', function(err){ alert(err) });  
+      connection.on('error', function(err){ alert(err) });  
     });
     // Send a chat message
-    $('#send').submit(function(e){
+    $('#send').on('submit', function(e){
       e.preventDefault();
       var msg = $('#text').val();
       conn.send(msg);
@@ -70,7 +72,7 @@
     <input type="submit" value="Connect">
   </form>
   
-  <div id="chat_area" style="display: none;">
+  <div id="chat" style="display:none;">
     <div id="messages"></div>
     <form id="send">
       <input type="text" id="text" placeholder="Enter message">
