@@ -1,4 +1,4 @@
-/*! peerjs.js build:0.1.0, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
+/*! peerjs.js build:0.1.7, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
 (function(exports){
 var binaryFeatures = {};
 binaryFeatures.useBlobBuilder = (function(){
@@ -1536,6 +1536,7 @@ DataConnection.prototype._configureDataChannel = function() {
     util.log('Data channel connection success');
     self.open = true;
     self.emit('open');
+    self._pc.onicecandidate = null;
   };
   if (this._reliable) {
     this._reliable.onmessage = function(msg) {
