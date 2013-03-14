@@ -1833,18 +1833,44 @@ Socket.prototype._startXhrStream = function(n) {
 
 /** Handles onreadystatechange response as a stream. */
 Socket.prototype._handleStream = function(http) {
-  var self = this;
   // 3 and 4 are loading/done state. All others are not relevant.
-  var message = http.responseText.split('\n')[http._index];
+  var messages = http.responseText.split('\n');
+
+  // Check to see if anything needs to be processed on buffer.
+  if (!!http._buffer && http._buffer.length > 0) {
+    while (http._buffer.length > 0) {
+      var index = http._buffer.shift();
+      var bufferedMessage = messages[index];
+      try {
+        bufferedMessage = JSON.parse(bufferedMessage);
+      } catch(e) {
+        http._buffer.shift(index);
+        break;
+      }
+      this.emit('message', bufferedMessage);
+    }
+  }
+
+  var message = messages[http._index];
   if (!!message) {
     http._index += 1;
-    try {
-      message = JSON.parse(message);
-    } catch(e) {
-      util.log('Invalid server message', message);
-      return;
+    // Buffering--this message is incomplete and we'll get to it next time.
+    // This checks if the httpResponse ended in a `\n`, in which case the last
+    // element of messages should be the empty string.
+    if (http._index === messages.length) {
+      if (!http._buffer) {
+        http._buffer = [];
+      }
+      http._buffer.push(http._index - 1);
+    } else {
+      try {
+        message = JSON.parse(message);
+      } catch(e) {
+        util.log('Invalid server message', message);
+        return;
+      }
+      this.emit('message', message);
     }
-    self.emit('message', message);
   }
 };
 
