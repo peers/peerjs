@@ -1837,7 +1837,7 @@ Socket.prototype._handleStream = function(http) {
   var messages = http.responseText.split('\n');
 
   // Check to see if anything needs to be processed on buffer.
-  if (!!http._buffer && http._buffer.length > 0) {
+  if (!!http._buffer) {
     while (http._buffer.length > 0) {
       var index = http._buffer.shift();
       var bufferedMessage = messages[index];
