@@ -1376,7 +1376,7 @@ exports.Peer = Peer;
  * A DataChannel|PeerConnection between two Peers.
  */
 function DataConnection(id, peer, socket, options) {
-  if (!(this instanceof DataConnection)) return new DataConnection(options);
+  if (!(this instanceof DataConnection)) return new DataConnection(id, peer, socket, options);
   EventEmitter.call(this);
 
   options = util.extend({
@@ -1751,7 +1751,7 @@ DataConnection.prototype.handlePort = function(message) {
  * possible connection for peers.
  */
 function Socket(host, port, key, id) {
-  if (!(this instanceof Socket)) return new Socket(server, id, key);
+  if (!(this instanceof Socket)) return new Socket(host, port, key, id);
   EventEmitter.call(this);
   
   this._id = id;
