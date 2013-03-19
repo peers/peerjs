@@ -1014,7 +1014,7 @@ Reliable.prototype._handleMessage = function(msg) {
 
       var n = msg[2];
       var chunk = msg[3];
-      data.chunks[n] = chunk;
+      data.chunks[n] = new Uint8Array(chunk);
 
       // If we get the chunk we're looking for, ACK for next missing.
       // Otherwise, ACK the same N again.
