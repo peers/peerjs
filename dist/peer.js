@@ -1112,6 +1112,16 @@ Reliable.prototype._complete = function(id) {
   delete this._incoming[id];
 };
 
+// Ups bandwidth limit on SDP. Meant to be called during offer/answer.
+Reliable.higherBandwidthSDP = function(sdp) {
+  // AS stands for Application-Specific Maximum.
+  // Bandwidth number is in kilobits / sec.
+  // See RFC for more info: http://www.ietf.org/rfc/rfc2327.txt
+  var parts = sdp.split('b=AS:30');
+  var replace = 'b=AS:102400'; // 100 Mbps
+  return parts[0] + replace + parts[1];
+};
+
 exports.Reliable = Reliable;
 var RTCPeerConnection = null;
 var getUserMedia = null;
@@ -1568,6 +1578,10 @@ DataConnection.prototype._makeOffer = function() {
   var self = this;
   this._pc.createOffer(function(offer) {
     util.log('Created offer');
+    // Reliable hack.
+    if (self._options.reliable) {
+      offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
+    }
     self._pc.setLocalDescription(offer, function() {
       util.log('Set localDescription to offer');
       self._socket.send({
@@ -1592,6 +1606,10 @@ DataConnection.prototype._makeAnswer = function() {
   var self = this;
   this._pc.createAnswer(function(answer) {
     util.log('Created answer');
+    // Reliable hack.
+    if (self._options.reliable) {
+      answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
+    }
     self._pc.setLocalDescription(answer, function() {
       util.log('Set localDescription to answer');
       self._socket.send({
