@@ -45,7 +45,7 @@ var base = [
   , '../deps/reliable/lib/reliable.js'
   , 'adapter.js' 
   , 'peer.js'
-  , 'connection.js'
+  , 'dataconnection.js'
   , 'connectionmanager.js'
   , 'socket.js'
 
