@@ -1316,9 +1316,12 @@ Peer.prototype._processQueue = function() {
 Peer.prototype._attachManagerListeners = function(manager) {
   var self = this;
   manager.on('connection', function(connection) {
+    self.connections[connection.peer][connection.label] = connection;
     self.emit('connection', connection);
   });
-
+  manager.on('error', function(err) {
+    self.emit('error', err);
+  });
 };
 
 /** Destroys the Peer and emits an error message. */
@@ -1369,7 +1372,10 @@ Peer.prototype.connect = function(peer, options) {
   }
 
   var connection = manager.connect(options.label);
-  this.connections[peer][options.label] = connection;
+  console.log(peer, options.label);
+  if (!!connection) {
+    this.connections[peer][options.label] = connection;
+  }
 
   if (!this.id) {
     this._queued.push(manager);
@@ -1741,6 +1747,12 @@ ConnectionManager.prototype.close = function() {
 
 /** Create and returns a DataConnection with the peer with the given label. */
 ConnectionManager.prototype.connect = function(label, options) {
+  // Check if label is taken.
+  if (!!this.connections[label]) {
+    this.emit('error', new Error('Label name taken for peer: ' + this.peer));
+    return;
+  }
+
   options = util.extend({
     reliable: false,
     serialization: 'binary',
