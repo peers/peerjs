@@ -1254,22 +1254,20 @@ Peer.prototype._handleServerJSONMessage = function(message) {
       break;
     case 'OFFER':
       var options = {
-        metadata: payload.metadata,
-        serialization: payload.serialization,
         sdp: payload.sdp,
-        reliable: payload.reliable,
+        labels: payload.labels,
         config: this._options.config
       };
 
       var manager = this.managers[peer];
-      if (!!manager) {
+      if (!manager) {
         manager = new ConnectionManager(this.id, peer, this._socket, options);
         this._attachManagerListeners(manager);
         this.managers[peer] = manager;
         this.connections[peer] = {};
       }
-      // MOVE THIS TO ONDATACHANNEL
-      //this.emit('connection', connection, payload.metadata);
+      manager.update(options.labels);
+      manager.handleSDP(payload.sdp, message.type);
       break;
     case 'EXPIRE':
       if (manager) {
@@ -1309,9 +1307,18 @@ Peer.prototype._handleServerJSONMessage = function(message) {
 /** Process queued calls to connect. */
 Peer.prototype._processQueue = function() {
   while (this._queued.length > 0) {
-    var conn = this._queued.pop();
-    conn.initialize(this.id, this._socket);
+    var manager = this._queued.pop();
+    manager.initialize(this.id, this._socket);
   }
+};
+
+/** Listeners for manager. */
+Peer.prototype._attachManagerListeners = function(manager) {
+  var self = this;
+  manager.on('connection', function(connection) {
+    self.emit('connection', connection);
+  });
+
 };
 
 /** Destroys the Peer and emits an error message. */
@@ -1354,7 +1361,7 @@ Peer.prototype.connect = function(peer, options) {
   }, options);
 
   var manager = this.managers[peer];
-  if (!!manager) {
+  if (!manager) {
     manager = new ConnectionManager(this.id, peer, this._socket, options);
     this._attachManagerListeners(manager);
     this.managers[peer] = manager;
@@ -1382,8 +1389,8 @@ exports.Peer = Peer;
 /**
  * Wraps a DataChannel between two Peers.
  */
-function DataConnection(dc, options) {
-  if (!(this instanceof DataConnection)) return new DataConnection(dc, options);
+function DataConnection(peer, dc, options) {
+  if (!(this instanceof DataConnection)) return new DataConnection(peer, dc, options);
   EventEmitter.call(this);
 
   options = util.extend({
@@ -1394,11 +1401,16 @@ function DataConnection(dc, options) {
   // Connection is not open yet.
   this.open = false;
 
+  this.label = options.label;
   this.metadata = options.metadata;
   this.serialization = options.serialization;
+  this.peer = peer;
+  this._isReliable = options.reliable;
 
   this._dc = dc;
-  this._configureDataChannel();
+  if (!!this._dc) {
+    this._configureDataChannel();
+  }
 };
 
 util.inherits(DataConnection, EventEmitter);
@@ -1427,7 +1439,7 @@ DataConnection.prototype._configureDataChannel = function() {
   };
 
   // Reliable.
-  if (this._options.reliable) {
+  if (this._isReliable) {
     this._reliable = new Reliable(this._dc, util.debug);
   }
 
@@ -1462,6 +1474,11 @@ DataConnection.prototype._handleDataMessage = function(e) {
     data = JSON.parse(data);
   }
   this.emit('data', data);
+};
+
+DataConnection.prototype.addDC = function(dc) {
+  this._dc = dc;
+  this._configureDataChannel();
 };
 
 
@@ -1511,9 +1528,7 @@ function ConnectionManager(id, peer, socket, options) {
   EventEmitter.call(this);
 
   options = util.extend({
-    config: { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] },
-    reliable: false,
-    serialization: 'binary'
+    config: { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] }
   }, options);
   this._options = options;
 
@@ -1530,6 +1545,7 @@ function ConnectionManager(id, peer, socket, options) {
 
   // DataConnections on this PC.
   this.connections = {};
+  this._queued = [];
 
   this._socket = socket;
 
@@ -1551,6 +1567,9 @@ ConnectionManager.prototype.initialize = function(id, socket) {
   // Set up PeerConnection.
   this._startPeerConnection();
 
+  // Process queued DCs.
+  this._processQueue();
+
   // Listen for ICE candidates.
   this._setupIce();
 
@@ -1567,7 +1586,15 @@ ConnectionManager.prototype.initialize = function(id, socket) {
 /** Start a PC. */
 ConnectionManager.prototype._startPeerConnection = function() {
   util.log('Creating RTCPeerConnection');
-  this.pc = new RTCPeerConnection(this._options.config, { optional: [ { rtpDataChannels: true } ]});
+  this.pc = new RTCPeerConnection(this._options.config, { optional: [ { RtpDataChannels: true } ]});
+};
+
+/** Add DataChannels to all queued DataConnections. */
+ConnectionManager.prototype._processQueue = function() {
+  while (this._queued.length > 0) {
+    var conn = this._queued.pop();
+    conn.addDC(this.pc.createDataChannel(conn.label, { reliable: false }));
+  }
 };
 
 /** Set up ICE candidate handlers. */
@@ -1601,13 +1628,14 @@ ConnectionManager.prototype._setupNegotiationHandler = function() {
 /** Set up Data Channel listener. */
 ConnectionManager.prototype._setupDataChannel = function() {
   var self = this;
+  util.log('Listening for data channel');
   this.pc.ondatachannel = function(evt) {
     util.log('Received data channel');
     var dc = evt.channel;
     var label = dc.label;
     // This should not be empty.
     var options = self.labels[label] || {};
-    var connection  = new DataConnection(dc, options);
+    var connection  = new DataConnection(self.peer, dc, options);
     self.connections[label] = connection;
     self.emit('connection', connection);
   };
@@ -1624,6 +1652,7 @@ ConnectionManager.prototype._makeOffer = function() {
         type: 'OFFER',
         payload: {
           sdp: offer,
+          config: self._options.config,
           labels: self.labels
         },
         dst: self.peer
@@ -1711,27 +1740,29 @@ ConnectionManager.prototype.close = function() {
 };
 
 /** Create and returns a DataConnection with the peer with the given label. */
-// TODO: queue in case no ID/PC.
 ConnectionManager.prototype.connect = function(label, options) {
   options = util.extend({
     reliable: false,
-    serialization: 'binary'
+    serialization: 'binary',
+    label: label
   }, options);
 
-  this.labels[label] = {
-    reliable: options.reliable,
-    serialization: options.serialization,
-    label: label,
-    metadata: options.metadata
-  };
+  this.labels[label] = options;
 
-  var connection  = new DataConnection(this.pc.createDataChannel(this.peer, { reliable: false }), options);
+  var dc;
+  if (!!this.pc) {
+    dc = this.pc.createDataChannel(label, { reliable: false });
+  }
+  var connection = new DataConnection(this.peer, dc, options);
   this.connections[label] = connection;
+
+  if (!this.pc) {
+    this._queued.push(connection);
+  }
   return connection;
 };
 
 /** Updates label:[serialization, reliable, metadata] pairs from offer. */
-// TODO: queue in case no ID/PC.
 ConnectionManager.prototype.update = function(updates) {
   var labels = Object.keys(updates);
   for (var i = 0, ii = labels.length; i < ii; i += 1) {
