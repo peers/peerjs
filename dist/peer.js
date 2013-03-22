@@ -836,30 +836,11 @@ function Reliable(dc, debug) {
   this._received = {};
 
   // Window size.
-  this._window = 20;
+  this._window = 1000;
   // MTU.
   this._mtu = 500;
   // Interval for setInterval. In ms.
-  this._interval = 30;
-  /**
-   * TIMES for 5KB:
-   * Time - wi | mtu | interval
-   * 4441 - 20 | 500 | 50
-   * 4317 - 100| 600 | 20
-   * 4158 - 50 | 600 | 100
-   * 4151 - 20 | 500 | 30
-   * 4086 - 20 | 600 | 20
-   * 4080 - 50 | 600 | 20
-   * 4049 - 50 | 600 | 10
-   * 3561 - 50 | 600 | 50
-   * 2198 - 20 | 800 | 50 - Breaks for bigger files.
-   *              800 MTU seems to throttle even at 200ms for larger files
-   *
-   * TIMES for 23KB:
-   * 38421 - 20 | 600 | 50
-   * 29904 - 20 | 500 | 30
-   * 37906 - 50 | 500 | 30
-   */
+  this._interval = 10;
 
   // Messages sent.
   this._count = 0;
@@ -902,17 +883,28 @@ Reliable.prototype._setupInterval = function() {
   this._timeout = setInterval(function() {
     // FIXME: String stuff makes things terribly async.
     var msg = self._queue.shift();
-    util.log('Sending...', msg);
-    msg = util.pack(msg);
-    util.blobToBinaryString(msg, function(str) {
-      self._dc.send(str);
-      if (self._queue.length === 0) {
-        clearTimeout(self._timeout);
-        self._timeout = null;
-        self._processAcks();
+    if (msg._multiple) {
+      for (var i = 0, ii = msg.length; i < ii; i += 1) {
+        self._intervalSend(msg[i]);
       }
-    });
+    } else {
+      self._intervalSend(msg);
+    }
   }, this._interval);
+};
+
+Reliable.prototype._intervalSend = function(msg) {
+  var self = this;
+  util.log('Sending...', msg);
+  msg = util.pack(msg);
+  util.blobToBinaryString(msg, function(str) {
+    self._dc.send(str);
+  });
+  if (self._queue.length === 0) {
+    clearTimeout(self._timeout);
+    self._timeout = null;
+    //self._processAcks();
+  }
 };
 
 // Go through ACKs to send missing pieces.
@@ -927,7 +919,16 @@ Reliable.prototype._processAcks = function() {
 // Handle sending a message.
 // FIXME: Don't wait for interval time for all messages...
 Reliable.prototype._handleSend = function(msg) {
-  if (this._queue.indexOf(msg) === -1) {
+  var push = true;
+  for (var i = 0, ii = this._queue.length; i < ii; i += 1) {
+    var item = this._queue[i];
+    if (item === msg) {
+      push = false;
+    } else if (item._multiple && item.indexOf(msg) !== -1) {
+      push = false;
+    }
+  }
+  if (push) {
     this._queue.push(msg);
     if (!this._timeout) {
       this._setupInterval();
@@ -993,6 +994,8 @@ Reliable.prototype._handleMessage = function(msg) {
         if (data.ack >= data.chunks.length) {
           util.log('Time: ', new Date() - data.timer);
           delete this._outgoing[id];
+        } else {
+          this._processAcks();
         }
       }
       // If !data, just ignore.
@@ -1054,11 +1057,6 @@ Reliable.prototype._ack = function(id, n) {
   this._handleSend(ack);
 };
 
-// Sends END.
-Reliable.prototype._end = function(id, n) {
-  this._handleSend(['end', id, n]);
-};
-
 // Calculates the next ACK number, given chunks.
 Reliable.prototype._calculateNextAck = function(id) {
   var data = this._incoming[id];
@@ -1078,30 +1076,24 @@ Reliable.prototype._sendWindowedChunks = function(id) {
   util.log('sendWindowedChunks for: ', id);
   var data = this._outgoing[id];
   var ch = data.chunks;
+  var chunks = [];
   var limit = Math.min(data.ack + this._window, ch.length);
-  var timeout = 0;
   for (var i = data.ack; i < limit; i += 1) {
     if (!ch[i].sent || i === data.ack) {
       ch[i].sent = true;
-      // TODO: set timer.
-      this._sendChunk(id, i, ch[i].payload);
+      chunks.push(['chunk', id, i, ch[i].payload]);
     }
   }
   if (data.ack + this._window >= ch.length) {
-    this._end(id, ch.length);
+    chunks.push(['end', id, ch.length])
   }
+  chunks._multiple = true;
+  this._handleSend(chunks);
   // TODO: set retry timer.
-};
-
-// Sends one chunk.
-Reliable.prototype._sendChunk = function(id, n, payload) {
-  util.log('sendChunk', payload);
-  this._handleSend(['chunk', id, n, payload]);
 };
 
 // Puts together a message from chunks.
 Reliable.prototype._complete = function(id) {
-  util.log('complete', id);
   // FIXME: handle errors.
   var self = this;
   var chunks = this._incoming[id].chunks;
@@ -1110,6 +1102,16 @@ Reliable.prototype._complete = function(id) {
     self.onmessage(util.unpack(ab));
   });
   delete this._incoming[id];
+};
+
+// Ups bandwidth limit on SDP. Meant to be called during offer/answer.
+Reliable.higherBandwidthSDP = function(sdp) {
+  // AS stands for Application-Specific Maximum.
+  // Bandwidth number is in kilobits / sec.
+  // See RFC for more info: http://www.ietf.org/rfc/rfc2327.txt
+  var parts = sdp.split('b=AS:30');
+  var replace = 'b=AS:102400'; // 100 Mbps
+  return parts[0] + replace + parts[1];
 };
 
 exports.Reliable = Reliable;
@@ -1376,7 +1378,7 @@ exports.Peer = Peer;
  * A DataChannel|PeerConnection between two Peers.
  */
 function DataConnection(id, peer, socket, options) {
-  if (!(this instanceof DataConnection)) return new DataConnection(options);
+  if (!(this instanceof DataConnection)) return new DataConnection(id, peer, socket, options);
   EventEmitter.call(this);
 
   options = util.extend({
@@ -1568,6 +1570,10 @@ DataConnection.prototype._makeOffer = function() {
   var self = this;
   this._pc.createOffer(function(offer) {
     util.log('Created offer');
+    // Reliable hack.
+    if (self._options.reliable) {
+      offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
+    }
     self._pc.setLocalDescription(offer, function() {
       util.log('Set localDescription to offer');
       self._socket.send({
@@ -1592,6 +1598,10 @@ DataConnection.prototype._makeAnswer = function() {
   var self = this;
   this._pc.createAnswer(function(answer) {
     util.log('Created answer');
+    // Reliable hack.
+    if (self._options.reliable) {
+      answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
+    }
     self._pc.setLocalDescription(answer, function() {
       util.log('Set localDescription to answer');
       self._socket.send({
@@ -1751,7 +1761,7 @@ DataConnection.prototype.handlePort = function(message) {
  * possible connection for peers.
  */
 function Socket(host, port, key, id) {
-  if (!(this instanceof Socket)) return new Socket(server, id, key);
+  if (!(this instanceof Socket)) return new Socket(host, port, key, id);
   EventEmitter.call(this);
   
   this._id = id;
