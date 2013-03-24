@@ -35,7 +35,7 @@ If no id was specified in the constructor, this value will be `undefined` util t
 
 ### peer.connections
 
-A hash of all current connections with the current peer. Keys are ids and values are instances of `DataConnection`.
+A hash of all current connections with the current peer. Keys are ids and values are hashes of label => `DataConnection` pairs.
 
 ### peer.connect(id, [options])
 
@@ -45,6 +45,7 @@ Returns a `DataConnection` object.
 
 * `id` String. The id of the remote peer to connect to.
 * `options` Object.
+  * `label` Optional label for the underlying DataChannel, to differentiate between DataConnections between the same two peers. If left unspecified, a label will be assigned at random.
   * `metadata` Optional metadata to pass to the remote peer. Can be any serializable type.
   * `serialization` String, which can be `binary`, `binary-utf8`, `json`, or `none`. This will be the serialization format of all data sent over the P2P DataConnection. Defaults to `binary`.
   * `reliable` Boolean, which if `true` activates experimental reliable transfer (while waiting for actual reliable transfer to be implemented in Chrome). Defaults to `false` until Chrome implements reliable/large data transfer. This parameter is only available in the most recent build.
@@ -162,7 +163,7 @@ Emitted when the connection is established and ready for writing. `data` from th
 
 `function (error) { }`
 
-If the client emits an error, this event is emitted (errors from the underlying `DataChannel` are forwarded here).
+If the connection emits an error, this event is emitted (errors from the underlying `DataChannel` are forwarded here).
 
 `error` is an `Error` object.
 
