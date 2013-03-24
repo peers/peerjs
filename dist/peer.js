@@ -1,4 +1,4 @@
-/*! peerjs.js build:0.1.7, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
+/*! peerjs.js build:0.2.0, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
 (function(exports){
 var binaryFeatures = {};
 binaryFeatures.useBlobBuilder = (function(){
@@ -1795,11 +1795,9 @@ ConnectionManager.prototype.connect = function(label) {
     return;
   }
 
-  var options = {
-    reliable: false,
-    serialization: 'binary',
+  var options = util.extend({
     label: label || 'peerjs'
-  };
+  }, this._options);
 
   // Check if label is taken...if so, generate a new label randomly.
   while (!!this.connections[options.label]) {
