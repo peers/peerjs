@@ -903,12 +903,13 @@ Reliable.prototype._intervalSend = function(msg) {
   if (self._queue.length === 0) {
     clearTimeout(self._timeout);
     self._timeout = null;
-    //self._processAcks();
+    self._processAcks();
   }
 };
 
 // Go through ACKs to send missing pieces.
 Reliable.prototype._processAcks = function() {
+  // processAcks
   for (var id in this._outgoing) {
     if (this._outgoing.hasOwnProperty(id)) {
       this._sendWindowedChunks(id);
@@ -1080,11 +1081,20 @@ Reliable.prototype._sendWindowedChunks = function(id) {
   var limit = Math.min(data.ack + this._window, ch.length);
   for (var i = data.ack; i < limit; i += 1) {
     if (!ch[i].sent || i === data.ack) {
+      // Sliding window.
+      if (i === data.ack && ch[i].sent) {
+        this._window = Math.max(1, Math.round(this._window / 10));
+        limit = Math.min(data.ack + this._window, ch.length);
+      } else if (i === data.ack) {
+        this._window = Math.min(1000, Math.round(this._window * 10));
+        limit = Math.min(data.ack + this._window, ch.length);
+      }
+
       ch[i].sent = true;
       chunks.push(['chunk', id, i, ch[i].payload]);
     }
   }
-  if (data.ack + this._window >= ch.length) {
+  if (data.ack + this._window >= ch.length - 1) {
     chunks.push(['end', id, ch.length])
   }
   chunks._multiple = true;
@@ -1095,10 +1105,12 @@ Reliable.prototype._sendWindowedChunks = function(id) {
 // Puts together a message from chunks.
 Reliable.prototype._complete = function(id) {
   // FIXME: handle errors.
+  util.log('Complete', id);
   var self = this;
   var chunks = this._incoming[id].chunks;
   var bl = new Blob(chunks);
   util.blobToArrayBuffer(bl, function(ab) {
+    util.log('Calling onmessage with complete message');
     self.onmessage(util.unpack(ab));
   });
   delete this._incoming[id];
@@ -1436,6 +1448,12 @@ DataConnection.prototype._configureDataChannel = function() {
     self.open = true;
     self.emit('open');
   };
+
+  // Reliable.
+  if (this._isReliable) {
+    this._reliable = new Reliable(this._dc, util.debug);
+  }
+
   if (this._reliable) {
     this._reliable.onmessage = function(msg) {
       self.emit('data', msg);
@@ -1449,11 +1467,6 @@ DataConnection.prototype._configureDataChannel = function() {
     util.log('DataChannel closed.');
     self.close();
   };
-
-  // Reliable.
-  if (this._isReliable) {
-    this._reliable = new Reliable(this._dc, util.debug);
-  }
 
 };
 
