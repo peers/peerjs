@@ -1315,9 +1315,16 @@ Peer.prototype._processQueue = function() {
 /** Listeners for manager. */
 Peer.prototype._attachManagerListeners = function(manager) {
   var self = this;
+  // Handle receiving a connection.
   manager.on('connection', function(connection) {
     self.connections[connection.peer][connection.label] = connection;
     self.emit('connection', connection);
+  });
+  // Handle a connection closing.
+  manager.on('close', function() {
+    if (!!self.managers[manager.peer]) {
+      delete self.managers[manager.peer]
+    }
   });
   manager.on('error', function(err) {
     self.emit('error', err);
@@ -1371,16 +1378,15 @@ Peer.prototype.connect = function(peer, options) {
     this.connections[peer] = {};
   }
 
-  var connection = manager.connect(options.label);
-  console.log(peer, options.label);
-  if (!!connection) {
-    this.connections[peer][options.label] = connection;
+  var connectionInfo = manager.connect(options.label);
+  if (!!connectionInfo) {
+    this.connections[peer][connectionInfo[0]] = connectionInfo[1];
   }
 
   if (!this.id) {
     this._queued.push(manager);
   }
-  return connection;
+  return connectionInfo[1];
 };
 
 Peer.prototype.destroy = function() {
@@ -1441,7 +1447,8 @@ DataConnection.prototype._configureDataChannel = function() {
     };
   }
   this._dc.onclose = function(e) {
-    self.emit('close');
+    util.log('DataChannel closed.');
+    self.close();
   };
 
   // Reliable.
@@ -1452,10 +1459,12 @@ DataConnection.prototype._configureDataChannel = function() {
 };
 
 DataConnection.prototype._cleanup = function() {
-  if (!!this._dc && this._dc.readyState != 'closed') {
+  if (!!this._dc && this._dc.readyState !== 'closed') {
     this._dc.close();
     this._dc = null;
   }
+  this.open = false;
+  this.emit('close');
 };
 
 // Handles a DataChannel message.
@@ -1494,13 +1503,17 @@ DataConnection.prototype.addDC = function(dc) {
 
 /** Allows user to close connection. */
 DataConnection.prototype.close = function() {
+  if (!this.open) {
+    return;
+  }
   this._cleanup();
-  this.open = false;
-  this.emit('close');
 };
 
 /** Allows user to send data. */
 DataConnection.prototype.send = function(data) {
+  if (!this.open) {
+    this.emit('error', new Error('Connection no longer open.'));
+  }
   if (this._reliable) {
     // Note: reliable sending will make it so that you cannot customize
     // serialization.
@@ -1547,7 +1560,9 @@ function ConnectionManager(id, peer, socket, options) {
 
   // Mapping labels to metadata and serialization.
   // label => { metadata: ..., serialization: ..., reliable: ...}
-  this.labels = {}
+  this.labels = {};
+  // A default label in the event that none are passed in.
+  this._default = 0;
 
   // DataConnections on this PC.
   this.connections = {};
@@ -1642,6 +1657,7 @@ ConnectionManager.prototype._setupDataChannel = function() {
     // This should not be empty.
     var options = self.labels[label] || {};
     var connection  = new DataConnection(self.peer, dc, options);
+    self._attachConnectionListeners(connection);
     self.connections[label] = connection;
     self.emit('connection', connection);
   };
@@ -1699,7 +1715,33 @@ ConnectionManager.prototype._makeAnswer = function() {
 /** Clean up PC, close related DCs. */
 ConnectionManager.prototype._cleanup = function() {
   util.log('Cleanup ConnectionManager for ' + this.peer);
+  if (!!this.pc && this.pc.readyState !== 'closed') {
+    this.pc.close();
+    this.pc = null;
+  }
 
+  var self = this;
+  this._socket.send({
+    type: 'LEAVE',
+    dst: self.peer
+  });
+
+  this.open = false;
+  this.emit('close');
+};
+
+/** Attach connection listeners. */
+ConnectionManager.prototype._attachConnectionListeners = function(connection) {
+  var self = this;
+  connection.on('close', function() {
+    if (!!self.connections[connection.label]) {
+      delete self.connections[connection.label];
+    }
+
+    if (!Object.keys(self.connections).length) {
+      self._cleanup();
+    }
+  });
 };
 
 /** Handle an SDP. */
@@ -1733,24 +1775,30 @@ ConnectionManager.prototype.handleLeave = function() {
 
 /** Closes manager and all related connections. */
 ConnectionManager.prototype.close = function() {
-  this._cleanup();
-  var self = this;
-  if (this.open) {
-    this._socket.send({
-      type: 'LEAVE',
-      dst: self.peer
-    });
+  if (!this.open) {
+    this.emit('error', new Error('Connections to ' + this.peer + 'are already closed.'));
+    return;
   }
-  this.open = false;
-  this.emit('close', this.peer);
+
+  var labels = Object.keys(this.connections);
+  for (var i = 0, ii = labels.length; i < ii; i += 1) {
+    var label = labels[i];
+    var connection = this.connections[label];
+    connection.close();
+  }
+  this.connections = null;
+  this._cleanup();
 };
 
 /** Create and returns a DataConnection with the peer with the given label. */
 ConnectionManager.prototype.connect = function(label, options) {
-  // Check if label is taken.
-  if (!!this.connections[label]) {
-    this.emit('error', new Error('Label name taken for peer: ' + this.peer));
+  if (!this.open) {
     return;
+  }
+  // Check if label is taken...if so, generate a new label randomly.
+  while (!!this.connections[label]) {
+    label = 'peerjs' + this._default;
+    this._default += 1;
   }
 
   options = util.extend({
@@ -1766,12 +1814,13 @@ ConnectionManager.prototype.connect = function(label, options) {
     dc = this.pc.createDataChannel(label, { reliable: false });
   }
   var connection = new DataConnection(this.peer, dc, options);
+  this._attachConnectionListeners(connection);
   this.connections[label] = connection;
 
   if (!this.pc) {
     this._queued.push(connection);
   }
-  return connection;
+  return [label, connection];
 };
 
 /** Updates label:[serialization, reliable, metadata] pairs from offer. */

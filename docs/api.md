@@ -77,7 +77,8 @@ This event does not need to fire before creating or receiving connections.
 
 `function (error) { }`
 
-Emitted when an unexpected event occurs. Errors on the Peer are **always fatal**. Errors from the underlying socket are forwarded here.
+Emitted when an unexpected event occurs. Errors on the Peer are **always
+fatal**. Errors from the underlying socket and PeerConnections are forwarded here.
 
 The `error` object also has a `type` parameter that may be helpful in responding to client errors properly:
 * `invalid-id`: The ID passed into the Peer constructor contains illegal characters.
@@ -94,7 +95,7 @@ The `error` object also has a `type` parameter that may be helpful in responding
 
 `function () { }`
 
-Emitted when the Peer object has closed it's connection with PeerServer so no more remote peer connections can be made or received.
+Emitted when the Peer object has closed its connection with PeerServer so no more remote peer connections can be made or received.
 
 To be extra certain that Peer objects clean up cleanly (and because it takes the WS server and DataChannel some time to realize that a Peer has disconnected), it is best to call `destroy()` on a Peer when it is no longer needed.
 
@@ -161,7 +162,7 @@ Emitted when the connection is established and ready for writing. `data` from th
 
 `function (error) { }`
 
-If the client emits an error, this event is emitted (errors from the underlying `RTCPeerConnection` and `DataChannel` are forwarded here).
+If the client emits an error, this event is emitted (errors from the underlying `DataChannel` are forwarded here).
 
 `error` is an `Error` object.
 
