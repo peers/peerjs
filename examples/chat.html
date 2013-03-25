@@ -55,8 +55,14 @@ function connect(c) {
         });
   } else if (c.label === 'file') {
     c.on('data', function(data) {
-      $('#' + c.peer).find('.messages').append('<div><span class="file">' +
-          c.peer + ' has sent you a file.</span></div>');
+      // If we're getting a file, create a URL for it.
+      if (data.constructor === ArrayBuffer) {
+        var dataView = new Uint8Array(data);
+        var dataBlob = new Blob([dataView]);
+        var url = window.URL.createObjectURL(dataBlob);
+        $('#' + c.peer).find('.messages').append('<div><span class="file">' +
+            c.peer + ' has sent you a <a target="_blank" href="' + url + '">file</a>.</span></div>');
+      }
     });
   }
 }
