@@ -5,69 +5,176 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
 <meta http-equiv="Content-Language" content="en-us"> 
 
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> 
+<link href="fancy.css" rel="stylesheet" type="text/css">
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script> 
 <script type="text/javascript" src="http://cdn.peerjs.com/0/peer.js"></script>
 <script>
-  
-  var conn;
-  // Connect to PeerJS, have server assign an ID instead of providing one
-  var peer = new Peer({key: 'lwjd5qra8257b9', debug: true});
-  peer.on('open', function(id){
-    $('#pid').text(id);
-  });  
-  // Await connections from others
-  peer.on('connection', connect);
-  function connect(c) {
-    $('#chat_area').show();
-    conn = c;
-    $('#messages').empty().append('Now chatting with ' + conn.peer);
-    conn.on('data', function(data){
-      $('#messages').append('<br>' + conn.peer + ':<br>' + data);
+// Connect to PeerJS, have server assign an ID instead of providing one
+var connections = {};
+var peer = new Peer({key: 'lwjd5qra8257b9', debug: true});
+
+// Show this peer's ID.
+peer.on('open', function(id){
+  $('#pid').text(id);
+});
+
+// Await connections from others
+peer.on('connection', connect);
+
+// Handle a connection object.
+function connect(c) {
+  // Handle a chat connection.
+  if (c.label === 'chat') {
+    var chatbox = $('<div></div>').addClass('connection').addClass('active').attr('id', c.peer);
+    var header = $('<h1></h1>').html(c.peer);
+    var messages = $('<div></div>').addClass('messages');
+    chatbox.append(header);
+    chatbox.append(messages);
+
+    // Select connection handler.
+    chatbox.on('click', function() {
+      if ($(this).attr('class').indexOf('active') === -1) {
+        $(this).addClass('active');
+      } else {
+        $(this).removeClass('active');
+      }
     });
-    conn.on('close', function(err){ alert(conn.peer + ' has left the chat.') });
+    $('.filler').hide();
+    $('#connections').append(chatbox);
+
+    c.on('data', function(data) {
+      //chatbox.addClass('active');
+      messages.append('<div><span class="peer">' + c.peer + '</span>: ' + data +
+        '</div>');
+        });
+        c.on('close', function() {
+          alert(c.peer + ' has left the chat.');
+          chatbox.remove();
+          if ($('.connection').length === 0) {
+            $('.filler').show();
+          }
+        });
+  } else if (c.label === 'file') {
+    c.on('data', function(data) {
+      $('#' + c.peer).find('.messages').append('<div><span class="file">' +
+          c.peer + ' has sent you a file.</span></div>');
+    });
   }
-  $(document).ready(function() {
-    // Conect to a peer
-    $('#connect').click(function(){
-      var c = peer.connect($('#rid').val());
-      c.on('open', function(){
-        connect(c);
-      });
-      c.on('error', function(err){ alert(err) });  
+
+  // Save connection object appropriately.
+  if (!connections[c.peer]) {
+    connections[c.peer] = {};
+  }
+  connections[c.peer][c.label] = c;
+}
+
+$(document).ready(function() {
+  // Prepare file drop box.
+  var box = $('#box');
+  box.on('dragenter', doNothing);
+  box.on('dragover', doNothing);
+  box.on('drop', function(e){
+    e.originalEvent.preventDefault();
+    var file = e.originalEvent.dataTransfer.files[0];
+    eachActiveConnection(function(c, $c) {
+      if (c.label === 'file') {
+        c.send(file);
+        $c.find('.messages').append('<div><span class="file">You sent a file.</span></div>');
+      }
     });
-    // Send a chat message
-    $('#send').click(function(){
-      var msg = $('#text').val();
-      conn.send(msg);
-      $('#messages').append('<br>You:<br>' + msg);
-      $('#text').val('');
-    });
-    // Show browser version
-    $('#browsers').text(navigator.userAgent);
   });
+  function doNothing(e){
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  // Connect to a peer
+  $('#connect').click(function() {
+    // Create 2 connections, one labelled chat and another labelled file.
+    var c = peer.connect($('#rid').val(), { label: 'chat' });
+    c.on('open', function() {
+      connect(c);
+    });
+    c.on('error', function(err) { alert(err); });
+    var f = peer.connect($('#rid').val(), { reliable: true, label: 'file' });
+    f.on('open', function() {
+      connect(f);
+    });
+    f.on('error', function(err) { alert(err); });
+  });
+
+  // Close a connection.
+  $('#close').click(function() {
+    eachActiveConnection(function(c) {
+      c.close();
+    });
+  });
+
+  // Send a chat message to all active connections.
+  $('#send').submit(function(e) {
+    e.preventDefault();
+    // For each active connection, send the message.
+    var msg = $('#text').val();
+    eachActiveConnection(function(c, $c) {
+      if (c.label === 'chat') {
+        c.send(msg);
+        $c.find('.messages').append('<div><span class="you">You: </span>' + msg
+          + '</div>');
+      }
+    });
+    $('#text').val('');
+    $('#text').focus();
+  });
+
+  // Goes through each active peer and calls FN on its connections.
+  function eachActiveConnection(fn) {
+    var actives = $('.active');
+    actives.each(function() {
+      var peerId = $(this).attr('id');
+      var conns = connections[peerId];
+      var labels = Object.keys(conns);
+      for (var i = 0, ii = labels.length; i < ii; i += 1) {
+        var conn = conns[labels[i]];
+        fn(conn, $(this));
+      }
+    });
+  }
+
+  // Show browser version
+  $('#browsers').text(navigator.userAgent);
+});
 
 </script>
 </head> 
  
 <body> 
 
-  Your PeerJS id is : <span id="pid"></span><br><br>
-  Connect to peer: <input type="text" id="rid" placeholder="Someone else's id">
-                   <input type="button" value="Connect" id="connect"><br><br>
-  
-  
-  <div id="chat_area" style="display: none;">
-    <div id="messages"></div>
-    <input type="text" id="text" placeholder="Enter message">
-    <input type="button" value="Send" id="send">
+  <div id="actions">
+    Your PeerJS ID is <span id="pid"></span><br>
+    Connect to a peer: <input type="text" id="rid" placeholder="Someone else's id"><input class="button" type="button" value="Connect" id="connect"><br><br>
+
+    <form id="send">
+      <input type="text" id="text" placeholder="Enter message"><input class="button" type="submit" value="Send to selected peers">
+    </form>
+    <button id="close">Close selected connections</button>
+  </div>
+
+  <div id="wrap"><div id="connections"><span class="filler">You have not yet
+        made any connections.</span></div>
+    <div class="clear"></div></div>
+
+  <div id="box" style="background: #fff; font-size: 18px;padding:40px 30px; text-align: center;">
+    Drag file here to send to active connections.
   </div>
   
-
   
-  
-  <br><br><br>
-  <p style="font-size: 10px;">Your browser version: <span id="browsers"></span><br>
-  Currently <strong>Google Chrome 26.0.1403.0 or above</strong> is required (Dev or Canary channels)</strong><br><br>For more up to date compatibility information see <a href="http://peerjs.com/status">PeerJS WebRTC Status</a><br><br>Note that this demo may also fail if you are behind stringent firewalls or both you and the remote peer and behind symmetric NATs.</p>
-  
+  <div class="warning browser"><div class="important">Your browser version: <span id="browsers"></span><br>
+  Currently <strong>Google Chrome 26.0.1403.0 or above</strong> is required (Dev
+  or Canary channels)</strong></div>For more up to date compatibility
+information see <a href="http://peerjs.com/status">PeerJS WebRTC
+  Status</a><br>Note that this demo may also fail if you are behind
+stringent firewalls or both you and the remote peer and behind symmetric
+NATs.</div>
 </body> 
 </html> 
