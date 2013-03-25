@@ -11,7 +11,6 @@
 <script type="text/javascript" src="http://cdn.peerjs.com/0/peer.js"></script>
 <script>
 // Connect to PeerJS, have server assign an ID instead of providing one
-var connections = {};
 var peer = new Peer({key: 'lwjd5qra8257b9', debug: true});
 
 // Show this peer's ID.
@@ -44,7 +43,6 @@ function connect(c) {
     $('#connections').append(chatbox);
 
     c.on('data', function(data) {
-      //chatbox.addClass('active');
       messages.append('<div><span class="peer">' + c.peer + '</span>: ' + data +
         '</div>');
         });
@@ -61,12 +59,6 @@ function connect(c) {
           c.peer + ' has sent you a file.</span></div>');
     });
   }
-
-  // Save connection object appropriately.
-  if (!connections[c.peer]) {
-    connections[c.peer] = {};
-  }
-  connections[c.peer][c.label] = c;
 }
 
 $(document).ready(function() {
@@ -132,7 +124,7 @@ $(document).ready(function() {
     var actives = $('.active');
     actives.each(function() {
       var peerId = $(this).attr('id');
-      var conns = connections[peerId];
+      var conns = peer.connections[peerId];
       var labels = Object.keys(conns);
       for (var i = 0, ii = labels.length; i < ii; i += 1) {
         var conn = conns[labels[i]];
