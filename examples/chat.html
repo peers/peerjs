@@ -11,7 +11,7 @@
 <script type="text/javascript" src="http://cdn.peerjs.com/0/peer.js"></script>
 <script>
 // Connect to PeerJS, have server assign an ID instead of providing one
-var peer = new Peer({key: 'lwjd5qra8257b9', debug: true});
+var peer = new Peer({key: '47etzdhjw597ldi', debug: true});
 
 // Show this peer's ID.
 peer.on('open', function(id){
@@ -26,11 +26,11 @@ function connect(c) {
   // Handle a chat connection.
   if (c.label === 'chat') {
     var chatbox = $('<div></div>').addClass('connection').addClass('active').attr('id', c.peer);
-    var header = $('<h1></h1>').html(c.peer);
-    var messages = $('<div></div>').addClass('messages');
+    var header = $('<h1></h1>').html('Chat with <strong>' + c.peer + '</strong>');
+    var messages = $('<div><em>Peer connected.</em></div>').addClass('messages');
     chatbox.append(header);
     chatbox.append(messages);
-
+ 
     // Select connection handler.
     chatbox.on('click', function() {
       if ($(this).attr('class').indexOf('active') === -1) {
@@ -142,6 +142,14 @@ $(document).ready(function() {
   // Show browser version
   $('#browsers').text(navigator.userAgent);
 });
+
+// Make sure things clean up properly.
+
+window.onunload = window.onbeforeunload = function(e) {
+  if (!!peer && !peer.destroyed) {
+    peer.destroy();
+  }
+};
 
 </script>
 </head> 

@@ -30,6 +30,14 @@ h1 {
   padding: 5px 10px;
   margin: 0 -10px 0 -10px;
   border-bottom: 1px solid #ccc;
+  font-weight: 300;
+}
+.active h1 strong {
+  color: #FF7500;
+}
+.file, em {
+  color: #999;
+  font-style: italic;
 }
 #wrap {
   background-color: #ddd;
