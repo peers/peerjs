@@ -1,0 +1,73 @@
+<!DOCTYPE HTML> 
+<html lang="en"> 
+<head>
+<title>PeerJS chat demo</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
+<meta http-equiv="Content-Language" content="en-us"> 
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> 
+<script type="text/javascript" src="http://cdn.peerjs.com/0/peer.js"></script>
+<script>
+  
+  var conn;
+  // Connect to PeerJS, have server assign an ID instead of providing one
+  var peer = new Peer({key: 'lwjd5qra8257b9', debug: true});
+  peer.on('open', function(id){
+    $('#pid').text(id);
+  });  
+  // Await connections from others
+  peer.on('connection', connect);
+  function connect(c) {
+    $('#chat_area').show();
+    conn = c;
+    $('#messages').empty().append('Now chatting with ' + conn.peer);
+    conn.on('data', function(data){
+      $('#messages').append('<br>' + conn.peer + ':<br>' + data);
+    });
+    conn.on('close', function(err){ alert(conn.peer + ' has left the chat.') });
+  }
+  $(document).ready(function() {
+    // Conect to a peer
+    $('#connect').click(function(){
+      var c = peer.connect($('#rid').val());
+      c.on('open', function(){
+        connect(c);
+      });
+      c.on('error', function(err){ alert(err) });  
+    });
+    // Send a chat message
+    $('#send').click(function(){
+      var msg = $('#text').val();
+      conn.send(msg);
+      $('#messages').append('<br>You:<br>' + msg);
+      $('#text').val('');
+    });
+    // Show browser version
+    $('#browsers').text(navigator.userAgent);
+  });
+
+</script>
+</head> 
+ 
+<body> 
+
+  Your PeerJS id is : <span id="pid"></span><br><br>
+  Connect to peer: <input type="text" id="rid" placeholder="Someone else's id">
+                   <input type="button" value="Connect" id="connect"><br><br>
+  
+  
+  <div id="chat_area" style="display: none;">
+    <div id="messages"></div>
+    <input type="text" id="text" placeholder="Enter message">
+    <input type="button" value="Send" id="send">
+  </div>
+  
+
+  
+  
+  <br><br><br>
+  <p style="font-size: 10px;">Your browser version: <span id="browsers"></span><br>
+  Currently <strong>Google Chrome 26.0.1403.0 or above</strong> is required (Dev or Canary channels)</strong><br><br>For more up to date compatibility information see <a href="http://peerjs.com/status">PeerJS WebRTC Status</a><br><br>Note that this demo may also fail if you are behind stringent firewalls or both you and the remote peer and behind symmetric NATs.</p>
+  
+</body> 
+</html> 
