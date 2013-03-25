@@ -1389,7 +1389,7 @@ Peer.prototype.connect = function(peer, options) {
     this.connections[peer] = {};
   }
 
-  var connectionInfo = manager.connect(options.label);
+  var connectionInfo = manager.connect(options);
   if (!!connectionInfo) {
     this.connections[peer][connectionInfo[0]] = connectionInfo[1];
   }
@@ -1624,8 +1624,8 @@ ConnectionManager.prototype._startPeerConnection = function() {
 
 /** Add DataChannels to all queued DataConnections. */
 ConnectionManager.prototype._processQueue = function() {
-  while (this._queued.length > 0) {
-    var conn = this._queued.pop();
+  var conn = this._queued.pop();
+  if (!!conn) {
     conn.addDC(this.pc.createDataChannel(conn.label, { reliable: false }));
   }
 };
@@ -1754,6 +1754,10 @@ ConnectionManager.prototype._attachConnectionListeners = function(connection) {
       self._cleanup();
     }
   });
+  connection.on('open', function() {
+    self._lock = false;
+    self._processQueue();
+  });
 };
 
 /** Handle an SDP. */
@@ -1803,14 +1807,14 @@ ConnectionManager.prototype.close = function() {
 };
 
 /** Create and returns a DataConnection with the peer with the given label. */
-ConnectionManager.prototype.connect = function(label) {
+ConnectionManager.prototype.connect = function(options) {
   if (!this.open) {
     return;
   }
 
-  var options = util.extend({
-    label: label || 'peerjs'
-  }, this._options);
+  options = util.extend({
+    label: 'peerjs'
+  }, options);
 
   // Check if label is taken...if so, generate a new label randomly.
   while (!!this.connections[options.label]) {
@@ -1821,16 +1825,18 @@ ConnectionManager.prototype.connect = function(label) {
   this.labels[options.label] = options;
 
   var dc;
-  if (!!this.pc) {
+  if (!!this.pc && !this._lock) {
     dc = this.pc.createDataChannel(options.label, { reliable: false });
   }
   var connection = new DataConnection(this.peer, dc, options);
   this._attachConnectionListeners(connection);
   this.connections[options.label] = connection;
 
-  if (!this.pc) {
+  if (!this.pc || this._lock) {
     this._queued.push(connection);
   }
+
+  this._lock = true
   return [options.label, connection];
 };
 
