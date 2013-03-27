@@ -11,7 +11,7 @@
 <script type="text/javascript" src="http://cdn.peerjs.com/0/peer.js"></script>
 <script>
 // Connect to PeerJS, have server assign an ID instead of providing one
-var peer = new Peer({key: '47etzdhjw597ldi', debug: true});
+var peer = new Peer({key: 'lwjd5qra8257b9', debug: true});
 
 // Show this peer's ID.
 peer.on('open', function(id){
@@ -155,6 +155,9 @@ window.onunload = window.onbeforeunload = function(e) {
 </head> 
  
 <body> 
+  <a href="https://github.com/peers/peerjs"><img style="position: absolute; top: 0; right: 0; border: 0;"
+    src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png"
+    alt="Fork me on GitHub"></a>
 
   <div id="actions">
     Your PeerJS ID is <span id="pid"></span><br>
@@ -176,8 +179,7 @@ window.onunload = window.onbeforeunload = function(e) {
   
   
   <div class="warning browser"><div class="important">Your browser version: <span id="browsers"></span><br>
-  Currently <strong>Google Chrome 26.0.1403.0 or above</strong> is required (Dev
-  or Canary channels)</strong></div>For more up to date compatibility
+  Currently <strong>Google Chrome 26.0.1403.0 or above</strong> is required.</strong></div>For more up to date compatibility
 information see <a href="http://peerjs.com/status">PeerJS WebRTC
   Status</a><br>Note that this demo may also fail if you are behind
 stringent firewalls or both you and the remote peer and behind symmetric
