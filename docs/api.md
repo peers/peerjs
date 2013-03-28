@@ -82,6 +82,7 @@ Emitted when an unexpected event occurs. Errors on the Peer are **always
 fatal**. Errors from the underlying socket and PeerConnections are forwarded here.
 
 The `error` object also has a `type` parameter that may be helpful in responding to client errors properly:
+* `browser-incompatible`: The client's browser does not support some or all WebRTC features that you are trying to use.
 * `invalid-id`: The ID passed into the Peer constructor contains illegal characters.
 * `invalid-key`: The API key passed into the Peer constructor contains illegal characters or is not in the system (cloud server only).
 * `unavailable-id`: The ID passed into the Peer constructor is already taken.

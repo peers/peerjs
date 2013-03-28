@@ -720,6 +720,11 @@ EventEmitter.prototype.emit = function(type) {
 
 var util = {
   
+  chromeCompatible: true,
+  firefoxCompatibile: false,
+  chromeVersion: 26,
+  firefoxVersion: 22,
+
   debug: false,
   browserisms: '',
   
@@ -816,6 +821,24 @@ var util = {
   },
   randomToken: function () {
     return Math.random().toString(36).substr(2);
+  },
+  isBrowserCompatible: function() {
+    var c, f;
+    if (this.chromeCompatible) {
+      if ((c = navigator.userAgent.split('Chrome/')) && c.length > 1) {
+        // Get version #.
+        var v = c[1].split('.')[0];
+        return parseInt(v) >= this.chromeVersion;
+      }
+    }
+    if (this.firefoxCompatible) {
+      if ((f = navigator.userAgent.split('Firefox/')) && f.length > 1) {
+        // Get version #.
+        var v = f[1].split('.')[0];
+        return parseInt(v) >= this.firefoxVersion;
+      }
+    }
+    return false;
   }
 };
 /**
@@ -1157,6 +1180,14 @@ function Peer(id, options) {
   }
   if (!(this instanceof Peer)) return new Peer(id, options);
   EventEmitter.call(this);
+
+  // First check if browser can use PeerConnection/DataChannels.
+  // TODO: when media is supported, lower browser version limit and move DC
+  // check to where`connect` is called.
+  if (!util.isBrowserCompatible()) {
+    this._abort('browser-incompatible', 'The current browser does not support WebRTC DataChannels');
+    return;
+  }
 
   // Detect relative URL host.
   if (options.host === '/') {
