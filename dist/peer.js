@@ -721,7 +721,7 @@ EventEmitter.prototype.emit = function(type) {
 var util = {
   
   chromeCompatible: true,
-  firefoxCompatibile: false,
+  firefoxCompatible: false,
   chromeVersion: 26,
   firefoxVersion: 22,
 
@@ -1219,6 +1219,10 @@ function Peer(id, options) {
     return
   }
 
+  // States.
+  this.destroyed = false;
+  this.disconnected = false;
+
   // Connections for this peer.
   this.connections = {};
   // Connection managers.
@@ -1390,7 +1394,7 @@ Peer.prototype._cleanup = function() {
       this.managers[peers[i]].close();
     }
     util.setZeroTimeout(function(){
-      self._socket.close();
+      self.disconnect();
     });
   }
   this.emit('close');
@@ -1400,11 +1404,11 @@ Peer.prototype._cleanup = function() {
 
 /** Exposed connect function for users. Will try to connect later if user
  * is waiting for an ID. */
-// TODO: pause XHR streaming when not in use and start again when this is
-// called.
 Peer.prototype.connect = function(peer, options) {
-  if (this.destroyed) {
-    this._abort('peer-destroyed', 'This Peer has been destroyed and is no longer able to make connections.');
+  if (this.disconnected) {
+    var err = new Error('This Peer has been disconnected from the server and');
+    err.type = 'peer-disconnected';
+    this.emit('error', err);
     return;
   }
 
@@ -1431,10 +1435,29 @@ Peer.prototype.connect = function(peer, options) {
   return connectionInfo[1];
 };
 
+/**
+ * Destroys the Peer: closes all active connections as well as the connection
+ *  to the server.
+ * Warning: The peer can no longer create or accept connections after being
+ *  destroyed.
+ */
 Peer.prototype.destroy = function() {
   if (!this.destroyed) {
     this._cleanup();
     this.destroyed = true;
+  }
+};
+
+/**
+ * Disconnects the Peer's connection to the PeerServer. Does not close any
+ *  active connections.
+ * Warning: The peer can no longer create or accept connections after being
+ *  disconnected. It also cannot reconnect to the server.
+ */
+Peer.prototype.disconnect = function() {
+  if (!this.disconnected) {
+    this._socket.close();
+    this.disconnected = true;
   }
 };
 
@@ -1889,6 +1912,8 @@ function Socket(host, port, key, id) {
   
   this._id = id;
   var token = util.randomToken();
+
+  this.disconnected = false;
   
   this._httpUrl = 'http://' + host + ':' + port + '/' + key + '/' + id + '/' + token;
   this._wsUrl = 'ws://' + host + ':' + port + '/peerjs?key='+key+'&id='+id+'&token='+token;
@@ -2020,8 +2045,17 @@ Socket.prototype._setHTTPTimeout = function() {
   }, 25000);
 };
 
+
+Socket.prototype._wsOpen = function() {
+  return !!this._socket && this._socket.readyState == 1;
+};
+
 /** Exposed send for DC & Peer. */
 Socket.prototype.send = function(data) {
+  if (this.disconnected) {
+    return;
+  }
+
   if (!data.type) {
     this.emit('error', 'Invalid message');
     return;
@@ -2040,14 +2074,10 @@ Socket.prototype.send = function(data) {
 };
 
 Socket.prototype.close = function() {
-  if (!!this._wsOpen()) {
+  if (!this.disconnected && this._wsOpen()) {
     this._socket.close();
+    this.disconnected = true;
   }
 };
-
-Socket.prototype._wsOpen = function() {
-  return !!this._socket && this._socket.readyState == 1;
-};
-
 
 })(this);
