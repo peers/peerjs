@@ -1,5 +1,10 @@
 # PeerJS Changelog
 
+## Version 0.2.1 (Pending)
+* **Warning**: this build changes the error of type `peer-destroyed` to `peer-disconnected`.
+* Browser detection added. If an incompatible browser is detected, the `browser-incompatible` error is emitted from the `Peer`.
+* Added a `.disconnect()` method to `Peer`, which can be called to close connections to the PeerServer (but not any active DataConnections).
+
 ## Version 0.2.0 (24 Mar 2013)
 * **Warning**: this build introduces the following API changes that may break existing code.
   * `peer.connections` is no longer a hash mapping peer IDs to connections.
