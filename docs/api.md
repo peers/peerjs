@@ -54,7 +54,15 @@ Before writing to / data will be emitted from the `DataConnection` object that i
 
 ### peer.destroy()
 
-Close the server and terminate all connections.
+Close the connection to the server and terminate all connections.
+
+**Warning: This cannot be undone; the respective peer object will no longer be able to create or receive any connections and its ID will be forfeited on the (cloud) server.**
+
+### peer.disconnect()
+
+Close the connection to the server, leaving all existing DataConnections intact.
+
+**Warning: This cannot be undone; the respective peer object will no longer be able to create or receive any connections and its ID will be forfeited on the (cloud) server.**
 
 ### Event: 'connection'
 
@@ -91,7 +99,7 @@ The `error` object also has a `type` parameter that may be helpful in responding
   * `socket-error`: An error from the underlying socket.
   * `socket-closed`: The underlying socket closed unexpectedly.
 * (The Peer object is destroyed after one of the errors above are emitted.)
-* `peer-destroyed`: A Peer that has been destroyed is being used to try to connect.
+* `peer-disconnected`: A Peer that has been disconnected is being used to try to connect.
 
 ### Event: 'close'
 
