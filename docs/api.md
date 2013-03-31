@@ -99,7 +99,7 @@ The `error` object also has a `type` parameter that may be helpful in responding
   * `socket-error`: An error from the underlying socket.
   * `socket-closed`: The underlying socket closed unexpectedly.
 * (The Peer object is destroyed after one of the errors above are emitted.)
-* `peer-disconnected`: A Peer that has been disconnected is being used to try to connect.
+* `server-disconnected`: A Peer that has been disconnected is being used to try to connect.
 
 ### Event: 'close'
 

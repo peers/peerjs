@@ -1419,7 +1419,7 @@ Peer.prototype._cleanup = function() {
  * is waiting for an ID. */
 Peer.prototype.connect = function(peer, options) {
   if (this.disconnected) {
-    this._warn('peer-disconnected', 'This Peer has been disconnected from the server and');
+    this._warn('server-disconnected', 'This Peer has been disconnected from the server and can no longer make connections.');
     return;
   }
 
