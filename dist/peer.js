@@ -1884,9 +1884,7 @@ ConnectionManager.prototype._attachConnectionListeners = function(connection) {
   });
   connection.on('open', function() {
     self._lock = false;
-    if (util.browserisms !== 'Firefox') {
-      self._processQueue();
-    }
+    self._processQueue();
   });
 };
 
@@ -1985,14 +1983,15 @@ ConnectionManager.prototype.connect = function(options) {
   this.labels[options.label] = options;
 
   var dc;
-  if (!!this.pc && !this._lock && util.browserisms !== 'Firefox') {
+  if (!!this.pc && !this._lock && (util.browserisms !== 'Firefox' || Object.keys(this.connections).length !== 0)) {
     dc = this.pc.createDataChannel(options.label, { reliable: false });
+    dc._options = options;
   }
   var connection = new DataConnection(this.peer, dc, options);
   this._attachConnectionListeners(connection);
   this.connections[options.label] = connection;
 
-  if (!this.pc || this._lock || util.browserisms === 'Firefox') {
+  if (!dc) {
     this._queued.push(connection);
   }
 
