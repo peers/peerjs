@@ -1,6 +1,6 @@
 # PeerJS Changelog
 
-## Version 0.2.5 (Pending)
+## Version 0.2.5 (2 Apr 2013)
 * **Warning**: this build changes the error of type `peer-destroyed` to `server-disconnected`.
 * **Firefox compatibility.**
 * Browser detection added. If an incompatible browser is detected, the `browser-incompatible` error is emitted from the `Peer`.
