@@ -1491,10 +1491,12 @@ function DataConnection(peer, dc, options) {
   this.open = false;
 
   this.label = options.label;
+  // Firefox is not this finely configurable.
   this.metadata = options.metadata;
-  this.serialization = options.serialization;
+  this.serialization = util.browserisms !== 'Firefox' ? options.serialization : 'binary';
+  this._isReliable = util.browserisms !== 'Firefox' ? options.reliable : true;
+
   this.peer = peer;
-  this._isReliable = options.reliable;
 
   this._dc = dc;
   if (!!this._dc) {
@@ -1791,7 +1793,9 @@ ConnectionManager.prototype._setupDataChannel = function() {
     var label = dc.label;
 
     // This should not be empty.
-    var options = self.labels[label] || {};
+    // NOTE: Multiple DCs are currently not configurable in FF. Will have to
+    // come up with reasonable defaults.
+    var options = self.labels[label] || { label: label };
     var connection  = new DataConnection(self.peer, dc, options);
     delete self.labels[label];
 
@@ -1985,7 +1989,6 @@ ConnectionManager.prototype.connect = function(options) {
   var dc;
   if (!!this.pc && !this._lock && (util.browserisms !== 'Firefox' || Object.keys(this.connections).length !== 0)) {
     dc = this.pc.createDataChannel(options.label, { reliable: false });
-    dc._options = options;
   }
   var connection = new DataConnection(this.peer, dc, options);
   this._attachConnectionListeners(connection);
