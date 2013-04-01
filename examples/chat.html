@@ -9,9 +9,10 @@
 
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script> 
 <script type="text/javascript" src="http://cdn.peerjs.com/0/peer.js"></script>
+<script type="text/javascript" src="../dist/peer.js"></script>
 <script>
 // Connect to PeerJS, have server assign an ID instead of providing one
-var peer = new Peer({key: 'lwjd5qra8257b9', debug: true});
+peer = new Peer({key: 'lwjd5qra8257b9', debug: true});
 
 // Show this peer's ID.
 peer.on('open', function(id){

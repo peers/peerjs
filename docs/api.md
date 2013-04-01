@@ -46,9 +46,9 @@ Returns a `DataConnection` object.
 * `id` String. The id of the remote peer to connect to.
 * `options` Object.
   * `label` Optional label for the underlying DataChannel, to differentiate between DataConnections between the same two peers. If left unspecified, a label will be assigned at random.
-  * `metadata` Optional metadata to pass to the remote peer. Can be any serializable type.
-  * `serialization` String, which can be `binary`, `binary-utf8`, `json`, or `none`. This will be the serialization format of all data sent over the P2P DataConnection. Defaults to `binary`.
-  * `reliable` Boolean, which if `true` activates experimental reliable transfer (while waiting for actual reliable transfer to be implemented in Chrome). Defaults to `false` until Chrome implements reliable/large data transfer. This parameter is only available in the most recent build.
+  * `metadata` Optional metadata to pass to the remote peer. Can be any serializable type. **Only available in Firefox on the first DataConnection established between two Peers.**
+  * `serialization` String, which can be `binary`, `binary-utf8`, `json`, or `none`. This will be the serialization format of all data sent over the P2P DataConnection. Defaults to `binary`. **Will always be `binary` in Firefox.**
+  * `reliable` Boolean, which if `true` activates experimental reliable transfer (while waiting for actual reliable transfer to be implemented in Chrome). Defaults to `false` until Chrome implements reliable/large data transfer. This parameter is only available in the most recent build. **Will always be `true` in Firefox.**
 
 Before writing to / data will be emitted from the `DataConnection` object that is returned, the `open` event must fire. Also the `error` event should be checked in case a connection cannot be made.
 
@@ -86,8 +86,7 @@ This event does not need to fire before creating or receiving connections.
 
 `function (error) { }`
 
-Emitted when an unexpected event occurs. Errors on the Peer are **always
-fatal**. Errors from the underlying socket and PeerConnections are forwarded here.
+Emitted when an unexpected event occurs. All errors on the Peer except `server-disconnected` and `incompatible-peer` are **fatal**. Errors from the underlying socket and PeerConnections are forwarded here.
 
 The `error` object also has a `type` parameter that may be helpful in responding to client errors properly:
 * `browser-incompatible`: The client's browser does not support some or all WebRTC features that you are trying to use.
@@ -100,6 +99,7 @@ The `error` object also has a `type` parameter that may be helpful in responding
   * `socket-closed`: The underlying socket closed unexpectedly.
 * (The Peer object is destroyed after one of the errors above are emitted.)
 * `server-disconnected`: A Peer that has been disconnected is being used to try to connect.
+* `incompatible-peer`: The peer that is trying to connect or that you are trying to connect to is using a browser that is different from yours. **Currently DataChannels are not interoperable between Chrome and Firefox.**
 
 ### Event: 'close'
 
