@@ -46,9 +46,9 @@ Returns a `DataConnection` object.
 * `id` String. The id of the remote peer to connect to.
 * `options` Object.
   * `label` Optional label for the underlying DataChannel, to differentiate between DataConnections between the same two peers. If left unspecified, a label will be assigned at random.
-  * `metadata` Optional metadata to pass to the remote peer. Can be any serializable type.
-  * `serialization` String, which can be `binary`, `binary-utf8`, `json`, or `none`. This will be the serialization format of all data sent over the P2P DataConnection. Defaults to `binary`.
-  * `reliable` Boolean, which if `true` activates experimental reliable transfer (while waiting for actual reliable transfer to be implemented in Chrome). Defaults to `false` until Chrome implements reliable/large data transfer. This parameter is only available in the most recent build.
+  * `metadata` Optional metadata to pass to the remote peer. Can be any serializable type. **Only available in Firefox on the first DataConnection established between two Peers.**
+  * `serialization` String, which can be `binary`, `binary-utf8`, `json`, or `none`. This will be the serialization format of all data sent over the P2P DataConnection. Defaults to `binary`. **Will always be `binary` in Firefox.**
+  * `reliable` Boolean, which if `true` activates experimental reliable transfer (while waiting for actual reliable transfer to be implemented in Chrome). Defaults to `false` until Chrome implements reliable/large data transfer. This parameter is only available in the most recent build. **Will always be `true` in Firefox.**
 
 Before writing to / data will be emitted from the `DataConnection` object that is returned, the `open` event must fire. Also the `error` event should be checked in case a connection cannot be made.
 
