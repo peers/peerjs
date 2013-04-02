@@ -1,6 +1,9 @@
 {
   "name": "peerjs",
   "version": "0.2.0",
+  "scripts": {
+  	"build": "node bin/build.js"
+  },
   "description": "PeerJS client library",
   "devDependencies": {
     "uglify-js": "~1.3.4",
