@@ -27,7 +27,15 @@ In the options, either a PeerServer Cloud `key` must be provided or `host` and `
 
 The `config` object is passed straight into instances of `RTCPeerConnection`. For compatibility with symmetric NATs, you can provide your own TURN server. By default the STUN server provided by Google is used.
 
+### peer.getId()
+
+The given id of this peer.
+
+If no id was specified in the constructor, this value will be `undefined` util the `open` event fires.
+
 ### peer.id
+
+**Deprecated. Use the getter instead.**
 
 The given id of this peer.
 
@@ -36,6 +44,8 @@ If no id was specified in the constructor, this value will be `undefined` util t
 ### peer.connections
 
 A hash of all current connections with the current peer. Keys are ids and values are hashes of label => `DataConnection` pairs.
+
+**You are recommended to keep track of connections yourself rather than to manipulate this hash.**
 
 ### peer.connect(id, [options])
 
@@ -63,6 +73,14 @@ Close the connection to the server and terminate all connections.
 Close the connection to the server, leaving all existing DataConnections intact.
 
 **Warning: This cannot be undone; the respective peer object will no longer be able to create or receive any connections and its ID will be forfeited on the (cloud) server.**
+
+### peer.isConnected()
+
+Returns true if there is an active connection to the PeerServer.
+
+### peer.isDestroyed()
+
+Returns true if this peer is destroyed and can no longer be used.
 
 ### Event: 'connection'
 
@@ -133,7 +151,7 @@ The metadata passed in when the connection was created with `peer.connect(...)`.
 
 ### connection.getLabel()
 
-The optional label passed in when the connection was created with `peer.connect(...)`.
+The optional label passed in or assigned by PeerJS when the connection was created with `peer.connect(...)`.
 
   
 ### connection.peer
@@ -158,7 +176,7 @@ The metadata passed in when the connection was created with `peer.connect(...)`.
 
 **Deprecated. Use the getter instead.**
 
-The optional label passed in when the connection was created with `peer.connect(...)`.
+The optional label passed in or assigned by PeerJS when the connection was created with `peer.connect(...)`.
 
 ### connection.serialization
 
