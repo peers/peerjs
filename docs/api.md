@@ -118,22 +118,47 @@ There is no constructor. A `DataConnection` object must be obtained in the callb
 ### EXPERIMENTAL reliable and large file transfer:
 
 Simply pass in `reliable: true` when calling `.connect(...)`. This module is experimental, temporary, and exists here: https://github.com/michellebu/reliable
+
+### connection.getPeer()
+
+The id of the remote peer this connection is connected to.
+
+### connection.isOpen()
+
+Whether the connection is open (ready for read and write).
+
+### connection.getMetadata()
+
+The metadata passed in when the connection was created with `peer.connect(...)`.
+
+### connection.getLabel()
+
+The optional label passed in when the connection was created with `peer.connect(...)`.
+
   
-### connection.id
-
-The id of the local peer that this connection belongs to.
-
 ### connection.peer
+
+**Deprecated. Use the getter instead.**
 
 The id of the remote peer this connection is connected to.
 
 ### connection.open
 
+**Deprecated. Use the getter instead.**
+
 Whether the connection is open (ready for read and write).
 
 ### connection.metadata
 
+**Deprecated. Use the getter instead.**
+
 The metadata passed in when the connection was created with `peer.connect(...)`.
+
+### connection.label
+
+**Deprecated. Use the getter instead.**
+
+The optional label passed in when the connection was created with `peer.connect(...)`.
 
 ### connection.serialization
 
