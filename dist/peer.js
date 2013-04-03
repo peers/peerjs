@@ -1,4 +1,4 @@
-/*! peerjs.js build:0.2.0, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
+/*! peerjs.js build:0.2.1, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
 (function(exports){
 var binaryFeatures = {};
 binaryFeatures.useBlobBuilder = (function(){
@@ -1236,6 +1236,7 @@ function Peer(id, options) {
     this.id = id;
     this._init();
   } else {
+    this.id = null;
     this._getId();
   }
 };
@@ -1436,6 +1437,14 @@ Peer.prototype.connect = function(peer, options) {
 };
 
 /**
+ * Return the peer id or null, if there's no id at the moment.
+ * Reasons for no id could be 'connect in progress' or 'disconnected'
+ */
+Peer.prototype.getId = function() {
+  return this.id;
+};
+
+/**
  * Destroys the Peer: closes all active connections as well as the connection
  *  to the server.
  * Warning: The peer can no longer create or accept connections after being
@@ -1457,10 +1466,25 @@ Peer.prototype.destroy = function() {
 Peer.prototype.disconnect = function() {
   if (!this.disconnected) {
     this._socket.close();
+    this.id = null;
     this.disconnected = true;
   }
 };
 
+/**
+ * Provides a clean method for checking if there's an active connection to the
+ * peer server.
+ */
+Peer.prototype.isConnected = function() {
+  return !this.disconnected;
+};
+
+/**
+ * Returns true if this peer is destroyed and can no longer be used.
+ */
+Peer.prototype.isDestroyed = function() {
+  return this.destroyed;
+};
 
 exports.Peer = Peer;
 /**
@@ -1603,6 +1627,37 @@ DataConnection.prototype.send = function(data) {
       this._dc.send(blob);
     }
   }
+};
+
+/**
+ * Returns true if the DataConnection is open and able to send messages.
+ */
+DataConnection.prototype.isOpen = function() {
+  return this.open;
+};
+
+/**
+ * Gets the metadata associated with this DataConnection.
+ */
+DataConnection.prototype.getMetadata = function() {
+  return this.metadata;
+};
+
+/**
+ * Gets the label associated with this DataConnection.
+ */
+DataConnection.prototype.getLabel = function() {
+  return this.label;
+};
+
+/**
+ * Gets the brokering ID of the peer that you are connected with.
+ * Note that this ID may be out of date if the peer has disconnected from the
+ *  server, so it's not recommended that you use this ID to identify this
+ *  connection.
+ */
+DataConnection.prototype.getPeer = function() {
+  return this.peer;
 };
 /**
  * Manages DataConnections between its peer and one other peer.
