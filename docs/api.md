@@ -27,15 +27,7 @@ In the options, either a PeerServer Cloud `key` must be provided or `host` and `
 
 The `config` object is passed straight into instances of `RTCPeerConnection`. For compatibility with symmetric NATs, you can provide your own TURN server. By default the STUN server provided by Google is used.
 
-### peer.getId()
-
-The given id of this peer.
-
-If no id was specified in the constructor, this value will be `undefined` util the `open` event fires.
-
 ### peer.id
-
-**Deprecated. Use the getter instead.**
 
 The given id of this peer.
 
@@ -74,13 +66,13 @@ Close the connection to the server, leaving all existing DataConnections intact.
 
 **Warning: This cannot be undone; the respective peer object will no longer be able to create or receive any connections and its ID will be forfeited on the (cloud) server.**
 
-### peer.isConnected()
+### peer.disconnected
 
-Returns true if there is an active connection to the PeerServer.
+Is false if there is an active connection to the PeerServer.
 
-### peer.isDestroyed()
+### peer.destroyed
 
-Returns true if this peer is destroyed and can no longer be used.
+Is true if this peer is destroyed and can no longer be used.
 
 ### Event: 'connection'
 
@@ -137,44 +129,19 @@ There is no constructor. A `DataConnection` object must be obtained in the callb
 
 Simply pass in `reliable: true` when calling `.connect(...)`. This module is experimental, temporary, and exists here: https://github.com/michellebu/reliable
 
-### connection.getPeer()
-
-The id of the remote peer this connection is connected to.
-
-### connection.isOpen()
-
-Whether the connection is open (ready for read and write).
-
-### connection.getMetadata()
-
-The metadata passed in when the connection was created with `peer.connect(...)`.
-
-### connection.getLabel()
-
-The optional label passed in or assigned by PeerJS when the connection was created with `peer.connect(...)`.
-
-  
 ### connection.peer
-
-**Deprecated. Use the getter instead.**
 
 The id of the remote peer this connection is connected to.
 
 ### connection.open
 
-**Deprecated. Use the getter instead.**
-
 Whether the connection is open (ready for read and write).
 
 ### connection.metadata
 
-**Deprecated. Use the getter instead.**
-
 The metadata passed in when the connection was created with `peer.connect(...)`.
 
 ### connection.label
-
-**Deprecated. Use the getter instead.**
 
 The optional label passed in or assigned by PeerJS when the connection was created with `peer.connect(...)`.
 
