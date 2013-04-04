@@ -1447,6 +1447,31 @@ Peer.prototype.connect = function(peer, options) {
   return connectionInfo[1];
 };
 
+/** Exposed connect function for users. Will try to connect later if user
+ * is waiting for an ID. */
+//This gives you access to the connection info, you can broadcast it however you'd like
+Peer.prototype.pexConnect = function(peer, options, callback) {
+  /*if (this.disconnected) {
+    this._warn('server-disconnected', 'This Peer has been disconnected from the server and can no longer make connections.');
+    return;
+  }*/
+//I think this should just make a fake ConnectionManager? I just want to get enough info to create a connection from somewhere else?
+  options = util.extend({
+    config: this._options.config
+  }, options);
+  options.originator = true;
+
+  var manager = this.managers[peer];
+  if (!manager) {
+    manager = new ConnectionManager(this.id, peer, this._socket, options);
+    this._attachManagerListeners(manager);
+    this.managers[peer] = manager;
+    this.connections[peer] = {};
+  }
+  //var connectionInfo = manager.connect(options);
+  manager._pexOffer(callback);
+};
+
 /**
  * Destroys the Peer: closes all active connections as well as the connection
  *  to the server.
@@ -1808,8 +1833,9 @@ ConnectionManager.prototype._setupDataChannel = function() {
 /** Send an offer. */
 ConnectionManager.prototype._makeOffer = function() {
   var self = this;
-  this.pc.createOffer(function(offer) {
+  this.pc.createOffer(function setLocal(offer) {
     util.log('Created offer.');
+    util.log(offer);
     self.pc.setLocalDescription(offer, function() {
       util.log('Set localDescription to offer');
       self._socket.send({
@@ -1824,7 +1850,35 @@ ConnectionManager.prototype._makeOffer = function() {
       });
       // We can now reset labels because all info has been communicated.
       self.labels = {};
-    }, function(err) {
+    }, function handleError(err) {
+      self.emit('error', err);
+      util.log('Failed to setLocalDescription, ', err);
+    });
+  });
+};
+
+/** Send an offer for peer exchange. */
+ConnectionManager.prototype._pexOffer = function(callback) {
+  var self = this;
+  this.pc.createOffer(function setLocal(offer) {
+    
+    self.pc.setLocalDescription(offer, function() {
+      util.log('Set localDescription to offer');
+      util.log('Created offer.');
+      util.log(offer);
+      var packet = {
+        type: 'OFFER',  //Label for the message switch
+        payload: {
+          browserisms: util.browserisms, //browser specific stuff
+          sdp: offer,                    //the info to connect to this peer
+          config: self._options.config,  //connection config info
+          labels: self.labels            //not sure
+        }
+      };
+      callback(packet);
+      // We can now reset labels because all info has been communicated.
+      self.labels = {};
+    }, function handleError(err) {
       self.emit('error', err);
       util.log('Failed to setLocalDescription, ', err);
     });
