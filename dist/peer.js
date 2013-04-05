@@ -716,7 +716,7 @@ EventEmitter.prototype.emit = function(type) {
   }
 };
 
-
+exports.EventEmitter = EventEmitter;
 
 var util = {
   
@@ -841,7 +841,7 @@ var util = {
     return false;
   }
 };
-/**
+exports.util = util;/**
  * Reliable transfer for Chrome Canary DataChannel impl.
  * Author: @michellebu
  */
@@ -1283,7 +1283,6 @@ Peer.prototype._init = function() {
   this._socket.start();
 }
 
-
 Peer.prototype._handleServerJSONMessage = function(message) {
   var peer = message.src;
   var manager = this.managers[peer];
@@ -1433,6 +1432,7 @@ Peer.prototype.connect = function(peer, options) {
   if (!this.id) {
     this._queued.push(manager);
   }
+
   return connectionInfo[1];
 };
 
@@ -1659,6 +1659,8 @@ DataConnection.prototype.getLabel = function() {
 DataConnection.prototype.getPeer = function() {
   return this.peer;
 };
+
+exports.DataConnection = DataConnection;
 /**
  * Manages DataConnections between its peer and one other peer.
  * Internally, manages PeerConnection.
@@ -1800,8 +1802,9 @@ ConnectionManager.prototype._setupDataChannel = function() {
 /** Send an offer. */
 ConnectionManager.prototype._makeOffer = function() {
   var self = this;
-  this.pc.createOffer(function(offer) {
+  this.pc.createOffer(function setLocal(offer) {
     util.log('Created offer.');
+    util.log(offer);
     self.pc.setLocalDescription(offer, function() {
       util.log('Set localDescription to offer');
       self._socket.send({
@@ -1815,7 +1818,7 @@ ConnectionManager.prototype._makeOffer = function() {
       });
       // We can now reset labels because all info has been communicated.
       self.labels = {};
-    }, function(err) {
+    }, function handleError(err) {
       self.emit('error', err);
       util.log('Failed to setLocalDescription, ', err);
     });
