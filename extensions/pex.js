@@ -1,32 +1,48 @@
 
 Peer.prototype.pex = {};
 
-Peer.prototype.pex.init = function(){
-	this.pex._setupListeners(peer);
+Peer.prototype.initPEX = function(){
+	this.pex._setupListeners(this);
 	this.pex.queue = {};
+	this.pex.peer = this;
 }
 
 Peer.prototype.pex._setupListeners = function(peer) {
-	var self = this.pex;
+	var self = this;
 	//set up listeners on the right channels?
 	for(var key in peer.connections){
 		self.setupPEXChannel(key);
 	}
 	peer.on('connection', function setupBroker(connection, meta) {
 		if(connection.getLabel() == 'pex'){
-			//console.log('creating pex connection to '+ connection.getPeer());
+			console.log('got pex connection from '+ connection.getPeer());
 			connection.on('data', function(data){
 				//console.log('pex got: ');
-				//console.log(data);
+				console.log(data);
 				self._handlePEXJSONMessage(data);
 			});
 			self._unqueue(connection.getPeer());
 		} else if(peer.connections[connection.getPeer()]['pex'] === undefined){
-			var channel = self.peer.connect(peer, {label: 'pex', serialization: 'none', reliable: true});
-			channel.on('data', function(data){
-				self._handlePEXJSONMessage(data);
-			});
-			self._unqueue(channel.getPeer());
+			if(connection.metadata && connection.metadata.pex){
+				/*
+				//I'm leaving this out because it complicates things.. also since there's clearly already a path
+				//between the two peers we don't need a driect pex connection
+				var channel = peer.pex.connect(connection.getPeer(), {label: 'pex', serialization: 'none', reliable: true});
+				channel.on('data', function(data){
+					console.log(data);
+					self._handlePEXJSONMessage(data);
+				});
+				self._unqueue(channel.getPeer());
+				*/
+			} else {
+				console.log("creating pex connection to " + connection.getPeer());
+				var channel = self.peer.connect(connection.getPeer(), {label: 'pex', serialization: 'none', reliable: true});
+				channel.on('data', function(data){
+					console.log(data);
+					self._handlePEXJSONMessage(data);
+				});
+				self._unqueue(channel.getPeer());
+			}
 		}
 	});
 };
@@ -48,7 +64,7 @@ pex.broker.prototype.setupPEXChannel = function(peer){
 };
 */
 Peer.prototype.pex._unqueue = function(peer){
-	var self = this.pex;
+	var self = this;
 	if(self.queue.hasOwnProperty(peer)){
 		while(self.queue[peer].length){
 			self._send(peer, self.queue[peer].pop());
@@ -58,24 +74,24 @@ Peer.prototype.pex._unqueue = function(peer){
 };
 
 Peer.prototype.pex._send = function(peer, message){
-	var self = this.pex;
+	var self = this;
 	var connection = self.peer.connections[peer]['pex'];
 	if(connection){
-		//console.log("sending");
+		console.log("sending");
 		//console.log(connection);
 		if(!connection.isOpen()){
 			connection.once('open', function(){
-				//console.log("waiting for open");
+				console.log("waiting for open");
 				//console.log(connection);
 				connection.send(message);
 			});
 		} else {
-			//console.log('already open');
+			console.log('already open');
 			//console.log(connection);
 			connection.send(message);
 		}
 	} else {
-		//console.log('queing');
+		console.log('queing');
 		//console.log(message);
 		if(self.queue.hasOwnProperty(peer)){
 			self.queue[peer].push(message);
@@ -95,12 +111,12 @@ Peer.prototype.pex._forward = function(message){
 		for(var key in self.peer.connections){
 			if(key !== message.src && key !== last){
 				//send on the pex label
-				self.pex._send(key, JSON.stringify(message));
+				self._send(key, JSON.stringify(message));
 			}
 		}
 	} else {
 		//console.log("trying to send direct");
-		self.pex._send(message.dst, JSON.stringify(message));
+		self._send(message.dst, JSON.stringify(message));
 	}
 };
 
@@ -108,8 +124,8 @@ Peer.prototype.pex._handlePEXJSONMessage = function(data) {
   var self = this;
   var message = JSON.parse(data);
   //console.log('message destination: '+message.dst);
-  if(message.dst != self.getId()){
-  	return self.pex._forward(message);
+  if(message.dst != self.peer.getId()){
+  	return self._forward(message);
   }
 
   //console.log("I'm the dst peer!");
@@ -120,7 +136,7 @@ Peer.prototype.pex._handlePEXJSONMessage = function(data) {
 
   // Check that browsers match.
   if (!!payload && !!payload.browserisms && payload.browserisms !== util.browserisms) {
-    self._warn('incompatible-peer', 'Peer ' + self + ' is on an incompatible browser. Please clean up this peer.');
+    self.peer._warn('incompatible-peer', 'Peer ' + self.peer + ' is on an incompatible browser. Please clean up this peer.');
   }
 
   switch (message.type) {
@@ -131,13 +147,13 @@ Peer.prototype.pex._handlePEXJSONMessage = function(data) {
           config: self.peer._options.config
         };
 
-        var manager = self.managers[peer];
+        var manager = self.peer.managers[peer];
         if (!manager) {
           util.log('creating a pex manager');
-          manager = new PeerExchangeManager(self.getId(), peer, self.connections, options);
-          self._attachManagerListeners(manager);//are there differenct listeners?
-          self.managers[peer] = manager;
-          self.connections[peer] = {};
+          manager = new PeerExchangeManager(self.peer.getId(), peer, self.peer.connections, options);
+          self.peer._attachManagerListeners(manager);//are there differenct listeners?
+          self.peer.managers[peer] = manager;
+          self.peer.connections[peer] = {};
         }
         manager.update(options.labels);
         manager.handleSDP(payload.sdp, message.type);
@@ -559,27 +575,32 @@ Peer.prototype.pex.connect = function(peer, options) {
   util.log("using peer exchange to connect");
 
   options = util.extend({
-    config: this._options.config
+    config: this.peer._options.config
   }, options);
   options.originator = true;
 
-  var manager = this.managers[peer];
-  if (!manager) {
-    //console.log("creating a new pex manager");
-    manager = new PeerExchangeManager(this.id, peer, this.connections, options);
-    this._attachManagerListeners(manager);
-    this.managers[peer] = manager;
-    this.connections[peer] = {};
+  options.metadata = {pex: true};
+
+  var manager = this.peer.managers[peer];
+  if(!manager){
+    console.log("creating a new pex manager");
+    manager = new PeerExchangeManager(this.peer.id, peer, this.peer.connections, options);
+    this.peer._attachManagerListeners(manager);
+    this.peer.managers[peer] = manager;
+    this.peer.connections[peer] = {};
+  } else {
+  	console.log("what the hell?");
   }
+
   var connectionInfo = manager.connect(options);
   if (!!connectionInfo) {
     //console.log('heres the new connection by pex');
     //console.log(connectionInfo);
-    this.connections[peer][connectionInfo[0]] = connectionInfo[1];
+    this.peer.connections[peer][connectionInfo[0]] = connectionInfo[1];
   }
 
-  if (!this.id) {
-    this._queued.push(manager);
+  if (!this.peer.id) {
+    this.peer._queued.push(manager);
   }
   /*if(this.broker){
     var self = this;

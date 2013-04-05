@@ -1,6 +1,6 @@
 [submodule "deps/EventEmitter"]
 	path = deps/EventEmitter
-	url = git://github.com/peers/EventEmitter.git
+url=git://github.com/whytheplatypus/EventEmitter.git
 [submodule "deps/js-binarypack"]
 	path = deps/js-binarypack
 	url = git://github.com/peers/js-binarypack.git
