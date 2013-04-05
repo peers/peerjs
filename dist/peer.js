@@ -1312,7 +1312,7 @@ Peer.prototype._handleServerJSONMessage = function(message) {
         manager = new ConnectionManager(this.id, peer, this._socket, options);
         this._attachManagerListeners(manager);
         this.managers[peer] = manager;
-        this.connections[peer] = {};
+        this.connections[peer] = manager.connections;
       }
       manager.update(options.labels);
       manager.handleSDP(payload.sdp, message.type);
@@ -1365,13 +1365,13 @@ Peer.prototype._attachManagerListeners = function(manager) {
   var self = this;
   // Handle receiving a connection.
   manager.on('connection', function(connection) {
-    self.connections[connection.peer][connection.label] = connection;
     self.emit('connection', connection);
   });
   // Handle a connection closing.
   manager.on('close', function() {
     if (!!self.managers[manager.peer]) {
-      delete self.managers[manager.peer]
+      delete self.managers[manager.peer];
+      delete self.connections[manager.peer];
     }
   });
   manager.on('error', function(err) {
@@ -1425,15 +1425,12 @@ Peer.prototype.connect = function(peer, options) {
     this.connections[peer] = {};
   }
 
-  var connectionInfo = manager.connect(options);
-  if (!!connectionInfo) {
-    this.connections[peer][connectionInfo[0]] = connectionInfo[1];
-  }
+  var connection = manager.connect(options);
 
   if (!this.id) {
     this._queued.push(manager);
   }
-  return connectionInfo[1];
+  return connection;
 };
 
 /**
@@ -1959,7 +1956,7 @@ ConnectionManager.prototype.connect = function(options) {
   }
 
   this._lock = true
-  return [options.label, connection];
+  return connection;
 };
 
 /** Updates label:[serialization, reliable, metadata] pairs from offer. */
