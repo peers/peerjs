@@ -1237,13 +1237,13 @@ function Peer(id, options) {
     this._init();
   } else {
     this.id = null;
-    this._getId();
+    this._retrieveId();
   }
 };
 
 util.inherits(Peer, EventEmitter);
 
-Peer.prototype._getId = function(cb) {  
+Peer.prototype._retrieveId = function(cb) {  
   var self = this;
   try {
     var http = new XMLHttpRequest();
@@ -1254,6 +1254,10 @@ Peer.prototype._getId = function(cb) {
     http.open('get', url, true);
     http.onreadystatechange = function() {
       if (http.readyState === 4) {
+        if (http.status !== 200) {
+          throw 'Retrieve id response not 200';
+          return;
+        }
         self.id = http.responseText;
         self._init();
       }
@@ -1389,15 +1393,13 @@ Peer.prototype._abort = function(type, message) {
 
 Peer.prototype._cleanup = function() {
   var self = this;
-  if (!!this.managers) {
-    var peers = Object.keys(this.managers);
-    for (var i = 0, ii = peers.length; i < ii; i++) {
-      this.managers[peers[i]].close();
-    }
-    util.setZeroTimeout(function(){
-      self.disconnect();
-    });
+  var peers = Object.keys(this.managers);
+  for (var i = 0, ii = peers.length; i < ii; i++) {
+    this.managers[peers[i]].close();
   }
+  util.setZeroTimeout(function(){
+    self.disconnect();
+  });
   this.emit('close');
 };
 
