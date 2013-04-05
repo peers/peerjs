@@ -48,8 +48,6 @@ var base = [
   , 'dataconnection.js'
   , 'connectionmanager.js'
   , 'socket.js'
-  , 'PEXBroker.js'
-  , 'PEXManager.js'
 
 ];
 
