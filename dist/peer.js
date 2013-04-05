@@ -1240,7 +1240,7 @@ function Peer(id, options) {
     this._getId();
   }
 
-  if(options.broker){
+  if(options.pex){
     this.broker = new PEXBroker(self);
   }
 };
@@ -1461,7 +1461,7 @@ Peer.prototype.pexConnect = function(peer, options) {
 
   var manager = this.managers[peer];
   if (!manager) {
-    console.log("creating a new pex manager");
+    //console.log("creating a new pex manager");
     manager = new PEXManager(this.id, peer, this.connections, options);
     this._attachManagerListeners(manager);
     this.managers[peer] = manager;
@@ -1469,8 +1469,8 @@ Peer.prototype.pexConnect = function(peer, options) {
   }
   var connectionInfo = manager.connect(options);
   if (!!connectionInfo) {
-    console.log('heres the new connection by pex');
-    console.log(connectionInfo);
+    //console.log('heres the new connection by pex');
+    //console.log(connectionInfo);
     this.connections[peer][connectionInfo[0]] = connectionInfo[1];
   }
 
@@ -2213,10 +2213,10 @@ PEXBroker.prototype._setupListeners = function(peer) {
 	}
 	peer.on('connection', function setupBroker(connection, meta) {
 		if(connection.getLabel() == 'pex'){
-			console.log('creating pex connection to '+ connection.getPeer());
+			//console.log('creating pex connection to '+ connection.getPeer());
 			connection.on('data', function(data){
-				console.log('pex got: ');
-				console.log(data);
+				//console.log('pex got: ');
+				//console.log(data);
 				self._handlePEXJSONMessage(data);
 			});
 			self._unqueue(connection.getPeer());
@@ -2237,13 +2237,13 @@ PEXBroker.prototype._unqueue = function(peer){
 PEXBroker.prototype.setupPEXChannel = function(peer){
 	var self = this;
 	if(self.peer.connections[peer]['pex'] === undefined){
-		console.log('creating pex connection to '+ peer);
+		//console.log('creating pex connection to '+ peer);
 		//honest truth is I have no idea how much of this will work when the server is down.. i'd like it all to
-		console.log('pex broker trying to setup channel to '+peer);
+		//console.log('pex broker trying to setup channel to '+peer);
 		var channel = self.peer.connect(peer, {label: 'pex', serialization: 'none', reliable: true});
 		channel.on('data', function(data){
-			console.log('pex got: ');
-			console.log(data);
+			//console.log('pex got: ');
+			//console.log(data);
 			self._handlePEXJSONMessage(data);
 		});
 		self._unqueue(channel.getPeer());
@@ -2254,22 +2254,22 @@ PEXBroker.prototype._send = function(peer, message){
 	var self = this;
 	var connection = self.peer.connections[peer]['pex'];
 	if(connection){
-		console.log("sending");
-		console.log(connection);
+		//console.log("sending");
+		//console.log(connection);
 		if(!connection.isOpen()){
 			connection.once('open', function(){
-				console.log("waiting for open");
-				console.log(connection);
+				//console.log("waiting for open");
+				//console.log(connection);
 				connection.send(message);
 			});
 		} else {
-			console.log('already open');
-			console.log(connection);
+			//console.log('already open');
+			//console.log(connection);
 			connection.send(message);
 		}
 	} else {
-		console.log('queing');
-		console.log(message);
+		//console.log('queing');
+		//console.log(message);
 		if(self.queue.hasOwnProperty(peer)){
 			self.queue[peer].push(message);
 		} else {
@@ -2281,8 +2281,8 @@ PEXBroker.prototype._send = function(peer, message){
 PEXBroker.prototype._forward = function(message){
 	var self = this;
 	var last = message.last;
-	console.log("forward!");
-	console.log(message);
+	//console.log("forward!");
+	//console.log(message);
 	message.last = self.peer.getId();
 	if(self.peer.connections[message.dst]['pex'] === undefined){
 		for(var key in self.peer.connections){
@@ -2292,7 +2292,7 @@ PEXBroker.prototype._forward = function(message){
 			}
 		}
 	} else {
-		console.log("trying to send direct");
+		//console.log("trying to send direct");
 		self._send(message.dst, JSON.stringify(message));
 	}
 };
@@ -2300,12 +2300,12 @@ PEXBroker.prototype._forward = function(message){
 PEXBroker.prototype._handlePEXJSONMessage = function(data) {
   var self = this;
   var message = JSON.parse(data);
-  console.log('message destination: '+message.dst);
+  //console.log('message destination: '+message.dst);
   if(message.dst != self.peer.getId()){
   	return self._forward(message);
   }
 
-  console.log("I'm the dst peer!");
+  //console.log("I'm the dst peer!");
   
   var peer = message.src;
   var manager = self.peer.managers[peer];
@@ -2409,21 +2409,21 @@ util.inherits(PEXManager, EventEmitter);
 PEXManager.prototype._send = function(message) {
 	message.dst = this.peer;
 	message.src = this.id;
-	//console.log(this.connections);
+	////console.log(this.connections);
 	function sendWhenReady(connection){
 		if(connection){
 			if(!connection.isOpen()){
 				connection.once('open', function(){
-					console.log("pex sending on open");
-					console.log(message);
-					console.log('to '+ connection.getPeer());
+					//console.log("pex sending on open");
+					//console.log(message);
+					//console.log('to '+ connection.getPeer());
 					connection.send(message);
 				});
 			} else {
-				console.log("pex sending");
-				console.log(JSON.stringify(message));
-				console.log('to '+ connection.getPeer());
-				console.log(connection);
+				//console.log("pex sending");
+				//console.log(JSON.stringify(message));
+				//console.log('to '+ connection.getPeer());
+				//console.log(connection);
 				connection.send(JSON.stringify(message));//wish I could move this to the broker
 			}
 		} else {
