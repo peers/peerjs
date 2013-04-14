@@ -9,5 +9,10 @@
 
 ###[Live demo: Simple hello world demo](http://cdn.peerjs.com/demo/helloworld.html)
 
+###[Wikipedia Golf](http://wikigolf.herokuapp.com/)
+
+A Game with a Purpose (GWAP) that is designed to provide meaningful data useful for NLP programs.
+
+### More on the way!
 
 As we build more examples and demos they will be posted here. If you have built something cool, feel free to make a pull request to this directory.
