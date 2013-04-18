@@ -1298,7 +1298,6 @@ Peer.prototype._handleServerJSONMessage = function(message) {
       this.emit('open', this.id);
       break;
     case 'ERROR':
-      util.log(payload.msg);
       this._abort('server-error', payload.msg);
       break;
     case 'ID-TAKEN':
@@ -1385,6 +1384,7 @@ Peer.prototype._attachManagerListeners = function(manager) {
 
 /** Destroys the Peer and emits an error message. */
 Peer.prototype._abort = function(type, message) {
+  util.log('Aborting. Error:', message);
   var err = new Error(message);
   err.type = type;
   this.destroy();
