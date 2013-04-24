@@ -719,15 +719,15 @@ EventEmitter.prototype.emit = function(type) {
 
 
 var util = {
-  
+
   chromeCompatible: true,
-  firefoxCompatible: false,
+  firefoxCompatible: true,
   chromeVersion: 26,
   firefoxVersion: 22,
 
   debug: false,
   browserisms: '',
-  
+
   inherits: function(ctor, superCtor) {
     ctor.super_ = superCtor;
     ctor.prototype = Object.create(superCtor.prototype, {
@@ -752,7 +752,7 @@ var util = {
   randomPort: function() {
     return Math.round(Math.random() * 60535) + 5000;
   },
-  
+
   log: function () {
     if (util.debug) {
       var err = false;
@@ -778,7 +778,7 @@ var util = {
     function setZeroTimeoutPostMessage(fn) {
       timeouts.push(fn);
       global.postMessage(messageName, '*');
-    }		
+    }
 
     function handleMessage(event) {
       if (event.source == global && event.data == messageName) {
@@ -797,7 +797,7 @@ var util = {
     }
     return setZeroTimeoutPostMessage;
   }(this)),
-  
+
   blobToArrayBuffer: function(blob, cb){
     var fr = new FileReader();
     fr.onload = function(evt) {
@@ -1184,8 +1184,11 @@ function Peer(id, options) {
   // First check if browser can use PeerConnection/DataChannels.
   // TODO: when media is supported, lower browser version limit and move DC
   // check to where`connect` is called.
+  var self = this;
   if (!util.isBrowserCompatible()) {
-    this._abort('browser-incompatible', 'The current browser does not support WebRTC DataChannels');
+    util.setZeroTimeout(function() {
+      self._abort('browser-incompatible', 'The current browser does not support WebRTC DataChannels');
+    });
     return;
   }
 
@@ -1205,18 +1208,17 @@ function Peer(id, options) {
   util.debug = options.debug;
 
   // Ensure alphanumeric_-
-  var self = this;
   if (id && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(id)) {
     util.setZeroTimeout(function() {
       self._abort('invalid-id', 'ID "' + id + '" is invalid');
     });
-    return
+    return;
   }
   if (options.key && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.key)) {
     util.setZeroTimeout(function() {
       self._abort('invalid-key', 'API KEY "' + options.key + '" is invalid');
     });
-    return
+    return;
   }
 
   // States.
@@ -1344,11 +1346,6 @@ Peer.prototype._handleServerJSONMessage = function(message) {
     case 'INVALID-KEY':
       this._abort('invalid-key', 'API KEY "' + this._key + '" is invalid');
       break;
-    case 'PORT':
-      //if (util.browserisms === 'Firefox') {
-      //  connection.handlePort(payload);
-      //  break;
-      //}
     default:
       util.log('Unrecognized message type:', message.type);
       break;
@@ -1393,16 +1390,17 @@ Peer.prototype._abort = function(type, message) {
 
 Peer.prototype._cleanup = function() {
   var self = this;
-  var peers = Object.keys(this.managers);
-  for (var i = 0, ii = peers.length; i < ii; i++) {
-    this.managers[peers[i]].close();
+  if (!!this.managers) {
+    var peers = Object.keys(this.managers);
+    for (var i = 0, ii = peers.length; i < ii; i++) {
+      this.managers[peers[i]].close();
+    }
   }
   util.setZeroTimeout(function(){
     self.disconnect();
   });
   this.emit('close');
 };
-
 
 
 /** Exposed connect function for users. Will try to connect later if user
@@ -1420,11 +1418,20 @@ Peer.prototype.connect = function(peer, options) {
   }, options);
 
   var manager = this.managers[peer];
+
+  // Firefox currently does not support multiplexing once an offer is made.
+  if (util.browserisms === 'Firefox' && !!manager && manager.firefoxSingular) {
+    var err = new Error('Firefox currently does not support multiplexing after a DataChannel has already been established');
+    err.type = 'firefoxism';
+    this.emit('error', err);
+    return;
+  }
+
   if (!manager) {
     manager = new ConnectionManager(this.id, peer, this._socket, options);
     this._attachManagerListeners(manager);
     this.managers[peer] = manager;
-    this.connections[peer] = {};
+    this.connections[peer] = manager.connections;
   }
 
   var connection = manager.connect(options);
@@ -1527,7 +1534,7 @@ DataConnection.prototype._configureDataChannel = function() {
   };
 
   // Reliable.
-  if (this._isReliable) {
+  if (this._isReliable && util.browserisms !== 'Firefox') {
     this._reliable = new Reliable(this._dc, util.debug);
   }
 
@@ -1801,6 +1808,9 @@ ConnectionManager.prototype._makeOffer = function() {
   var self = this;
   this.pc.createOffer(function(offer) {
     util.log('Created offer.');
+    // Firefox currently does not support multiplexing once an offer is made.
+    self.firefoxSingular = true;
+
     self.pc.setLocalDescription(offer, function() {
       util.log('Set localDescription to offer');
       self._socket.send({
@@ -1947,7 +1957,11 @@ ConnectionManager.prototype.connect = function(options) {
 
   var dc;
   if (!!this.pc && !this._lock) {
-    dc = this.pc.createDataChannel(options.label, { reliable: false });
+    var reliable = util.browserisms === 'Firefox' ? !!options.reliable : false;
+    dc = this.pc.createDataChannel(options.label, { reliable: reliable });
+    if (util.browserisms === 'Firefox') {
+      this._makeOffer();
+    }
   }
   var connection = new DataConnection(this.peer, dc, options);
   this._attachConnectionListeners(connection);
