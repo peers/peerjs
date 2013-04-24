@@ -1,11 +1,14 @@
 # PeerJS Changelog
 
+## Version 0.2.5 (24 Apr 2013)
+* **Firefox compatibility for Firefox Nightly.**
+* Misc bug fixes.
+
 ## Version 0.2.1 (3 Apr 2013)
 * **Warning**: this build changes the error of type `peer-destroyed` to `server-disconnected`.
 * ~~**Firefox compatibility.**~~ - Pushed back due to volatility of Firefox Nightly DataChannel APIs.
 * Browser detection added. If an incompatible browser is detected, the `browser-incompatible` error is emitted from the `Peer`.
 * Added a `.disconnect()` method to `Peer`, which can be called to close connections to the PeerServer (but not any active DataConnections).
-* New getters for `Peer.id`, `DataConnection.peer`, `DataConnection.metadata` among others.
 
 ## Version 0.2.0 (24 Mar 2013)
 * **Warning**: this build introduces the following API changes that may break existing code.
