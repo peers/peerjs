@@ -749,9 +749,6 @@ var util = {
   },
   pack: BinaryPack.pack,
   unpack: BinaryPack.unpack,
-  randomPort: function() {
-    return Math.round(Math.random() * 60535) + 5000;
-  },
 
   log: function () {
     if (util.debug) {
