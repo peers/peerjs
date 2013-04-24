@@ -1512,7 +1512,7 @@ function DataConnection(peer, dc, options) {
   this.metadata = options.metadata;
   this.serialization = options.serialization;
   this.peer = peer;
-  this._isReliable = options.reliable;
+  this.reliable = options.reliable;
 
   this._dc = dc;
   if (!!this._dc) {
@@ -1534,7 +1534,7 @@ DataConnection.prototype._configureDataChannel = function() {
   };
 
   // Reliable.
-  if (this._isReliable && util.browserisms !== 'Firefox') {
+  if (this.reliable && util.browserisms !== 'Firefox') {
     this._reliable = new Reliable(this._dc, util.debug);
   }
 
@@ -1741,7 +1741,8 @@ ConnectionManager.prototype._startPeerConnection = function() {
 ConnectionManager.prototype._processQueue = function() {
   var conn = this._queued.pop();
   if (!!conn) {
-    conn.addDC(this.pc.createDataChannel(conn.label, { reliable: false }));
+    var reliable = util.browserisms === 'Firefox' ? conn.reliable : false;
+    conn.addDC(this.pc.createDataChannel(conn.label, { reliable: reliable }));
   }
 };
 
@@ -1943,9 +1944,17 @@ ConnectionManager.prototype.connect = function(options) {
     return;
   }
 
-  options = util.extend({
-    label: 'peerjs'
-  }, options);
+  if (util.browserisms === 'Firefox') {
+    options = util.extend({
+      label: 'peerjs',
+      reliable: true
+    }, options);
+  } else {
+    options = util.extend({
+      label: 'peerjs',
+      reliable: false
+    }, options);
+  }
 
   // Check if label is taken...if so, generate a new label randomly.
   while (!!this.connections[options.label]) {
@@ -1957,7 +1966,7 @@ ConnectionManager.prototype.connect = function(options) {
 
   var dc;
   if (!!this.pc && !this._lock) {
-    var reliable = util.browserisms === 'Firefox' ? !!options.reliable : false;
+    var reliable = util.browserisms === 'Firefox' ? options.reliable : false;
     dc = this.pc.createDataChannel(options.label, { reliable: reliable });
     if (util.browserisms === 'Firefox') {
       this._makeOffer();
