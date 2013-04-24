@@ -43,10 +43,6 @@ describe('util', function() {
     expect(util.unpack).to.be.equal(BinaryPack.unpack);
   })
 
-  it('randomPort', function() {
-    testRandom(util.randomPort);
-  })
-
   // FF no like
   it('log', function(done) {
     var consolelog = console.log;
@@ -64,7 +60,15 @@ describe('util', function() {
     util.debug = false;
   })
 
-  it('setZeroTimeout')
+  it('setZeroTimeout', function(done) {
+    var isdone = false;
+    util.setZeroTimeout(function() {
+      if (isdone) {
+        done();
+      }
+    });
+    isdone = true;
+  })
 
   it('blobToArrayBuffer', function(done) {
     var blob = new Blob(['hi']);
