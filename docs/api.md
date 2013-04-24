@@ -43,6 +43,10 @@ A hash of all current connections with the current peer. Keys are ids and values
 
 Connects to the remote peer specified by `id`.
 
+This function can be called multiple times for multiplexed connections between
+two peers. In Firefox however this functionality is only available before the
+first connection is established.
+
 Returns a `DataConnection` object.
 
 * `id` String. The id of the remote peer to connect to.
@@ -50,7 +54,7 @@ Returns a `DataConnection` object.
   * `label` Optional label for the underlying DataChannel, to differentiate between DataConnections between the same two peers. If left unspecified, a label will be assigned at random.
   * `metadata` Optional metadata to pass to the remote peer. Can be any serializable type.
   * `serialization` String, which can be `binary`, `binary-utf8`, `json`, or `none`. This will be the serialization format of all data sent over the P2P DataConnection. Defaults to `binary`.
-  * `reliable` Boolean, which if `true` activates experimental reliable transfer (while waiting for actual reliable transfer to be implemented in Chrome). Defaults to `false` until Chrome implements reliable/large data transfer. This parameter is only available in the most recent build.
+  * `reliable` Boolean, which if `true` activates experimental reliable transfer in Chrome (while waiting for actual reliable transfer to be implemented in Chrome). Defaults to `false` until Chrome implements reliable/large data transfer. Defaults to true in Firefox.
 
 Before writing to / data will be emitted from the `DataConnection` object that is returned, the `open` event must fire. Also the `error` event should be checked in case a connection cannot be made.
 
@@ -104,6 +108,7 @@ The `error` object also has a `type` parameter that may be helpful in responding
 * `invalid-id`: The ID passed into the Peer constructor contains illegal characters.
 * `invalid-key`: The API key passed into the Peer constructor contains illegal characters or is not in the system (cloud server only).
 * `unavailable-id`: The ID passed into the Peer constructor is already taken.
+* `firefoxism`: The operation you're trying to perform is not supported in firefox.
 * Errors types that shouldn't regularly appear:
   * `server-error`: Unable to reach the server.
   * `socket-error`: An error from the underlying socket.
@@ -127,7 +132,7 @@ There is no constructor. A `DataConnection` object must be obtained in the callb
 
 ### EXPERIMENTAL reliable and large file transfer:
 
-Simply pass in `reliable: true` when calling `.connect(...)`. This module is experimental, temporary, and exists here: https://github.com/michellebu/reliable
+(CHROME ONLY. Firefox has reliable transport built in and reliable transfer is the default option.) Simply pass in `reliable: true` when calling `.connect(...)`. This module is experimental, temporary, and exists here: https://github.com/michellebu/reliable
 
 ### connection.peer
 
