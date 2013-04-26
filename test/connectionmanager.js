@@ -4,68 +4,26 @@ describe('ConnectionManager', function() {
 
   it('inherits from EventEmitter');
 
-  it('initialize', function() {
+  it('_setupDataChannel');
 
-  });
+  it('_makeOffer');
 
-  it('_startPeerConnection', function() {
+  it('_makeAnswer');
 
-  });
+  it('_cleanup');
 
-  it('_processQueue', function() {
+  it('_attachConnectionListeners');
 
-  });
+  it('handleSDP');
 
-  it('_setupIce', function() {
+  it('handleCandidate');
 
-  });
+  it('handleLeave');
 
-  it('_setupNegotiationHandler', function() {
+  it('close');
 
-  });
+  it('connect');
 
-  it('_setupDataChannel', function() {
-
-  });
-
-  it('_makeOffer', function() {
-
-  });
-
-  it('_makeAnswer', function() {
-
-  });
-
-  it('_cleanup', function() {
-
-  });
-
-  it('_attachConnectionListeners', function() {
-
-  });
-
-  it('handleSDP', function() {
-
-  });
-
-  it('handleCandidate', function() {
-
-  });
-
-  it('handleLeave', function() {
-
-  });
-
-  it('close', function() {
-
-  });
-
-  it('connect', function() {
-
-  });
-
-  it('update', function() {
-
-  });
+  it('update');
 
 });
