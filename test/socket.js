@@ -1,23 +1,23 @@
 describe('Socket', function() {
 
-  it('constructor')
+  it('constructor');
 
-  it('inherits from EventEmitter')
+  it('inherits from EventEmitter');
 
-  it('start')
+  it('start');
 
-  it('_startWebSocket')
+  it('_startWebSocket');
 
-  it('_startXhrStream')
+  it('_startXhrStream');
 
-  it('_handleStream')
+  it('_handleStream');
 
-  it('_setHTTPTimeout')
+  it('_setHTTPTimeout');
 
-  it('send')
+  it('send');
 
-  it('close')
-  
-  it('_wsOpen')
+  it('close');
+
+  it('_wsOpen');
 
 });
