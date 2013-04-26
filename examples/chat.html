@@ -6,6 +6,15 @@
 <meta http-equiv="Content-Language" content="en-us"> 
 
 <link href="fancy.css" rel="stylesheet" type="text/css">
+<script>
+  // Just for demo.
+  console._log = console.log;
+  console.log = function() {
+    var copy = Array.prototype.slice.call(arguments).join(' ');
+    $('.log').append(copy + '<br>');
+    console._log(copy);
+  };
+</script>
 
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script> 
 <script type="text/javascript" src="http://cdn.peerjs.com/0/peer.js"></script>
@@ -178,11 +187,15 @@ window.onunload = window.onbeforeunload = function(e) {
   </div>
   
   
-  <div class="warning browser"><div class="important">Your browser version: <span id="browsers"></span><br>
+  <div class="warning browser">
+    <div class="important">Your browser version: <span id="browsers"></span><br>
   Currently <strong>Firefox 22+ and Google Chrome 26.0.1403.0 or above</strong> is required.</strong></div>For more up to date compatibility
 information see <a href="http://peerjs.com/status">PeerJS WebRTC
   Status</a><br>Note that this demo may also fail if you are behind
 stringent firewalls or both you and the remote peer and behind symmetric
-NATs.</div>
+NATs.
+
+<div class="log" style="color:#FF7500;text-shadow:none;padding:15px;background:#eee"><strong>Connection status</strong>:<br></div>
+</div>
 </body> 
 </html> 

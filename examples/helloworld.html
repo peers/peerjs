@@ -5,6 +5,16 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
 <meta http-equiv="Content-Language" content="en-us"> 
 
+<script>
+  // Just for demo.
+  console._log = console.log;
+  console.log = function() {
+    var copy = Array.prototype.slice.call(arguments).join(' ');
+    $('.log').append(copy + '<br>');
+    console._log(copy);
+  };
+</script>
+
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> 
 <script type="text/javascript" src="http://cdn.peerjs.com/0/peer.js"></script>
 <script>
@@ -111,5 +121,6 @@
 information see <a href="http://peerjs.com/status">PeerJS WebRTC
   Status</a><br>Note that this demo may also fail if you are behind
 stringent firewalls.</div></div>
+<div class="log" style="color:#FF7500;text-shadow:none;padding:15px;"><strong>Connection status</strong>:<br></div>
 </body> 
 </html> 
