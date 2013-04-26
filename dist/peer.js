@@ -1498,7 +1498,6 @@ function DataConnection(peer, dc, options) {
   EventEmitter.call(this);
 
   options = util.extend({
-    reliable: false,
     serialization: 'binary'
   }, options);
 
@@ -1941,17 +1940,10 @@ ConnectionManager.prototype.connect = function(options) {
     return;
   }
 
-  if (util.browserisms === 'Firefox') {
-    options = util.extend({
-      label: 'peerjs',
-      reliable: true
-    }, options);
-  } else {
-    options = util.extend({
-      label: 'peerjs',
-      reliable: false
-    }, options);
-  }
+  options = util.extend({
+    label: 'peerjs',
+    reliable: (util.browserisms === 'Firefox')
+  }, options);
 
   // Check if label is taken...if so, generate a new label randomly.
   while (!!this.connections[options.label]) {
