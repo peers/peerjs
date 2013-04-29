@@ -1147,26 +1147,16 @@ Reliable.higherBandwidthSDP = function(sdp) {
 };
 
 exports.Reliable = Reliable;
-var RTCPeerConnection = null;
-var getUserMedia = null;
-var attachMediaStream = null;
-
-if (navigator.mozGetUserMedia) {
+if (window.mozRTCPeerConnection) {
   util.browserisms = 'Firefox';
-
-  RTCSessionDescription = window.mozRTCSessionDescription;
-  RTCPeerConnection = window.mozRTCPeerConnection;
-  getUserMedia = navigator.mozGetUserMedia.bind(navigator);
-} else if (navigator.webkitGetUserMedia) {
+} else if (window.webkitRTCPeerConnection) {
   util.browserisms = 'Webkit';
-
-  RTCPeerConnection = window.webkitRTCPeerConnection;
-  getUserMedia = navigator.webkitGetUserMedia.bind(navigator);
+} else {
+  util.browserisms = 'Unknown';
 }
 
-exports.RTCSessionDescription = RTCSessionDescription;
-exports.RTCPeerConnection = RTCPeerConnection;
-exports.getUserMedia = getUserMedia;
+exports.RTCSessionDescription = window.mozRTCSessionDescription || window.RTCSessionDescription;
+exports.RTCPeerConnection = window.mozRTCPeerConnection || window.webkitRTCPeerConnection || window.RTCPeerConnection;
 /**
  * A peer who can initiate connections with other peers.
  */
@@ -1521,6 +1511,7 @@ util.inherits(DataConnection, EventEmitter);
 DataConnection.prototype._configureDataChannel = function() {
   var self = this;
   if (util.browserisms !== 'Webkit') {
+    // Webkit doesn't support binary yet
     this._dc.binaryType = 'arraybuffer';
   }
   this._dc.onopen = function() {
@@ -1529,7 +1520,7 @@ DataConnection.prototype._configureDataChannel = function() {
     self.emit('open');
   };
 
-  // Reliable.
+  // Use the Reliable shim for non Firefox browsers
   if (this.reliable && util.browserisms !== 'Firefox') {
     this._reliable = new Reliable(this._dc, util.debug);
   }
@@ -1566,6 +1557,7 @@ DataConnection.prototype._handleDataMessage = function(e) {
   var datatype = data.constructor;
   if (this.serialization === 'binary' || this.serialization === 'binary-utf8') {
     if (datatype === Blob) {
+      // Datatype should never be blob
       util.blobToArrayBuffer(data, function(ab) {
         data = util.unpack(ab);
         self.emit('data', data);
@@ -1574,6 +1566,7 @@ DataConnection.prototype._handleDataMessage = function(e) {
     } else if (datatype === ArrayBuffer) {
       data = util.unpack(data);
     } else if (datatype === String) {
+      // String fallback for binary data for browsers that don't support binary yet
       var ab = util.binaryStringToArrayBuffer(data);
       data = util.unpack(ab);
     }
