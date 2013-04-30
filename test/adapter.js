@@ -12,8 +12,5 @@ describe('adapter', function() {
     expect(RTCSessionDescription).to.be.a('function');
   });
 
-  it('sets getUserMedia', function() {
-    expect(getUserMedia).to.be.a('function');
-  });
 
 });
