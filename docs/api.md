@@ -27,6 +27,11 @@ In the options, either a PeerServer Cloud `key` must be provided or `host` and `
 
 The `config` object is passed straight into instances of `RTCPeerConnection`. For compatibility with symmetric NATs, you can provide your own TURN server. By default the STUN server provided by Google is used.
 
+### Peer.browser
+
+The type of browser the client is on. Currently WebRTC DataChannels are not
+interoperable so different browser types should not be connected.
+
 ### peer.id
 
 The given id of this peer.

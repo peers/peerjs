@@ -1464,6 +1464,9 @@ Peer.prototype.disconnect = function() {
   }
 };
 
+/** The current browser. */
+Peer.browser = util.browserisms;
+
 /**
  * Provides a clean method for checking if there's an active connection to the
  * peer server.
