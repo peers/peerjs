@@ -1,3 +1,33 @@
+
+- [PeerJS API Reference](#peerjs-api-reference)
+	- [Class: peerjs.Peer](#class-peerjspeer)
+		- [new Peer([id], [options])](#new-peerid-options)
+		- [Peer.browser](#peerbrowser)
+		- [peer.id](#peerid)
+		- [peer.connections](#peerconnections)
+		- [peer.connect(id, [options])](#peerconnectid-options)
+		- [peer.destroy()](#peerdestroy)
+		- [peer.disconnect()](#peerdisconnect)
+		- [peer.disconnected](#peerdisconnected)
+		- [peer.destroyed](#peerdestroyed)
+		- [Event: 'connection'](#event-'connection')
+		- [Event: 'open'](#event-'open')
+		- [Event: 'error'](#event-'error')
+		- [Event: 'close'](#event-'close')
+	- [Class: peerjs.DataConnection](#class-peerjsdataconnection)
+		- [EXPERIMENTAL reliable and large file transfer:](#experimental-reliable-and-large-file-transfer)
+		- [connection.peer](#connectionpeer)
+		- [connection.open](#connectionopen)
+		- [connection.metadata](#connectionmetadata)
+		- [connection.label](#connectionlabel)
+		- [connection.serialization](#connectionserialization)
+		- [connection.send(data)](#connectionsenddata)
+		- [connection.close()](#connectionclose)
+		- [Event: 'data'](#event-'data')
+		- [Event: 'open'](#event-'open'-1)
+		- [Event: 'error'](#event-'error'-1)
+		- [Event: 'close'](#event-'close'-1)
+
 # PeerJS API Reference
 
 **Due to browsers' incomplete support of the WebRTC DataChannel specification, many features of PeerJS have caveats.
