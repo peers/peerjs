@@ -1,8 +1,12 @@
 # PeerJS Changelog
 
-## Version 0.2.6 (28 May 2013)
+## Version 0.2.7 (28 May 2013)
 * Fix bug, no error when .disconnect called in before socket connection established.
 * Fix bug, failure to enter debug mode when aborting because browser not supported.
+
+## Version 0.2.6 (2 May 2013)
+* Peer.browser to check browser type.
+* Update Reliable library and fix Reliable functionality in Chrome.
 
 ## Version 0.2.5 (24 Apr 2013)
 * **Firefox compatibility for Firefox Nightly.**
