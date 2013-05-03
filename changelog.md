@@ -1,5 +1,9 @@
 # PeerJS Changelog
 
+## Version 0.2.6 (2 May 2013)
+* Peer.browser to check browser type.
+* Update Reliable library and fix Reliable functionality in Chrome.
+
 ## Version 0.2.5 (24 Apr 2013)
 * **Firefox compatibility for Firefox Nightly.**
 * Misc bug fixes.
