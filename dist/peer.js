@@ -860,7 +860,7 @@ function Reliable(dc, debug) {
   // MTU.
   this._mtu = 500;
   // Interval for setInterval. In ms.
-  this._interval = 10;
+  this._interval = 0;
 
   // Messages sent.
   this._count = 0;
@@ -894,11 +894,10 @@ Reliable.prototype.send = function(msg) {
   this._count += 1;
 };
 
-// Overwritten, typically.
-Reliable.prototype.onmessage = function(msg) {};
-
 // Set up interval for processing queue.
 Reliable.prototype._setupInterval = function() {
+  // TODO: fail gracefully.
+
   var self = this;
   this._timeout = setInterval(function() {
     // FIXME: String stuff makes things terribly async.
@@ -915,7 +914,6 @@ Reliable.prototype._setupInterval = function() {
 
 Reliable.prototype._intervalSend = function(msg) {
   var self = this;
-  util.log('Sending...', msg);
   msg = util.pack(msg);
   util.blobToBinaryString(msg, function(str) {
     self._dc.send(str);
@@ -923,13 +921,12 @@ Reliable.prototype._intervalSend = function(msg) {
   if (self._queue.length === 0) {
     clearTimeout(self._timeout);
     self._timeout = null;
-    self._processAcks();
+    //self._processAcks();
   }
 };
 
 // Go through ACKs to send missing pieces.
 Reliable.prototype._processAcks = function() {
-  // processAcks
   for (var id in this._outgoing) {
     if (this._outgoing.hasOwnProperty(id)) {
       this._sendWindowedChunks(id);
@@ -976,7 +973,6 @@ Reliable.prototype._setupDC = function() {
 
 // Handles an incoming message.
 Reliable.prototype._handleMessage = function(msg) {
-  util.log('handleMessage: ', msg);
   var id = msg[1];
   var idata = this._incoming[id];
   var odata = this._outgoing[id];
@@ -986,27 +982,25 @@ Reliable.prototype._handleMessage = function(msg) {
     case 'no':
       var message = id;
       if (!!message) {
-        // TODO: What fancy timeout stuff to do with ACK?
         this.onmessage(util.unpack(message));
       }
       break;
     // Reached the end of the message.
     case 'end':
-      // What if 'end' is sent out of order? Eventually we will ACK for
-      // and receive it, so shouldn't be a problem.
       data = idata;
-      if (!!data && data.ack[2] === msg[2]) {
-        this._complete(id);
-        this._received[id] = true;
-      } else if (!!data) {
-        this._ack(id, data.ack);
+
+      // In case end comes first.
+      this._received[id] = msg[2];
+
+      if (!data) {
+        break;
       }
+
+      this._ack(id);
       break;
     case 'ack':
       data = odata;
       if (!!data) {
-        // TODO: more optimization for window size & data sent.
-        // TODO: possibly process ACKs only after queue cleared to avoid dups?
         var ack = msg[2];
         // Take the larger ACK, for out of order messages.
         data.ack = Math.max(ack, data.ack);
@@ -1026,7 +1020,8 @@ Reliable.prototype._handleMessage = function(msg) {
       // Create a new entry if none exists.
       data = idata;
       if (!data) {
-        if (this._received[id] !== undefined) {
+        var end = this._received[id];
+        if (end === true) {
           break;
         }
         data = {
@@ -1069,12 +1064,20 @@ Reliable.prototype._chunk = function(bl) {
     chunks.push(chunk);
     start = end;
   }
+  util.log('Created', chunks.length, 'chunks.');
   return chunks;
 };
 
 // Sends ACK N, expecting Nth blob chunk for message ID.
-Reliable.prototype._ack = function(id, n) {
+Reliable.prototype._ack = function(id) {
   var ack = this._incoming[id].ack;
+
+  // if ack is the end value, then call _complete.
+  if (this._received[id] === ack[2]) {
+    this._complete(id);
+    this._received[id] = true;
+  }
+
   this._handleSend(ack);
 };
 
@@ -1101,36 +1104,24 @@ Reliable.prototype._sendWindowedChunks = function(id) {
   var limit = Math.min(data.ack + this._window, ch.length);
   for (var i = data.ack; i < limit; i += 1) {
     if (!ch[i].sent || i === data.ack) {
-      // Sliding window.
-      if (i === data.ack && ch[i].sent) {
-        this._window = Math.max(1, Math.round(this._window / 10));
-        limit = Math.min(data.ack + this._window, ch.length);
-      } else if (i === data.ack) {
-        this._window = Math.min(1000, Math.round(this._window * 10));
-        limit = Math.min(data.ack + this._window, ch.length);
-      }
-
       ch[i].sent = true;
       chunks.push(['chunk', id, i, ch[i].payload]);
     }
   }
-  if (data.ack + this._window >= ch.length - 1) {
+  if (data.ack + this._window >= ch.length) {
     chunks.push(['end', id, ch.length])
   }
   chunks._multiple = true;
   this._handleSend(chunks);
-  // TODO: set retry timer.
 };
 
 // Puts together a message from chunks.
 Reliable.prototype._complete = function(id) {
-  // FIXME: handle errors.
-  util.log('Complete', id);
+  util.log('Completed called for', id);
   var self = this;
   var chunks = this._incoming[id].chunks;
   var bl = new Blob(chunks);
   util.blobToArrayBuffer(bl, function(ab) {
-    util.log('Calling onmessage with complete message');
     self.onmessage(util.unpack(ab));
   });
   delete this._incoming[id];
@@ -1145,6 +1136,9 @@ Reliable.higherBandwidthSDP = function(sdp) {
   var replace = 'b=AS:102400'; // 100 Mbps
   return parts[0] + replace + parts[1];
 };
+
+// Overwritten, typically.
+Reliable.prototype.onmessage = function(msg) {};
 
 exports.Reliable = Reliable;
 if (window.mozRTCPeerConnection) {
@@ -1804,6 +1798,10 @@ ConnectionManager.prototype._makeOffer = function() {
     // Firefox currently does not support multiplexing once an offer is made.
     self.firefoxSingular = true;
 
+    if (util.browserisms === 'Webkit') {
+      offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
+    }
+
     self.pc.setLocalDescription(offer, function() {
       util.log('Set localDescription to offer');
       self._socket.send({
@@ -1829,6 +1827,11 @@ ConnectionManager.prototype._makeAnswer = function() {
   var self = this;
   this.pc.createAnswer(function(answer) {
     util.log('Created answer.');
+
+    if (util.browserisms === 'Webkit') {
+      answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
+    }
+
     self.pc.setLocalDescription(answer, function() {
       util.log('Set localDescription to answer.');
       self._socket.send({
