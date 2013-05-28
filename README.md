@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/peers/peerjs.png)](https://travis-ci.org/peers/peerjs)
+
 # PeerJS: Peer-to-peer data in the browser #
 
 PeerJS provides a complete, configurable, and easy-to-use peer-to-peer data API built on top of WebRTC.   
