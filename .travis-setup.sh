@@ -16,7 +16,7 @@ Chrome*)
     sudo dpkg --install $CHROME || sudo apt-get -f install
     ls -l /usr/bin/google-chrome
     google-chrome --version
-    export CHROME_BIN=/usr/bin/google-chrome --no-sandbox
+    export CHROME_BIN="/usr/bin/google-chrome --no-sandbox"
     ;;
 
 Firefox)
