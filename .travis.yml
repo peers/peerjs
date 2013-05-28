@@ -1,6 +1,18 @@
 language: node_js
 node_js:
   - 0.8
+
+env:
+  - BROWSER=Chrome-stable
+  - BROWSER=Chrome-beta
+  - BROWSER=Chrome-unstable
+#  - BROWSER=PhantomJS
+  - BROWSER=Firefox
+
+
+install:
+  - ./.travis-setup.sh
+    
 before_script:
   - export DISPLAY=:99.0
   - sh -e /etc/init.d/xvfb start
