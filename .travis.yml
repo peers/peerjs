@@ -16,7 +16,6 @@ install:
 before_script:
   - export DISPLAY=:99.0
   - sh -e /etc/init.d/xvfb start
-  - make
 
 script:
   - ./node_modules/karma/bin/karma start ./karma/karma.conf.js --browsers $(echo $BROWSER | sed -e's/-.*//') --single-run
