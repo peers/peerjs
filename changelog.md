@@ -1,5 +1,9 @@
 # PeerJS Changelog
 
+## Version 0.2.6 (28 May 2013)
+* Fix bug, no error when .disconnect called in before socket connection established.
+* Fix bug, failure to enter debug mode when aborting because browser not supported.
+
 ## Version 0.2.5 (24 Apr 2013)
 * **Firefox compatibility for Firefox Nightly.**
 * Misc bug fixes.
