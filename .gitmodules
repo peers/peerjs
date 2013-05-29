@@ -6,4 +6,4 @@
 	url = git://github.com/peers/js-binarypack.git
 [submodule "deps/reliable"]
 	path = deps/reliable
-	url = git@github.com:michellebu/reliable.git
+	url = git://github.com/michellebu/reliable.git
