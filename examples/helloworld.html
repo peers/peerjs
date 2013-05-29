@@ -8,7 +8,7 @@
 <script>
   // Just for demo.
   console._log = console.log;
-  console.log = function() {
+  console.error = console.log = function() {
     var copy = Array.prototype.slice.call(arguments).join(' ');
     $('.log').append(copy + '<br>');
     console._log(copy);
@@ -16,7 +16,7 @@
 </script>
 
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> 
-<script type="text/javascript" src="http://cdn.peerjs.com/0/peer.js"></script>
+<script type="text/javascript" src="../dist/peer.js"></script>
 <script>
   // This is a very simple code example. See chat.html for a more involved
   // example.
