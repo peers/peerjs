@@ -142,6 +142,7 @@ The `error` object also has a `type` parameter that may be helpful in responding
 * `invalid-key`: The API key passed into the Peer constructor contains illegal characters or is not in the system (cloud server only).
 * `unavailable-id`: The ID passed into the Peer constructor is already taken.
 * `firefoxism`: The operation you're trying to perform is not supported in firefox.
+* `ssl-unavailable`: PeerJS is being used securely, but the cloud server does not support SSL. Use a custom PeerServer.
 * Errors types that shouldn't regularly appear:
   * `server-error`: Unable to reach the server.
   * `socket-error`: An error from the underlying socket.

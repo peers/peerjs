@@ -836,6 +836,9 @@ var util = {
       }
     }
     return false;
+  },
+  isSecure: function() {
+    return location.protocol === 'https:';
   }
 };
 /**
@@ -1162,7 +1165,7 @@ function Peer(id, options) {
   if (!(this instanceof Peer)) return new Peer(id, options);
   EventEmitter.call(this);
 
-  
+
   options = util.extend({
     debug: false,
     host: '0.peerjs.com',
@@ -1188,7 +1191,7 @@ function Peer(id, options) {
   if (options.host === '/') {
     options.host = window.location.hostname;
   }
-  
+
   // Ensure alphanumeric_-
   if (id && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(id)) {
     util.setZeroTimeout(function() {
@@ -1199,6 +1202,16 @@ function Peer(id, options) {
   if (options.key && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(options.key)) {
     util.setZeroTimeout(function() {
       self._abort('invalid-key', 'API KEY "' + options.key + '" is invalid');
+    });
+    return;
+  }
+
+  this._secure = util.isSecure();
+  // Errors for now because no support for SSL on cloud server.
+  if (this._secure && options.host === '0.peerjs.com') {
+    util.setZeroTimeout(function() {
+      self._abort('ssl-unavailable',
+        'The cloud server currently does not support HTTPS. Please run your own PeerServer to use HTTPS.');
     });
     return;
   }
@@ -1227,11 +1240,12 @@ function Peer(id, options) {
 
 util.inherits(Peer, EventEmitter);
 
-Peer.prototype._retrieveId = function(cb) {  
+Peer.prototype._retrieveId = function(cb) {
   var self = this;
   try {
     var http = new XMLHttpRequest();
-    var url = 'http://' + this._options.host + ':' + this._options.port + '/' + this._options.key + '/id';
+    var protocol = this._secure ? 'https://' : 'http://';
+    var url = protocol + this._options.host + ':' + this._options.port + '/' + this._options.key + '/id';
     var queryString = '?ts=' + new Date().getTime() + '' + Math.random();
     url += queryString;
     // If there's no ID we need to wait for one before trying to init socket.
@@ -1990,14 +2004,17 @@ ConnectionManager.prototype.update = function(updates) {
 function Socket(host, port, key, id) {
   if (!(this instanceof Socket)) return new Socket(host, port, key, id);
   EventEmitter.call(this);
-  
+
   this._id = id;
   var token = util.randomToken();
 
   this.disconnected = false;
-  
-  this._httpUrl = 'http://' + host + ':' + port + '/' + key + '/' + id + '/' + token;
-  this._wsUrl = 'ws://' + host + ':' + port + '/peerjs?key='+key+'&id='+id+'&token='+token;
+
+  var secure = util.isSecure();
+  var protocol = secure ? 'https://' : 'http://';
+  var wsProtocol = secure ? 'wss://' : 'ws://';
+  this._httpUrl = protocol + host + ':' + port + '/' + key + '/' + id + '/' + token;
+  this._wsUrl = wsProtocol + host + ':' + port + '/peerjs?key='+key+'&id='+id+'&token='+token;
 };
 
 util.inherits(Socket, EventEmitter);
@@ -2019,7 +2036,7 @@ Socket.prototype._startWebSocket = function() {
   }
 
   this._socket = new WebSocket(this._wsUrl);
-  
+
   this._socket.onmessage = function(event) {
     var data;
     try {
@@ -2141,7 +2158,7 @@ Socket.prototype.send = function(data) {
     this.emit('error', 'Invalid message');
     return;
   }
-  
+
   var message = JSON.stringify(data);
   if (this._wsOpen()) {
     this._socket.send(message);
