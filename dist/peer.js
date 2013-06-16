@@ -1,4 +1,4 @@
-/*! peerjs.js build:0.2.5, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
+/*! peerjs.js build:0.2.7, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
 (function(exports){
 var binaryFeatures = {};
 binaryFeatures.useBlobBuilder = (function(){
@@ -1162,6 +1162,17 @@ function Peer(id, options) {
   if (!(this instanceof Peer)) return new Peer(id, options);
   EventEmitter.call(this);
 
+  
+  options = util.extend({
+    debug: false,
+    host: '0.peerjs.com',
+    port: 9000,
+    key: 'peerjs',
+    config: { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] }
+  }, options);
+  this._options = options;
+  util.debug = options.debug;
+
   // First check if browser can use PeerConnection/DataChannels.
   // TODO: when media is supported, lower browser version limit and move DC
   // check to where`connect` is called.
@@ -1177,17 +1188,7 @@ function Peer(id, options) {
   if (options.host === '/') {
     options.host = window.location.hostname;
   }
-
-  options = util.extend({
-    debug: false,
-    host: '0.peerjs.com',
-    port: 9000,
-    key: 'peerjs',
-    config: { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] }
-  }, options);
-  this._options = options;
-  util.debug = options.debug;
-
+  
   // Ensure alphanumeric_-
   if (id && !/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(id)) {
     util.setZeroTimeout(function() {
@@ -1452,7 +1453,9 @@ Peer.prototype.destroy = function() {
  */
 Peer.prototype.disconnect = function() {
   if (!this.disconnected) {
-    this._socket.close();
+    if (!!this._socket) {
+      this._socket.close();
+    }
     this.id = null;
     this.disconnected = true;
   }
