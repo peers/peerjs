@@ -1253,7 +1253,7 @@ Peer.prototype._retrieveId = function(cb) {
     http.onreadystatechange = function() {
       if (http.readyState === 4) {
         if (http.status !== 200) {
-          throw 'Retrieve id response not 200';
+          throw 'Retrieve ID response not 200';
           return;
         }
         self.id = http.responseText;
