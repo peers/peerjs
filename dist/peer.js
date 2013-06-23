@@ -1316,7 +1316,7 @@ Peer.prototype._handleServerJSONMessage = function(message) {
         this.connections[peer] = manager.connections;
       }
       manager.update(options.labels);
-      manager.handleSDP(payload.sdp, message.type);
+      manager.handleSDP(payload.sdp, message.type, payload.call);
       break;
     case 'EXPIRE':
       if (manager) {
@@ -1363,6 +1363,10 @@ Peer.prototype._attachManagerListeners = function(manager) {
   manager.on('connection', function(connection) {
     self.emit('connection', connection);
   });
+  // Handle receiving a call
+  manager.on('call', function(call) {
+    self.emit('call', call);
+  });
   // Handle a connection closing.
   manager.on('close', function() {
     if (!!self.managers[manager.peer]) {
@@ -1401,7 +1405,7 @@ Peer.prototype._cleanup = function() {
 
 /** Exposed connect function for users. Will try to connect later if user
  * is waiting for an ID. */
-Peer.prototype.connect = function(peer, options) {
+Peer.prototype._getManager = function(peer, options) {
   if (this.disconnected) {
     var err = new Error('This Peer has been disconnected from the server and can no longer make connections.');
     err.type = 'server-disconnected';
@@ -1417,7 +1421,7 @@ Peer.prototype.connect = function(peer, options) {
 
   // Firefox currently does not support multiplexing once an offer is made.
   if (util.browserisms === 'Firefox' && !!manager && manager.firefoxSingular) {
-    var err = new Error('Firefox currently does not support multiplexing after a DataChannel has already been established');
+    var err = new Error('Firefox currently does not support renegotiating connections');
     err.type = 'firefoxism';
     this.emit('error', err);
     return;
@@ -1430,13 +1434,30 @@ Peer.prototype.connect = function(peer, options) {
     this.connections[peer] = manager.connections;
   }
 
-  var connection = manager.connect(options);
-
-  if (!this.id) {
-    this._queued.push(manager);
-  }
-  return connection;
+  return manager;
 };
+
+Peer.prototype.connect = function(peer, options) {
+  var manager = this._getManager(peer, options);
+  if (manager) {
+    var connection = manager.connect(options);
+    if (!this.id) {
+      this._queued.push(manager);
+    }
+    return connection;
+  }
+}
+
+Peer.prototype.call = function(peer, stream, options) {
+  var manager = this._getManager(peer, options);
+  if (manager) {
+    var connection = manager.call(stream, options);
+    if (!this.id) {
+      this._queued.push(manager);
+    }
+    return connection;
+  }
+}
 
 /**
  * Return the peer id or null, if there's no id at the moment.
@@ -1669,6 +1690,63 @@ DataConnection.prototype.getPeer = function() {
   return this.peer;
 };
 /**
+ * Wraps the streaming interface between two Peers.
+ */
+function MediaConnection(peer, localStream, options) {
+  if (!(this instanceof MediaConnection)) return new MediaConnection(peer, localStream, options);
+  EventEmitter.call(this);
+
+  options = util.extend({
+   
+  }, options);
+
+  this.localStream = localStream;
+  this.peer = peer;
+  
+};
+
+util.inherits(MediaConnection, EventEmitter);
+
+MediaConnection.prototype.receiveStream = function(stream) {
+  console.log('receiving stream', stream);
+  this.remoteStream = stream;
+  this.emit('stream', stream);
+  //this._cleanup();
+};
+
+MediaConnection.prototype.answer = function(stream) {
+  this.localStream = stream;
+  this.emit('answer', stream);
+  //this._cleanup();
+};
+
+MediaConnection.prototype.answered = function(stream) {
+  this.emit('stream', this.remoteStream);
+  //this._cleanup();
+};
+
+
+/**
+ * Exposed functionality for users.
+ */
+
+/** Allows user to close connection. */
+MediaConnection.prototype.close = function() {
+  //this._cleanup();
+};
+
+
+
+/**
+ * Gets the brokering ID of the peer that you are connected with.
+ * Note that this ID may be out of date if the peer has disconnected from the
+ *  server, so it's not recommended that you use this ID to identify this
+ *  connection.
+ */
+MediaConnection.prototype.getPeer = function() {
+  return this.peer;
+};
+/**
  * Manages DataConnections between its peer and one other peer.
  * Internally, manages PeerConnection.
  */
@@ -1730,6 +1808,9 @@ ConnectionManager.prototype.initialize = function(id, socket) {
 
   // Listen for data channel.
   this._setupDataChannel();
+  
+  // Listen for remote streams.
+  this._setupStreamListener();
 
   this.initialize = function() { };
 };
@@ -1742,11 +1823,21 @@ ConnectionManager.prototype._startPeerConnection = function() {
 
 /** Add DataChannels to all queued DataConnections. */
 ConnectionManager.prototype._processQueue = function() {
-  var conn = this._queued.pop();
-  if (!!conn) {
-    var reliable = util.browserisms === 'Firefox' ? conn.reliable : false;
-    conn.addDC(this.pc.createDataChannel(conn.label, { reliable: reliable }));
+console.log(this._queued);
+  for (var i = 0; i < this._queued.length; i++) {
+    var conn = this._queued[i];
+    if (conn.constructor == MediaConnection) {
+      console.log('adding', conn.localStream);
+      this.pc.addStream(conn.localStream);
+    } else if (conn.constructor = DataConnection) {
+      var reliable = util.browserisms === 'Firefox' ? conn.reliable : false;
+      conn.addDC(this.pc.createDataChannel(conn.label, { reliable: reliable }));
+    }
   }
+  if (util.browserisms === 'Firefox' && this._queued.length > 0) {
+    this._makeOffer();
+  }
+  this._queued = [];
 };
 
 /** Set up ICE candidate handlers. */
@@ -1807,6 +1898,21 @@ ConnectionManager.prototype._setupDataChannel = function() {
   };
 };
 
+/** Set up remote stream listener. */
+ConnectionManager.prototype._setupStreamListener = function() {
+  var self = this;
+  util.log('Listening for remote stream');
+  this.pc.onaddstream = function(evt) {
+    util.log('Received remote stream');
+    var stream = evt.stream;
+    if (!!self._call) {
+      self._call.receiveStream(stream);
+      
+    }
+  };
+};
+
+
 /** Send an offer. */
 ConnectionManager.prototype._makeOffer = function() {
   var self = this;
@@ -1816,7 +1922,7 @@ ConnectionManager.prototype._makeOffer = function() {
     self.firefoxSingular = true;
 
     if (util.browserisms === 'Webkit') {
-      offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
+      //offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
     }
 
     self.pc.setLocalDescription(offer, function() {
@@ -1826,7 +1932,8 @@ ConnectionManager.prototype._makeOffer = function() {
         payload: {
           sdp: offer,
           config: self._options.config,
-          labels: self.labels
+          labels: self.labels,
+          call: !!self._call
         },
         dst: self.peer
       });
@@ -1846,7 +1953,7 @@ ConnectionManager.prototype._makeAnswer = function() {
     util.log('Created answer.');
 
     if (util.browserisms === 'Webkit') {
-      answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
+      //answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
     }
 
     self.pc.setLocalDescription(answer, function() {
@@ -1905,14 +2012,33 @@ ConnectionManager.prototype._attachConnectionListeners = function(connection) {
 };
 
 /** Handle an SDP. */
-ConnectionManager.prototype.handleSDP = function(sdp, type) {
+ConnectionManager.prototype.handleSDP = function(sdp, type, call) {
   sdp = new RTCSessionDescription(sdp);
 
   var self = this;
   this.pc.setRemoteDescription(sdp, function() {
     util.log('Set remoteDescription: ' + type);
     if (type === 'OFFER') {
-      self._makeAnswer();
+      if (call && !self._call) {
+        window.g = self.pc;
+        self._call = new MediaConnection(self.peer);
+        self._call.on('answer', function(stream){
+          if (stream) {
+            self.pc.addStream(stream);
+          }
+          self._makeAnswer();
+          util.setZeroTimeout(function(){
+            // Add remote streams
+            self._call.receiveStream(self.pc.getRemoteStreams()[0]);
+          });
+        });
+        self.emit('call', self._call);
+      } else {
+        self._makeAnswer();
+      }
+    } else {
+      // Got answer from remote
+      self._lock = false;
     }
   }, function(err) {
     self.emit('error', err);
@@ -1955,7 +2081,7 @@ ConnectionManager.prototype.connect = function(options) {
   if (!this.open) {
     return;
   }
-
+console.log('trying to connect');
   options = util.extend({
     label: 'peerjs',
     reliable: (util.browserisms === 'Firefox')
@@ -1982,10 +2108,40 @@ ConnectionManager.prototype.connect = function(options) {
   this.connections[options.label] = connection;
 
   if (!this.pc || this._lock) {
+    console.log('qing', this._lock);
     this._queued.push(connection);
   }
 
   this._lock = true
+  return connection;
+};
+
+ConnectionManager.prototype.call = function(stream, options) {
+  if (!this.open) {
+    return;
+  }
+
+  options = util.extend({
+    
+  }, options);
+
+  if (!!this.pc && !this._lock) {
+    this.pc.addStream(stream);
+    if (util.browserisms === 'Firefox') {
+      this._makeOffer();
+    }
+  }
+  
+  var connection = new MediaConnection(this.peer, stream, options);
+  this._call = connection;
+  
+  if (!this.pc || this._lock) {
+    this._queued.push(connection);
+  }
+
+  this._lock = true;
+  
+  
   return connection;
 };
 

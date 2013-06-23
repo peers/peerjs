@@ -46,6 +46,7 @@ var base = [
   , 'adapter.js' 
   , 'peer.js'
   , 'dataconnection.js'
+  , 'mediaconnection.js'
   , 'connectionmanager.js'
   , 'socket.js'
 
