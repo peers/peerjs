@@ -32,29 +32,16 @@
 
       mc = peer1.call('asdf',s);
       mc.on('stream', function(){
-          z = $('<video></video>', {src: URL.createObjectURL(s)}).appendTo('body');
+          z = $('<video></video>', {src: URL.createObjectURL(s), autoplay: true}).appendTo('body');
       });
       peer2.on('call', function(c){
         c.answer(s);
         c.on('stream', function(s){
           window.s = s;
-          z = $('<video></video>', {src: URL.createObjectURL(s)}).appendTo('body');
+          z = $('<video></video>', {src: URL.createObjectURL(s), autoplay: true}).appendTo('body');
         });
       });
-      setTimeout(function(){
-      
-      peer2.on('connection', function(conn){
-        conn.on('data', function(x){
-          console.log(x);
-        })
-      });
-      conn = peer1.connect('asdf');
-      console.log('connected');
-      conn.on('open', function(){
-        conn.send('hi');
-      });
-      
-      }, 1000);
+     
       
       
     
