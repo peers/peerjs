@@ -22,19 +22,13 @@
   // example.
 
   $(document).ready(function() {
-    navigator.webkitGetUserMedia({video: true}, function(s){
-    
+    navigator.webkitGetUserMedia({audio: true, video: true}, function(s){
+      window.ls = s;
       // Create a new Peer with our demo API key, with debug set to true so we can
       // see what's going on.
-      peer1 = new Peer({ key: 'lwjd5qra8257b9', debug: true });
-      // Create another Peer with our demo API key to connect to.
-      peer2 = new Peer('asdf', { key: 'lwjd5qra8257b9', debug: true });
-
-      mc = peer1.call('asdf',s);
-      mc.on('stream', function(){
-          z = $('<video></video>', {src: URL.createObjectURL(s), autoplay: true}).appendTo('body');
-      });
-      peer2.on('call', function(c){
+      peer1 = new Peer(window.location.hash.substr(1), { key: 'lwjd5qra8257b9', debug: true });
+      
+      peer1.on('call', function(c){
         c.answer(s);
         c.on('stream', function(s){
           window.s = s;
@@ -48,6 +42,12 @@
     }, function(){});
     
   });
+  function call (name) {
+      mc = peer1.call(name, ls);
+      mc.on('stream', function(s){
+          z = $('<video></video>', {src: URL.createObjectURL(s), autoplay: true}).appendTo('body');
+      });
+  }
 
 
 </script>
