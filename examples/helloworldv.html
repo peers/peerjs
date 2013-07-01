@@ -45,6 +45,7 @@
   function call (name) {
       mc = peer1.call(name, ls);
       mc.on('stream', function(s){
+        window.remote = s;
           z = $('<video></video>', {src: URL.createObjectURL(s), autoplay: true}).appendTo('body');
       });
   }
