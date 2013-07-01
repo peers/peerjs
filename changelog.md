@@ -1,5 +1,10 @@
 # PeerJS Changelog
 
+## Version 0.2.8 (1 July 2013)
+* Fix bug, no error on Firefox 24 due to missing error callback.
+* TLS secure PeerServer's now supported
+* Updated version of Reliable shim
+
 ## Version 0.2.7 (28 May 2013)
 * Fix bug, no error when .disconnect called in before socket connection established.
 * Fix bug, failure to enter debug mode when aborting because browser not supported.
