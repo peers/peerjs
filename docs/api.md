@@ -168,6 +168,8 @@ There is no constructor. A `DataConnection` object must be obtained in the callb
 
 (CHROME ONLY. Firefox has reliable transport built in and reliable transfer is the default option.) Simply pass in `reliable: true` when calling `.connect(...)`. This module is experimental, temporary, and exists here: https://github.com/michellebu/reliable
 
+*Caveat:* With reliable enabled in Chrome, you can no longer customize the serialization format used for data transfer.
+
 ### connection.peer
 
 The id of the remote peer this connection is connected to.
