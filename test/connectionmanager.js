@@ -1,29 +1,41 @@
 describe('ConnectionManager', function() {
 
-  it('constructor');
+  describe('constructor', function() {
+  });
 
   it('inherits from EventEmitter');
 
-  it('_setupDataChannel');
+  describe('#_setupDataChannel', function() {
+  });
 
-  it('_makeOffer');
+  describe('#_makeOffer', function() {
+  });
 
-  it('_makeAnswer');
+  describe('#_makeAnswer', function() {
+  });
 
-  it('_cleanup');
+  describe('#_cleanup', function() {
+  });
 
-  it('_attachConnectionListeners');
+  describe('#_attachConnectionListeners', function() {
+  });
 
-  it('handleSDP');
+  describe('#handleSDP', function() {
+  });
 
-  it('handleCandidate');
+  describe('#handleCandidate', function() {
+  });
 
-  it('handleLeave');
+  describe('#handleLeave', function() {
+  });
 
-  it('close');
+  describe('#close', function() {
+  });
 
-  it('connect');
+  describe('#connect', function() {
+  });
 
-  it('update');
+  describe('#update', function() {
+  });
 
 });
