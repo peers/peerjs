@@ -15,88 +15,108 @@ describe('DataConnection', function() {
       },
       // Only sends to peer's dc.
       send: function(msg) {
-        pdc._dc.onmessage({ data: msg });
+        pdc._handleDataMessage({ data: msg });
       }
     };
 
-    it('constructor', function() {
-      // Test without 'new' keyword.
-      dc = DataConnection('peer', null,
-        { serialization: 'json',
-          metadata: { message: 'I\'m testing!'},
-          reliable: true });
+    describe('constructor', function() {
+      it('should accept options properly', function() {
+        // Test without 'new' keyword.
+        dc = DataConnection('peer', null,
+          { serialization: 'json',
+            metadata: { message: 'I\'m testing!'} });
 
-      expect(dc.peer).to.be('peer');
-      expect(dc.serialization).to.be('json');
-      expect(dc.metadata.message).to.be('I\'m testing!');
+        expect(dc.peer).to.be('peer');
+        expect(dc.serialization).to.be('json');
+        expect(dc.metadata.message).to.be('I\'m testing!');
 
-      expect(dc._dc).to.be(null);
-      dc._dc = new DataChannelStub();
+        expect(dc._dc).to.be(null);
+        dc._dc = new DataChannelStub();
+      });
     });
 
     it('inherits from EventEmitter');
 
-    it('_configureDataChannel', function() {
-      dc._configureDataChannel();
-
-      if (util.browserisms === 'Firefox') {
-        expect(dc._dc.binaryType).to.be('arraybuffer');
-      } else {
-        expect(dc._reliable).not.to.be(undefined);
-      }
+    before(function() {
+      dc = DataConnection('peer', null,
+        { serialization: 'json',
+          metadata: { message: 'I\'m testing!'} });
+      dc._dc = new DataChannelStub();
     });
 
-    it('should fire an `open` event', function(done) {
-      dc.on('open', function() {
-        expect(dc.open).to.be(true)
-        done();
+    describe('#_configureDataChannel', function() {
+      it('should set the correct binaryType', function() {
+        dc._configureDataChannel();
+
+        if (util.browserisms === 'Firefox') {
+          expect(dc._dc.binaryType).to.be('arraybuffer');
+        } else {
+          expect(dc._reliable).to.be(undefined);
+        }
       });
-      dc._dc.onopen();
-    });
 
-    it('_handleDataMessage', function() {
-       
-    });
-
-    it('addDC', function() {
-      pdc = new DataConnection('ignore', null, { serialization: 'json', reliable: true });
-      pdc.addDC(new DataChannelStub());
-
-      expect(pdc._dc).not.to.be(null);
-    });
-
-    it('send', function(done) {
-      pdc.on('data', function(data) {
-        expect(data.hello).to.be('peer-tester');
-        done();
+      it('should fire an `open` event', function(done) {
+        dc.on('open', function() {
+          expect(dc.open).to.be(true)
+          done();
+        });
+        dc._dc.onopen();
       });
-      dc.send({ hello: 'peer-tester' });
     });
 
-    it('_cleanup', function(done) {
-      var first = true;
-      dc.on('close', function() {
-        expect(dc.open).to.be(false)
+    describe('#_handleDataMessage', function() {
 
-        // Calling it twice should be fine.
-        if (first) {
-          first = false;
-          dc._cleanup();
+    });
+
+    describe('#addDC', function() {
+      it('should add a DataConnection properly', function() {
+        pdc = new DataConnection('ignore', null, { serialization: 'json', reliable: true });
+        pdc.addDC(new DataChannelStub());
+
+        expect(pdc._dc).not.to.be(null);
+      });
+    });
+
+    describe('#send', function() {
+      it('should send data to the peer', function(done) {
+        pdc = new DataConnection('ignore', null, { serialization: 'json' });
+        pdc.on('data', function(data) {
+          expect(data.hello).to.be('peer-tester');
+          done();
+        });
+        dc.send({ hello: 'peer-tester' });
+      });
+    });
+
+    describe('#_cleanup', function() {
+      it('should emit a `close` event', function(done) {
+        var first = true;
+        dc.on('close', function() {
+          expect(dc.open).to.be(false)
+
+          // Calling it twice should be fine.
+          if (first) {
+            first = false;
+            dc._cleanup();
+          }
+
+          done();
+        });
+
+        dc._cleanup();
+      });
+    });
+
+    // Hacks hacks
+    describe('#close', function() {
+      it('should not call _cleanup', function() {
+        dc._cleanup = function() {
+          throw Error();
         }
 
-        done();
+        // Should not call _cleanup again.
+        dc.close();
       });
-
-      dc._cleanup();
-    });
-
-    it('close', function() {
-      dc._cleanup = function() {
-        throw Error();
-      }
-
-      // Should not call _cleanup again.
-      dc.close();
     });
 
 

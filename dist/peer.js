@@ -1,4 +1,4 @@
-/*! peerjs.js build:0.2.7, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
+/*! peerjs.js build:0.2.8, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
 (function(exports){
 var binaryFeatures = {};
 binaryFeatures.useBlobBuilder = (function(){
@@ -1943,6 +1943,9 @@ ConnectionManager.prototype._makeOffer = function() {
       self.emit('error', err);
       util.log('Failed to setLocalDescription, ', err);
     });
+  }, function(err) {
+    self.emit('error', err);
+    util.log('Failed to createOffer, ', err);
   });
 };
 

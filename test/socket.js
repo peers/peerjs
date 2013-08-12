@@ -1,23 +1,32 @@
 describe('Socket', function() {
 
-  it('constructor');
+  describe('constructor', function() {
+  });
 
   it('inherits from EventEmitter');
 
-  it('start');
+  describe('#start', function() {
+  });
 
-  it('_startWebSocket');
+  describe('#_startWebSocket', function() {
+  });
 
-  it('_startXhrStream');
+  describe('#_startXhrStream', function() {
+  });
 
-  it('_handleStream');
+  describe('#_handleStream', function() {
+  });
 
-  it('_setHTTPTimeout');
+  describe('#_setHTTPTimeout', function() {
+  });
 
-  it('send');
+  describe('#send', function() {
+  });
 
-  it('close');
+  describe('#close', function() {
+  });
 
-  it('_wsOpen');
+  describe('#_wsOpen', function() {
+  });
 
 });
