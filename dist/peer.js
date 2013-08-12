@@ -819,6 +819,8 @@ var util = {
   randomToken: function () {
     return Math.random().toString(36).substr(2);
   },
+  
+  // When we have proper version/feature mappings we can remove this
   isBrowserCompatible: function() {
     var c, f;
     if (this.chromeCompatible) {
@@ -837,6 +839,19 @@ var util = {
     }
     return false;
   },
+  
+  // Lists which features are supported
+  // Temporarily set everything to true
+  supports: (function(){
+    return {
+      audioVideo: true,
+      data: true,
+      binaryData: true,
+      reliableData: true
+    }
+  }()),
+  
+  
   isSecure: function() {
     return location.protocol === 'https:';
   }
@@ -1158,13 +1173,13 @@ exports.RTCPeerConnection = window.mozRTCPeerConnection || window.webkitRTCPeerC
  * A peer who can initiate connections with other peers.
  */
 function Peer(id, options) {
+  if (!(this instanceof Peer)) return new Peer(id, options);
+  EventEmitter.call(this);
+
   if (id && id.constructor == Object) {
     options = id;
     id = undefined;
   }
-  if (!(this instanceof Peer)) return new Peer(id, options);
-  EventEmitter.call(this);
-
 
   options = util.extend({
     debug: false,
@@ -1178,7 +1193,7 @@ function Peer(id, options) {
 
   // First check if browser can use PeerConnection/DataChannels.
   // TODO: when media is supported, lower browser version limit and move DC
-  // check to where`connect` is called.
+  // check to where `connect` is called.
   var self = this;
   if (!util.isBrowserCompatible()) {
     util.setZeroTimeout(function() {
@@ -1217,23 +1232,31 @@ function Peer(id, options) {
   }
 
   // States.
-  this.destroyed = false;
-  this.disconnected = false;
+  this.destroyed = false; // Connections have been killed
+  this.disconnected = false; // Connection to PeerServer killed but P2P connections still active
 
-  // Connections for this peer.
+  // DataConnections for this peer.
   this.connections = {};
+  
+  // MediaConnections for this peer
+  this.calls = {}
+  
   // Connection managers.
-  this.managers = {};
+  // peer => { 
+  //   nextId: unique number to use for next manager created
+  //   dataManager: the last created data manager, for multiplexing data connections
+  //   managers: { id: manager} }
+  // }
+  this._managers = {};
 
   // Queued connections to make.
   this._queued = [];
 
   // Init immediately if ID is given, otherwise ask server for ID
+  this.id = null;
   if (id) {
-    this.id = id;
-    this._init();
+    this._initialize(id.toString());
   } else {
-    this.id = null;
     this._retrieveId();
   }
 };
@@ -1257,7 +1280,7 @@ Peer.prototype._retrieveId = function(cb) {
           return;
         }
         self.id = http.responseText;
-        self._init();
+        self._initialize(self.id);
       }
     };
     http.send(null);
@@ -1267,8 +1290,9 @@ Peer.prototype._retrieveId = function(cb) {
 };
 
 
-Peer.prototype._init = function() {
+Peer.prototype._initialize = function(id) {
   var self = this;
+  this.id = id;
   this._socket = new Socket(this._options.host, this._options.port, this._options.key, this.id);
   this._socket.on('message', function(data) {
     self._handleServerJSONMessage(data);
@@ -1288,7 +1312,8 @@ Peer.prototype._init = function() {
 
 Peer.prototype._handleServerJSONMessage = function(message) {
   var peer = message.src;
-  var manager = this.managers[peer];
+  var managerId = message.manager;
+  var manager = this._getManager(peer, managerId);
   var payload = message.payload;
   switch (message.type) {
     case 'OPEN':
@@ -1307,36 +1332,36 @@ Peer.prototype._handleServerJSONMessage = function(message) {
         labels: payload.labels,
         config: this._options.config
       };
-
-      var manager = this.managers[peer];
+      // Either forward to or create new manager
+      
       if (!manager) {
-        manager = new ConnectionManager(this.id, peer, this._socket, options);
-        this._attachManagerListeners(manager);
-        this.managers[peer] = manager;
-        this.connections[peer] = manager.connections;
+        manager = this._createManager(managerId, peer, options);
       }
-      manager.update(options.labels);
+      manager.handleUpdate(options.labels);
       manager.handleSDP(payload.sdp, message.type, payload.call);
       break;
     case 'EXPIRE':
-      if (manager) {
-        manager.close();
-        manager.emit('error', new Error('Could not connect to peer ' + manager.peer));
-      }
+      peer.emit('error', new Error('Could not connect to peer ' + manager.peer));
       break;
     case 'ANSWER':
+      // Forward to specific manager
       if (manager) {
         manager.handleSDP(payload.sdp, message.type);
       }
       break;
     case 'CANDIDATE':
+      // Forward to specific manager
       if (manager) {
         manager.handleCandidate(payload);
       }
       break;
     case 'LEAVE':
-      if (manager) {
-        manager.handleLeave();
+      // Leave on all managers for a user
+      if (this._managers[peer]) {
+        var ids = Object.keys(this._managers[peer].managers);
+        for (var i = 0; i < ids.length; i++) {
+          this._managers[peer].managers[ids[i]].handleLeave();
+        }
       }
       break;
     case 'INVALID-KEY':
@@ -1361,17 +1386,20 @@ Peer.prototype._attachManagerListeners = function(manager) {
   var self = this;
   // Handle receiving a connection.
   manager.on('connection', function(connection) {
+    self._managers[manager.peer].dataManager = manager;
+    self.connections[connection.label] = connection;
     self.emit('connection', connection);
   });
   // Handle receiving a call
   manager.on('call', function(call) {
+    self.calls[call.label] = call;
     self.emit('call', call);
   });
   // Handle a connection closing.
   manager.on('close', function() {
-    if (!!self.managers[manager.peer]) {
-      delete self.managers[manager.peer];
-      delete self.connections[manager.peer];
+    if (!!self._managers[manager.peer]) {
+      delete self._managers[manager.peer];
+      // TODO: delete relevant calls and connections
     }
   });
   manager.on('error', function(err) {
@@ -1379,33 +1407,22 @@ Peer.prototype._attachManagerListeners = function(manager) {
   });
 };
 
-/** Destroys the Peer and emits an error message. */
-Peer.prototype._abort = function(type, message) {
-  util.log('Aborting. Error:', message);
-  var err = new Error(message);
-  err.type = type;
-  this.destroy();
-  this.emit('error', err);
-};
 
-Peer.prototype._cleanup = function() {
-  var self = this;
-  if (!!this.managers) {
-    var peers = Object.keys(this.managers);
-    for (var i = 0, ii = peers.length; i < ii; i++) {
-      this.managers[peers[i]].close();
-    }
+Peer.prototype._getManager = function(peer, managerId) {
+  if (this._managers[peer]) {
+    return this._managers[peer].managers[managerId];
   }
-  util.setZeroTimeout(function(){
-    self.disconnect();
-  });
-  this.emit('close');
-};
+}
 
+Peer.prototype._getDataManager = function(peer) {
+  if (this._managers[peer]) {
+    return this._managers[peer].dataManager;
+  }
+}
 
 /** Exposed connect function for users. Will try to connect later if user
  * is waiting for an ID. */
-Peer.prototype._getManager = function(peer, options) {
+Peer.prototype._createManager = function(managerId, peer, options) {
   if (this.disconnected) {
     var err = new Error('This Peer has been disconnected from the server and can no longer make connections.');
     err.type = 'server-disconnected';
@@ -1417,54 +1434,49 @@ Peer.prototype._getManager = function(peer, options) {
     config: this._options.config
   }, options);
 
-  var manager = this.managers[peer];
-
-  // Firefox currently does not support multiplexing once an offer is made.
-  if (util.browserisms === 'Firefox' && !!manager && manager.firefoxSingular) {
-    var err = new Error('Firefox currently does not support renegotiating connections');
-    err.type = 'firefoxism';
-    this.emit('error', err);
-    return;
+  if (!this._managers[peer]) {
+    this._managers[peer] = {nextId: 0, managers: {}};
   }
-
-  if (!manager) {
-    manager = new ConnectionManager(this.id, peer, this._socket, options);
-    this._attachManagerListeners(manager);
-    this.managers[peer] = manager;
-    this.connections[peer] = manager.connections;
+  
+  managerId = managerId || peer + this._managers[peer].nextId++;
+  
+  var manager = new ConnectionManager(managerId, peer, options);
+  if (!!this.id && !!this._socket) {
+    manager.initialize(this.id, this._socket);
+  } else {
+    this._queued.push(manager);
   }
+  this._attachManagerListeners(manager);
+  this._managers[peer].managers[manager._managerId] = manager;
 
   return manager;
 };
 
 Peer.prototype.connect = function(peer, options) {
-  var manager = this._getManager(peer, options);
-  if (manager) {
-    var connection = manager.connect(options);
-    if (!this.id) {
-      this._queued.push(manager);
-    }
-    return connection;
+  var manager = this._getDataManager(peer);
+  if (!manager) {
+    manager = this._createManager(false, peer, options);
   }
+  var connection = manager.connect(options);
+  return connection;
 }
 
 Peer.prototype.call = function(peer, stream, options) {
-  var manager = this._getManager(peer, options);
-  if (manager) {
-    var connection = manager.call(stream, options);
-    if (!this.id) {
-      this._queued.push(manager);
-    }
-    return connection;
-  }
+  var manager = this._createManager(false, peer, options);
+  var connection = manager.call(stream, options);
+  return connection;
 }
 
-/**
- * Return the peer id or null, if there's no id at the moment.
- * Reasons for no id could be 'connect in progress' or 'disconnected'
- */
-Peer.prototype.getId = function() {
-  return this.id;
+
+
+
+/** Destroys the Peer and emits an error message. */
+Peer.prototype._abort = function(type, message) {
+  util.log('Aborting. Error:', message);
+  var err = new Error(message);
+  err.type = type;
+  this.destroy();
+  this.emit('error', err);
 };
 
 /**
@@ -1478,6 +1490,25 @@ Peer.prototype.destroy = function() {
     this._cleanup();
     this.destroyed = true;
   }
+};
+
+
+// TODO: UPDATE
+Peer.prototype._cleanup = function() {
+  var self = this;
+  if (!!this._managers) {
+    var peers = Object.keys(this._managers);
+    for (var i = 0, ii = peers.length; i < ii; i++) {
+      var ids = Object.keys(this._managers[peers[i]]);
+      for (var j = 0, jj = peers.length; j < jj; j++) {
+        this._managers[peers[i]][ids[j]].close();
+      }
+    }
+  }
+  util.setZeroTimeout(function(){
+    self.disconnect();
+  });
+  this.emit('close');
 };
 
 /**
@@ -1499,20 +1530,6 @@ Peer.prototype.disconnect = function() {
 /** The current browser. */
 Peer.browser = util.browserisms;
 
-/**
- * Provides a clean method for checking if there's an active connection to the
- * peer server.
- */
-Peer.prototype.isConnected = function() {
-  return !this.disconnected;
-};
-
-/**
- * Returns true if this peer is destroyed and can no longer be used.
- */
-Peer.prototype.isDestroyed = function() {
-  return this.destroyed;
-};
 
 exports.Peer = Peer;
 /**
@@ -1750,8 +1767,8 @@ MediaConnection.prototype.getPeer = function() {
  * Manages DataConnections between its peer and one other peer.
  * Internally, manages PeerConnection.
  */
-function ConnectionManager(id, peer, socket, options) {
-  if (!(this instanceof ConnectionManager)) return new ConnectionManager(id, peer, socket, options);
+function ConnectionManager(managerId, peer, options) {
+  if (!(this instanceof ConnectionManager)) return new ConnectionManager(id, peer, options);
   EventEmitter.call(this);
 
   options = util.extend({
@@ -1760,9 +1777,8 @@ function ConnectionManager(id, peer, socket, options) {
   this._options = options;
 
   // PeerConnection is not yet dead.
-  this.open = true;
+  this.destroyed = false;
 
-  this.id = id;
   this.peer = peer;
   this.pc = null;
 
@@ -1774,24 +1790,25 @@ function ConnectionManager(id, peer, socket, options) {
 
   // DataConnections on this PC.
   this.connections = {};
+  
+  // Media call on this PC
+  this._call = null;
+  
+  // Queue of incomplete calls and connections
   this._queued = [];
-
-  this._socket = socket;
-
-  if (!!this.id) {
-    this.initialize();
-  }
+  
+  // The id of this manager
+  this._managerId = managerId;
+  
 };
 
 util.inherits(ConnectionManager, EventEmitter);
 
 ConnectionManager.prototype.initialize = function(id, socket) {
-  if (!!id) {
-    this.id = id;
-  }
-  if (!!socket) {
-    this._socket = socket;
-  }
+  // The local peer id
+  this.id = id;
+  
+  this._socket = socket;  
 
   // Set up PeerConnection.
   this._startPeerConnection();
@@ -1823,17 +1840,18 @@ ConnectionManager.prototype._startPeerConnection = function() {
 
 /** Add DataChannels to all queued DataConnections. */
 ConnectionManager.prototype._processQueue = function() {
-console.log(this._queued);
   for (var i = 0; i < this._queued.length; i++) {
     var conn = this._queued[i];
     if (conn.constructor == MediaConnection) {
       console.log('adding', conn.localStream);
       this.pc.addStream(conn.localStream);
-    } else if (conn.constructor = DataConnection) {
+    } else if (conn.constructor == DataConnection) {
+      // reliable: true not yet implemented in Chrome
       var reliable = util.browserisms === 'Firefox' ? conn.reliable : false;
       conn.addDC(this.pc.createDataChannel(conn.label, { reliable: reliable }));
     }
   }
+  // onnegotiationneeded not yet implemented in Firefox, must manually create offer
   if (util.browserisms === 'Firefox' && this._queued.length > 0) {
     this._makeOffer();
   }
@@ -1852,23 +1870,26 @@ ConnectionManager.prototype._setupIce = function() {
         payload: {
           candidate: evt.candidate
         },
-        dst: self.peer
+        dst: self.peer,
+        manager: self._managerId
       });
     }
   };
   this.pc.oniceconnectionstatechange = function() {
-    if (!!self.pc && self.pc.iceConnectionState === 'disconnected') {
-      util.log('iceConnectionState is disconnected, closing connections to ' + this.peer);
-      self.close();
+    if (!!self.pc) {
+      switch (self.pc.iceConnectionState) {
+        case 'failed':
+          util.log('iceConnectionState is disconnected, closing connections to ' + self.peer);
+          self.close();
+          break;
+        case 'completed':
+          self.pc.onicecandidate = null;
+          break;
+      }
     }
   };
   // Fallback for older Chrome impls.
-  this.pc.onicechange = function() {
-    if (!!self.pc && self.pc.iceConnectionState === 'disconnected') {
-      util.log('iceConnectionState is disconnected, closing connections to ' + this.peer);
-      self.close();
-    }
-  };
+  this.pc.onicechange = this.pc.oniceconnectionstatechange;
 };
 
 /** Set up onnegotiationneeded. */
@@ -1935,7 +1956,8 @@ ConnectionManager.prototype._makeOffer = function() {
           labels: self.labels,
           call: !!self._call
         },
-        dst: self.peer
+        dst: self.peer,
+        manager: self._managerId
       });
       // We can now reset labels because all info has been communicated.
       self.labels = {};
@@ -1966,7 +1988,8 @@ ConnectionManager.prototype._makeAnswer = function() {
         payload: {
           sdp: answer
         },
-        dst: self.peer
+        dst: self.peer,
+        manager: self._managerId
       });
     }, function(err) {
       self.emit('error', err);
@@ -1992,7 +2015,7 @@ ConnectionManager.prototype._cleanup = function() {
     dst: self.peer
   });
 
-  this.open = false;
+  this.destroyed = true;
   this.emit('close');
 };
 
@@ -2023,7 +2046,6 @@ ConnectionManager.prototype.handleSDP = function(sdp, type, call) {
     util.log('Set remoteDescription: ' + type);
     if (type === 'OFFER') {
       if (call && !self._call) {
-        window.g = self.pc;
         self._call = new MediaConnection(self.peer);
         self._call.on('answer', function(stream){
           if (stream) {
@@ -2056,6 +2078,15 @@ ConnectionManager.prototype.handleCandidate = function(message) {
   util.log('Added ICE candidate.');
 };
 
+/** Updates label:[serialization, reliable, metadata] pairs from offer. */
+ConnectionManager.prototype.handleUpdate = function(updates) {
+  var labels = Object.keys(updates);
+  for (var i = 0, ii = labels.length; i < ii; i += 1) {
+    var label = labels[i];
+    this.labels[label] = updates[label];
+  }
+};
+
 /** Handle peer leaving. */
 ConnectionManager.prototype.handleLeave = function() {
   util.log('Peer ' + this.peer + ' disconnected.');
@@ -2064,7 +2095,7 @@ ConnectionManager.prototype.handleLeave = function() {
 
 /** Closes manager and all related connections. */
 ConnectionManager.prototype.close = function() {
-  if (!this.open) {
+  if (this.destroyed) {
     this.emit('error', new Error('Connections to ' + this.peer + 'are already closed.'));
     return;
   }
@@ -2075,13 +2106,16 @@ ConnectionManager.prototype.close = function() {
     var connection = this.connections[label];
     connection.close();
   }
+  
+  // TODO: close the call
+  
   this.connections = null;
   this._cleanup();
 };
 
 /** Create and returns a DataConnection with the peer with the given label. */
 ConnectionManager.prototype.connect = function(options) {
-  if (!this.open) {
+  if (this.destroyed) {
     return;
   }
 console.log('trying to connect');
@@ -2120,7 +2154,7 @@ console.log('trying to connect');
 };
 
 ConnectionManager.prototype.call = function(stream, options) {
-  if (!this.open) {
+  if (this.destroyed) {
     return;
   }
 
@@ -2148,14 +2182,7 @@ ConnectionManager.prototype.call = function(stream, options) {
   return connection;
 };
 
-/** Updates label:[serialization, reliable, metadata] pairs from offer. */
-ConnectionManager.prototype.update = function(updates) {
-  var labels = Object.keys(updates);
-  for (var i = 0, ii = labels.length; i < ii; i += 1) {
-    var label = labels[i];
-    this.labels[label] = updates[label];
-  }
-};
+
 /**
  * An abstraction on top of WebSockets and XHR streaming to provide fastest
  * possible connection for peers.
