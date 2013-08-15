@@ -1,5 +1,12 @@
 # PeerJS Changelog
 
+## Version 0.3.0 (TBA)
+* Support for WebRTC video and audio streams.
+* **Deprecate the ability to assign labels to DataConnections.** They will
+  instead have a randomly-generated ID.
+* Add `util.supports.[FEATURE]` flags, which represent the WebRTC features
+  supported by your browser.
+
 ## Version 0.2.8 (1 July 2013)
 * Fix bug, no error on Firefox 24 due to missing error callback.
 * TLS secure PeerServers now supported.
