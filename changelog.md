@@ -6,6 +6,7 @@
   instead have a randomly-generated ID.
 * Add `util.supports.[FEATURE]` flags, which represent the WebRTC features
   supported by your browser.
+* Additional logging levels (warnings, errors, all).
 
 ## Version 0.2.8 (1 July 2013)
 * Fix bug, no error on Firefox 24 due to missing error callback.
