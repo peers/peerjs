@@ -7,12 +7,12 @@
 
 <script>
   // Just for demo.
-  console._log = console.log;
+  /*console._log = console.log;
   console.error = console.log = function() {
     var copy = Array.prototype.slice.call(arguments).join(' ');
     $('.log').append(copy + '<br>');
     console._log(copy);
-  };
+  };*/
 </script>
 
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> 
@@ -22,13 +22,12 @@
   // example.
 
   $(document).ready(function() {
-    var peer1, peer2, peerId1;
 
     // Create a new Peer with our demo API key, with debug set to true so we can
     // see what's going on.
-    peer1 = new Peer({ key: 'lwjd5qra8257b9', debug: true });
+    peer1 = new Peer({ key: 'lwjd5qra8257b9', debug: 3});
     // Create another Peer with our demo API key to connect to.
-    peer2 = new Peer({ key: 'lwjd5qra8257b9', debug: true });
+    peer2 = new Peer({ key: 'lwjd5qra8257b9', debug: 3});
 
     // The `open` event signifies that the Peer is ready to connect with other
     // Peers and, if we didn't provide the Peer with an ID, that an ID has been

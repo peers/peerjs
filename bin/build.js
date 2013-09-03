@@ -47,7 +47,7 @@ var base = [
   , 'peer.js'
   , 'dataconnection.js'
   , 'mediaconnection.js'
-  , 'connectionmanager.js'
+  , 'negotiator.js'
   , 'socket.js'
 
 ];
