@@ -1463,6 +1463,13 @@ Peer.prototype._handleMessage = function(message) {
  * complete list of options.
  */
 Peer.prototype.connect = function(peer, options) {
+  if (this.disconnected) {
+    util.warn('You cannot connect to a new Peer because you called '
+        + '.disconnect() on this Peer and ended your connection with the'
+        + ' server. You can create a new Peer to reconnect.');
+    this.emit('error', new Error('Cannot connect to new Peer after disconnecting from server.'));
+    return;
+  }
   var connection = new DataConnection(peer, this, options);
   this._addConnection(peer, connection);
   return connection;
@@ -1636,7 +1643,7 @@ DataConnection.prototype._configureDataChannel = function() {
     util.log('Data channel connection success');
     self.open = true;
     self.emit('open');
-  };
+  }
 
   // Use the Reliable shim for non Firefox browsers
   // TODO: util.supports.reliable
@@ -1655,6 +1662,7 @@ DataConnection.prototype._configureDataChannel = function() {
   }
   this._dc.onclose = function(e) {
     util.log('DataChannel closed for:', self.peer);
+    // TODO: remove connection from Peer as well!!
     self.close();
   };
 }
