@@ -1548,7 +1548,7 @@ Peer.prototype._cleanup = function() {
 /** Closes all connections to this peer. */
 Peer.prototype._cleanupPeer = function(peer) {
   var connections = this.connections[peer];
-  for (var j = 0, jj = connections; j < jj; j += 1) {
+  for (var j = 0, jj = connections.length; j < jj; j += 1) {
     connections[j].close();
   }
 }
@@ -1665,7 +1665,7 @@ DataConnection.prototype._cleanup = function() {
     this._dc = null;
   }
   this.open = false;
-  // Negotiator will listen for this and take care of the PC if appropriate.
+  Negotiator.cleanup(this);
   this.emit('close');
 }
 
@@ -1973,7 +1973,7 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
     switch (pc.iceConnectionState) {
       case 'failed':
         util.log('iceConnectionState is disconnected, closing connections to ' + peerId);
-        Negotiator._cleanup();
+        Negotiator.cleanup(connection);
         break;
       case 'completed':
         pc.onicecandidate = util.noop;
@@ -2011,17 +2011,18 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
   };
 }
 
-Negotiator._cleanup = function(provider, peerId, connectionId) {
+Negotiator.cleanup = function(connection) {
+  connection.close(); // Will fail safely if connection is already closed.
   // TODO: close PeerConnection when all connections are closed.
-  util.log('Cleanup PeerConnection for ' + peerId);
+  util.log('Cleanup PeerConnection for ' + connection.peer);
   /*if (!!this.pc && (this.pc.readyState !== 'closed' || this.pc.signalingState !== 'closed')) {
     this.pc.close();
     this.pc = null;
   }*/
 
-  provider.socket.send({
+  connection.provider.socket.send({
     type: 'LEAVE',
-    dst: peerId
+    dst: connection.peer
   });
 }
 
@@ -2112,7 +2113,6 @@ Negotiator.handleSDP = function(type, connection, sdp) {
           connection.addStream(pc.getRemoteStreams()[0]);
         });
       }
-      // TODO. also, why setZeroTimeout up there?
       Negotiator._makeAnswer(connection);
     }
   }, function(err) {
@@ -2126,12 +2126,6 @@ Negotiator.handleCandidate = function(connection, candidate) {
   var candidate = new RTCIceCandidate(candidate);
   connection.pc.addIceCandidate(candidate);
   util.log('Added ICE candidate for:', connection.peer);
-}
-
-/** Handle peer leaving. */
-Negotiator.handleLeave = function(connection) {
-  util.log('Peer ' + connection.peer + ' disconnected.');
-  // TODO: clean up PC if this is the last connection on that PC.
 }
 /**
  * An abstraction on top of WebSockets and XHR streaming to provide fastest
@@ -2277,7 +2271,7 @@ Socket.prototype._setHTTPTimeout = function() {
     var old = self._http;
     if (!self._wsOpen()) {
       self._startXhrStream(old._streamIndex + 1);
-      self._http.old = old;        
+      self._http.old = old;
     } else {
       old.abort();
     }
@@ -2298,7 +2292,6 @@ Socket.prototype._sendQueuedMessages = function() {
 
 /** Exposed send for DC & Peer. */
 Socket.prototype.send = function(data) {
-  console.log(data)
   if (this.disconnected) {
     return;
   }
