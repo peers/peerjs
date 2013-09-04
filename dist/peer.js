@@ -1309,6 +1309,7 @@ function Peer(id, options) {
 
   // References
   this.connections = {}; // DataConnections for this peer.
+  this._lostMessages = {}; // src => [list of messages]
   //
 
   // Initialize the 'socket' (which is actually a mix of XHR streaming and
@@ -1415,15 +1416,15 @@ Peer.prototype._handleMessage = function(message) {
       } else {
         // Create a new connection.
         if (payload.type === 'call') {
-          var call = new MediaConnection(peer, this, {
+          var connection = new MediaConnection(peer, this, {
             connectionId: connectionId,
-            _payload: payload, // A regular *Connection would have no payload.
+            _payload: payload,
             metadata: payload.metadata,
           });
-          this._addConnection(peer, call);
-          this.emit('call', call);
+          this._addConnection(peer, connection);
+          this.emit('call', connection);
         } else if (payload.type === 'data') {
-          var connection = new DataConnection(peer, this, {
+          connection = new DataConnection(peer, this, {
             connectionId: connectionId,
             _payload: payload,
             metadata: payload.metadata,
@@ -1435,13 +1436,22 @@ Peer.prototype._handleMessage = function(message) {
           this.emit('connection', connection);
         } else {
           util.warn('Received malformed connection type:', payload.type);
+          return;
+        }
+        // Find messages.
+        var messages = this._lostMessages[connection.id];
+        if (messages) {
+          for (var i = 0, ii = messages.length; i < ii; i += 1) {
+            connection.handleMessage(messages[i]);
+          }
+          delete this._lostMessages[connection.id];
         }
       }
       break;
     default:
       // TODO: if out of order, must queue.
       if (!payload) {
-        util.warn('You received a malformed message from ' + peer);
+        util.warn('You received a malformed message from ' + peer + ' of type ' + type);
         return;
       }
 
@@ -1452,10 +1462,23 @@ Peer.prototype._handleMessage = function(message) {
         // Pass it on.
         connection.handleMessage(message);
       } else {
-        util.warn('You aborted your connection to ' + peer + ' before it opened.');
+        this._storeMessage(message);
       }
       break;
   }
+}
+
+/** Stores messages without a connection, to be claimed later. */
+Peer.prototype._storeMessage = function(message) {
+  var connectionId = message.payload.connectionId;
+  if (!connectionId) {
+    util.warn('You received an unrecognized message:', message);
+  }
+
+  if (!this._lostMessages[connectionId]) {
+    this._lostMessages[connectionId] = [];
+  }
+  this._lostMessages[connectionId].push(message);
 }
 
 /**
