@@ -1901,6 +1901,7 @@ Negotiator._getPeerConnection = function(connection, options) {
 
   var pc;
   if (options.multiplex) {
+    // TODO: this doesn't work right now because we don't have PC ids.
     // Find an existing PC to use.
     ids = Object.keys(peerConnections);
     for (var i = 0, ii = ids.length; i < ii; i += 1) {
@@ -2041,6 +2042,10 @@ Negotiator._makeOffer = function(connection) {
         payload: {
           sdp: offer,
           type: connection.type,
+          label: connection.label,
+          reliable: connection.reliable,
+          serialization: connection.serialization,
+          metadata: connection.metadata,
           connectionId: connection.id
         },
         dst: connection.peer,
@@ -2293,6 +2298,7 @@ Socket.prototype._sendQueuedMessages = function() {
 
 /** Exposed send for DC & Peer. */
 Socket.prototype.send = function(data) {
+  console.log(data)
   if (this.disconnected) {
     return;
   }

@@ -8,19 +8,19 @@
 <link href="fancy.css" rel="stylesheet" type="text/css">
 <script>
   // Just for demo.
-  console._log = console.log;
+  /*console._log = console.log;
   console.log = function() {
     var copy = Array.prototype.slice.call(arguments).join(' ');
     $('.log').append(copy + '<br>');
     console._log(copy);
-  };
+  };*/
 </script>
 
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script> 
-<script type="text/javascript" src="http://cdn.peerjs.com/0/peer.js"></script>
+<script type="text/javascript" src="../dist/peer.js"></script>
 <script>
 // Connect to PeerJS, have server assign an ID instead of providing one
-var peer = new Peer({key: 'lwjd5qra8257b9', debug: true});
+var peer = new Peer({key: 'lwjd5qra8257b9', debug: 3});
 
 // Show this peer's ID.
 peer.on('open', function(id){
