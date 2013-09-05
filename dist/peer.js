@@ -1461,20 +1461,18 @@ Peer.prototype._handleMessage = function(message) {
       if (connection) {
         // Pass it on.
         connection.handleMessage(message);
+      } else if (id) {
+        // Store for possible later use
+        this._storeMessage(id, message);
       } else {
-        this._storeMessage(message);
+        util.warn('You received an unrecognized message:', message);
       }
       break;
   }
 }
 
 /** Stores messages without a connection, to be claimed later. */
-Peer.prototype._storeMessage = function(message) {
-  var connectionId = message.payload.connectionId;
-  if (!connectionId) {
-    util.warn('You received an unrecognized message:', message);
-  }
-
+Peer.prototype._storeMessage = function(connectionId, message) {
   if (!this._lostMessages[connectionId]) {
     this._lostMessages[connectionId] = [];
   }
