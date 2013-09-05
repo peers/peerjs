@@ -721,6 +721,9 @@ EventEmitter.prototype.emit = function(type) {
 var util = {
   noop: function() {},
 
+  CLOUD_HOST: '0.peerjs.com',
+  CLOUD_PORT: 9000,
+  
   // Logging logic
   logLevel: 0,
   setLogLevel: function(level) {
@@ -1255,8 +1258,8 @@ function Peer(id, options) {
   // Configurize options
   options = util.extend({
     debug: 0, // 1: Errors, 2: Warnings, 3: All logs
-    host: '0.peerjs.com',
-    port: 9000,
+    host: util.CLOUD_HOST,
+    port: util.CLOUD_PORT,
     key: 'peerjs',
     config: { 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] }
   }, options);
@@ -1266,7 +1269,7 @@ function Peer(id, options) {
     options.host = window.location.hostname;
   }
   // Set whether we use SSL to same as current host
-  if (options.secure === undefined) {
+  if (options.secure === undefined && options.host !== util.CLOUD_HOST) {
     options.secure = util.isSecure();
   }
   // TODO: document this feature
@@ -2169,8 +2172,9 @@ function Socket(secure, host, port, key) {
   this.disconnected = false;
   this._queue = [];
 
+  var httpProtocol = secure ? 'https://' : 'http://';
   var wsProtocol = secure ? 'wss://' : 'ws://';
-  this._httpUrl = '//' + host + ':' + port + '/' + key;
+  this._httpUrl = httpProtocol + host + ':' + port + '/' + key;
   this._wsUrl = wsProtocol + host + ':' + port + '/peerjs?key=' + key;
 }
 
