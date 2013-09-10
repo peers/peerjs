@@ -1689,13 +1689,14 @@ DataConnection.prototype._configureDataChannel = function() {
 }
 
 DataConnection.prototype._cleanup = function() {
-  if (this._dc && this._dc.readyState !== 'closed') {
+  if (this._dc.readyState !== 'closing' && this._dc.readyState !== 'closed') {
     this._dc.close();
-    this._dc = null;
+    this.open = false;
+    Negotiator.cleanup(this);
+    this.emit('close');
+  } else {
+    this.emit('error', new Error('The connection has already been closed'));
   }
-  this.open = false;
-  Negotiator.cleanup(this);
-  this.emit('close');
 }
 
 // Handles a DataChannel message.
