@@ -777,7 +777,7 @@ var util = {
       audioVideo: true,
       data: true,
       binary: false,
-      reliable: true,
+      reliable: false,
       onnegotiationneeded: true
     };
   }()),
@@ -2061,8 +2061,8 @@ Negotiator._makeOffer = function(connection) {
   pc.createOffer(function(offer) {
     util.log('Created offer.');
 
-    if (!util.supports.reliable) {
-      //offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
+    if (!util.supports.reliable && connection.type === 'data') {
+      offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
     }
 
     pc.setLocalDescription(offer, function() {
@@ -2096,9 +2096,8 @@ Negotiator._makeAnswer = function(connection) {
   pc.createAnswer(function(answer) {
     util.log('Created answer.');
 
-    if (!util.supports.reliable) {
-      // TODO
-      //answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
+    if (!util.supports.reliable && connection.type === 'data') {
+      answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
     }
 
     pc.setLocalDescription(answer, function() {
