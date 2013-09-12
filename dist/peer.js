@@ -727,8 +727,9 @@ var util = {
   // Logging logic
   logLevel: 0,
   setLogLevel: function(level) {
-    if (level = parseInt(level, 10)) {
-      util.logLevel = level;
+    var debugLevel = parseInt(level, 10);
+    if (!isNaN(parseInt(level, 10))) {
+      util.logLevel = debugLevel;
     } else {
       // If they are using truthy/falsy values for debug
       util.logLevel = (!!level) ? 3 : 0;
@@ -1418,7 +1419,7 @@ Peer.prototype._handleMessage = function(message) {
         //connection.handleMessage(message);
       } else {
         // Create a new connection.
-        if (payload.type === 'call') {
+        if (payload.type === 'media') {
           var connection = new MediaConnection(peer, this, {
             connectionId: connectionId,
             _payload: payload,
@@ -1504,10 +1505,18 @@ Peer.prototype.connect = function(peer, options) {
  * complete list of options.
  */
 Peer.prototype.call = function(peer, stream, options) {
+  if (this.disconnected) {
+    util.warn('You cannot connect to a new Peer because you called '
+        + '.disconnect() on this Peer and ended your connection with the'
+        + ' server. You can create a new Peer to reconnect.');
+    this.emit('error', new Error('Cannot connect to new Peer after disconnecting from server.'));
+    return;
+  }
   if (!stream) {
     util.error('To call a peer, you must provide a stream from your browser\'s `getUserMedia`.');
     return;
   }
+  options = options || {};
   options._stream = stream;
   var call = new MediaConnection(peer, this, options);
   this._addConnection(peer, call);
@@ -1807,10 +1816,10 @@ function MediaConnection(peer, provider, options) {
 
   this.id = this.options.connectionId || MediaConnection._idPrefix + util.randomToken();
   if (this.localStream) {
-    this.pc = Negotiator.startConnection(
+    Negotiator.startConnection(
       this,
       {_stream: this.localStream, originator: true}
-    )
+    );
   }
 };
 
@@ -1855,11 +1864,8 @@ MediaConnection.prototype.answer = function(stream) {
   this.options._payload._stream = stream;
 
   this.localStream = stream;
-  this._pc = Negotiator.startConnection(
-    this.type,
-    this.peer,
-    this.id,
-    this.provider,
+  Negotiator.startConnection(
+    this,
     this.options._payload
   )
 };
@@ -1904,7 +1910,6 @@ Negotiator.startConnection = function(connection, options) {
 
   // Set the connection's PC.
   connection.pc = pc;
-
   // What do we need to do now?
   if (options.originator) {
     if (connection.type === 'data') {
@@ -2020,7 +2025,11 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
   util.log('Listening for `negotiationneeded`');
   pc.onnegotiationneeded = function() {
     util.log('`negotiationneeded` triggered');
-    Negotiator._makeOffer(connection);
+    if (pc.signalingState == 'stable') {
+      Negotiator._makeOffer(connection);
+    } else {
+      util.log('onnegotiationneeded triggered when not stable. Is another connection being established?');
+    }
   };
 
   // DATACONNECTION.
@@ -2039,7 +2048,7 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
   pc.onaddstream = function(evt) {
     util.log('Received remote stream');
     var stream = evt.stream;
-    provider.getConnection(peerId, id).receiveStream(stream);
+    provider.getConnection(peerId, connectionId).addStream(stream);
   };
 }
 
@@ -2140,10 +2149,10 @@ Negotiator.handleSDP = function(type, connection, sdp) {
           // Add local stream (from answer).
           pc.addStream(connection.localStream);
         }
-        util.setZeroTimeout(function(){
-          // Add remote streams
-          connection.addStream(pc.getRemoteStreams()[0]);
-        });
+        //util.setZeroTimeout(function(){
+        //  // Add remote streams
+        //  connection.addStream(pc.getRemoteStreams()[0]);
+        //});
       }
       Negotiator._makeAnswer(connection);
     }
