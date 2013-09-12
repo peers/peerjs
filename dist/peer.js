@@ -781,7 +781,7 @@ var util = {
       audioVideo: true,
       data: true,
       binary: false,
-      reliable: true,
+      reliable: false,
       onnegotiationneeded: true
     };
   }()),
@@ -1639,7 +1639,7 @@ function DataConnection(peer, provider, options) {
   this.id = this.options.connectionId || DataConnection._idPrefix + util.randomToken();
 
   this.label = this.options.label || this.id;
-  this.metadata = this.options.metadata; // TODO: metadata could also be a part of the paylod.
+  this.metadata = this.options.metadata;
   this.serialization = this.options.serialization;
   this.reliable = this.options.reliable;
 
@@ -1667,7 +1667,6 @@ DataConnection.prototype.initialize = function(dc) {
 
 DataConnection.prototype._configureDataChannel = function() {
   var self = this;
-  // TODO: util.supports.binary
   if (util.supports.binary) {
     // Webkit doesn't support binary yet
     this._dc.binaryType = 'arraybuffer';
@@ -1679,7 +1678,6 @@ DataConnection.prototype._configureDataChannel = function() {
   }
 
   // Use the Reliable shim for non Firefox browsers
-  // TODO: util.supports.reliable
   if (!util.supports.reliable) {
     this._reliable = new Reliable(this._dc, util.debug);
   }
@@ -1695,19 +1693,20 @@ DataConnection.prototype._configureDataChannel = function() {
   }
   this._dc.onclose = function(e) {
     util.log('DataChannel closed for:', self.peer);
-    // TODO: remove connection from Peer as well!!
     self.close();
   };
 }
 
 DataConnection.prototype._cleanup = function() {
-  if (this._dc && this._dc.readyState !== 'closed') {
-    this._dc.close();
-    this._dc = null;
+  // readyState is deprecated but still exists in older versions.
+  if (this.pc.readyState !== 'closed' || this.pc.signalingState !== 'closed') {
+    this.pc.close();
+    this.open = false;
+    Negotiator.cleanup(this);
+    this.emit('close');
+  } else {
+    this.emit('error', new Error('The connection has already been closed'));
   }
-  this.open = false;
-  Negotiator.cleanup(this);
-  this.emit('close');
 }
 
 // Handles a DataChannel message.
@@ -1746,7 +1745,7 @@ DataConnection.prototype.close = function() {
     return;
   }
   this._cleanup();
-};
+}
 
 /** Allows user to send data. */
 DataConnection.prototype.send = function(data) {
@@ -1776,20 +1775,17 @@ DataConnection.prototype.send = function(data) {
       this._dc.send(blob);
     }
   }
-};
+}
 
 DataConnection.prototype.handleMessage = function(message) {
   var payload = message.payload;
 
   switch (message.type) {
     case 'ANSWER':
-      // TODO: assert sdp exists.
-      // Should we pass `this`?
       // Forward to negotiator
       Negotiator.handleSDP(message.type, this, payload.sdp);
       break;
     case 'CANDIDATE':
-      // TODO
       Negotiator.handleCandidate(this, payload.candidate);
       break;
     default:
@@ -1884,8 +1880,6 @@ MediaConnection.prototype.close = function() {
 /**
  * Manages all negotiations between Peers.
  */
-// TODO: LOCKS.
-// TODO: FIREFOX new PC after offer made for DC.
 var Negotiator = {
   pcs: {
     data: {},
@@ -1898,9 +1892,7 @@ var Negotiator = {
 Negotiator._idPrefix = 'pc_';
 
 /** Returns a PeerConnection object set up correctly (for data, media). */
-// Options preceeded with _ are ones we add artificially.
 Negotiator.startConnection = function(connection, options) {
-  //Negotiator._addProvider(provider);
   var pc = Negotiator._getPeerConnection(connection, options);
 
   if (connection.type === 'media' && options._stream) {
@@ -1937,9 +1929,8 @@ Negotiator._getPeerConnection = function(connection, options) {
   var peerConnections = Negotiator.pcs[connection.type][connection.peer];
 
   var pc;
-  if (options.multiplex) {
-    // TODO: this doesn't work right now because we don't have PC ids.
-    // Find an existing PC to use.
+  // Not multiplexing while FF and Chrome have not-great support for it.
+  /*if (options.multiplex) {
     ids = Object.keys(peerConnections);
     for (var i = 0, ii = ids.length; i < ii; i += 1) {
       pc = peerConnections[ids[i]];
@@ -1947,7 +1938,8 @@ Negotiator._getPeerConnection = function(connection, options) {
         break; // We can go ahead and use this PC.
       }
     }
-  } else if (options.pc) { // Simplest case: PC id already provided for us.
+  } else */
+  if (options.pc) { // Simplest case: PC id already provided for us.
     pc = Negotiator.pcs[connection.type][connection.peer][options.pc];
   }
 
@@ -1975,7 +1967,12 @@ Negotiator._startPeerConnection = function(connection) {
   util.log('Creating RTCPeerConnection.');
 
   var id = Negotiator._idPrefix + util.randomToken();
-  pc = new RTCPeerConnection(connection.provider.options.config, {optional: [{RtpDataChannels: true}]});
+  pc = new RTCPeerConnection(connection.provider.options.config, {
+    optional: [{
+      RtpDataChannels: true,
+      DtlsSrtpKeyAgreement: true /* Firefox interop */
+    }]
+  });
   Negotiator.pcs[connection.type][connection.peer][id] = pc;
 
   Negotiator._setupListeners(connection, pc, id);
@@ -2008,6 +2005,7 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
 
   pc.oniceconnectionstatechange = function() {
     switch (pc.iceConnectionState) {
+      case 'disconnected':
       case 'failed':
         util.log('iceConnectionState is disconnected, closing connections to ' + peerId);
         Negotiator.cleanup(connection);
@@ -2054,7 +2052,6 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
 
 Negotiator.cleanup = function(connection) {
   connection.close(); // Will fail safely if connection is already closed.
-  // TODO: close PeerConnection when all connections are closed.
   util.log('Cleanup PeerConnection for ' + connection.peer);
   /*if (!!this.pc && (this.pc.readyState !== 'closed' || this.pc.signalingState !== 'closed')) {
     this.pc.close();
@@ -2073,8 +2070,8 @@ Negotiator._makeOffer = function(connection) {
   pc.createOffer(function(offer) {
     util.log('Created offer.');
 
-    if (!util.supports.reliable) {
-      //offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
+    if (!util.supports.reliable && connection.type === 'data') {
+      offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
     }
 
     pc.setLocalDescription(offer, function() {
@@ -2108,9 +2105,8 @@ Negotiator._makeAnswer = function(connection) {
   pc.createAnswer(function(answer) {
     util.log('Created answer.');
 
-    if (!util.supports.reliable) {
-      // TODO
-      //answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
+    if (!util.supports.reliable && connection.type === 'data') {
+      answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
     }
 
     pc.setLocalDescription(answer, function() {
@@ -2200,7 +2196,7 @@ Socket.prototype.start = function(id) {
 
   this._startXhrStream();
   this._startWebSocket();
-};
+}
 
 
 /** Start up websocket communications. */
@@ -2237,7 +2233,7 @@ Socket.prototype._startWebSocket = function(id) {
     self._sendQueuedMessages();
     util.log('Socket open');
   };
-};
+}
 
 /** Start XHR streaming. */
 Socket.prototype._startXhrStream = function(n) {
@@ -2261,7 +2257,7 @@ Socket.prototype._startXhrStream = function(n) {
   } catch(e) {
     util.log('XMLHttpRequest not available; defaulting to WebSockets');
   }
-};
+}
 
 
 /** Handles onreadystatechange response as a stream. */
@@ -2367,6 +2363,6 @@ Socket.prototype.close = function() {
     this._socket.close();
     this.disconnected = true;
   }
-};
+}
 
 })(this);

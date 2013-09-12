@@ -21,6 +21,7 @@
 <script>
 // Connect to PeerJS, have server assign an ID instead of providing one
 var peer = new Peer({key: 'lwjd5qra8257b9', debug: 3});
+var connectedPeers = {};
 
 // Show this peer's ID.
 peer.on('open', function(id){
@@ -61,6 +62,7 @@ function connect(c) {
           if ($('.connection').length === 0) {
             $('.filler').show();
           }
+          delete connectedPeers[c.peer];
         });
   } else if (c.label === 'file') {
     c.on('data', function(data) {
@@ -98,17 +100,21 @@ $(document).ready(function() {
 
   // Connect to a peer
   $('#connect').click(function() {
-    // Create 2 connections, one labelled chat and another labelled file.
-    var c = peer.connect($('#rid').val(), { label: 'chat' });
-    c.on('open', function() {
-      connect(c);
-    });
-    c.on('error', function(err) { alert(err); });
-    var f = peer.connect($('#rid').val(), { reliable: true, label: 'file' });
-    f.on('open', function() {
-      connect(f);
-    });
-    f.on('error', function(err) { alert(err); });
+    requestedPeer = $('#rid').val();
+    if (!connectedPeers[requestedPeer]) {
+      // Create 2 connections, one labelled chat and another labelled file.
+      var c = peer.connect(requestedPeer, { label: 'chat' });
+      c.on('open', function() {
+        connect(c);
+      });
+      c.on('error', function(err) { alert(err); });
+      var f = peer.connect(requestedPeer, { reliable: true, label: 'file' });
+      f.on('open', function() {
+        connect(f);
+      });
+      f.on('error', function(err) { alert(err); });
+    }
+    connectedPeers[requestedPeer] = 1;
   });
 
   // Close a connection.
@@ -137,14 +143,19 @@ $(document).ready(function() {
   // Goes through each active peer and calls FN on its connections.
   function eachActiveConnection(fn) {
     var actives = $('.active');
+    var checkedIds = {};
     actives.each(function() {
       var peerId = $(this).attr('id');
-      var conns = peer.connections[peerId];
-      var labels = Object.keys(conns);
-      for (var i = 0, ii = labels.length; i < ii; i += 1) {
-        var conn = conns[labels[i]];
-        fn(conn, $(this));
+
+      if (!checkedIds[peerId]) {
+        var conns = peer.connections[peerId];
+        for (var i = 0, ii = conns.length; i < ii; i += 1) {
+          var conn = conns[i];
+          fn(conn, $(this));
+        }
       }
+
+      checkedIds[peerId] = 1;
     });
   }
 

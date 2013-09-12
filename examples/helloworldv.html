@@ -9,9 +9,9 @@
   // Just for demo.
   console._log = console.log;
   console.error = console.log = function() {
-    var copy = Array.prototype.slice.call(arguments).join(' ');
-    $('.log').append(copy + '<br>');
-    console._log(copy);
+    var copy = Array.prototype.slice.call(arguments);
+    $('.log').append(copy.join(' ') + '<br>');
+    console._log.apply(console, copy);
   };
 </script>
 
@@ -26,8 +26,9 @@
       window.ls = s;
       // Create a new Peer with our demo API key, with debug set to true so we can
       // see what's going on.
-      peer1 = new Peer(window.location.hash.substr(1), { key: 'lwjd5qra8257b9', debug: true });
-      
+      peer1 = new Peer(window.location.hash.substr(1), { key: 'lwjd5qra8257b9', debug: 3});
+      peer1.on('error', console.log);
+      peer1.on('close', console.log);
       peer1.on('call', function(c){
         c.answer(s);
         c.on('stream', function(s){
