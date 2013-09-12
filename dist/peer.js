@@ -1689,8 +1689,9 @@ DataConnection.prototype._configureDataChannel = function() {
 }
 
 DataConnection.prototype._cleanup = function() {
-  if (this._dc.readyState !== 'closing' && this._dc.readyState !== 'closed') {
-    this._dc.close();
+  // readyState is deprecated but still exists in older versions.
+  if (this.pc.readyState !== 'closed' || this.pc.signalingState !== 'closed') {
+    this.pc.close();
     this.open = false;
     Negotiator.cleanup(this);
     this.emit('close');
@@ -1735,7 +1736,7 @@ DataConnection.prototype.close = function() {
     return;
   }
   this._cleanup();
-};
+}
 
 /** Allows user to send data. */
 DataConnection.prototype.send = function(data) {
@@ -1765,7 +1766,7 @@ DataConnection.prototype.send = function(data) {
       this._dc.send(blob);
     }
   }
-};
+}
 
 DataConnection.prototype.handleMessage = function(message) {
   var payload = message.payload;
@@ -2001,6 +2002,7 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
 
   pc.oniceconnectionstatechange = function() {
     switch (pc.iceConnectionState) {
+      case 'disconnected':
       case 'failed':
         util.log('iceConnectionState is disconnected, closing connections to ' + peerId);
         Negotiator.cleanup(connection);
@@ -2041,9 +2043,9 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
   };
 }
 
+// TODO(michelle)
 Negotiator.cleanup = function(connection) {
   connection.close(); // Will fail safely if connection is already closed.
-  // TODO: close PeerConnection when all connections are closed.
   util.log('Cleanup PeerConnection for ' + connection.peer);
   /*if (!!this.pc && (this.pc.readyState !== 'closed' || this.pc.signalingState !== 'closed')) {
     this.pc.close();
