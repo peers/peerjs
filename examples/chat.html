@@ -6,21 +6,26 @@
 <meta http-equiv="Content-Language" content="en-us"> 
 
 <link href="fancy.css" rel="stylesheet" type="text/css">
-<script>
-  // Just for demo.
-  /*console._log = console.log;
-  console.log = function() {
-    var copy = Array.prototype.slice.call(arguments).join(' ');
-    $('.log').append(copy + '<br>');
-    console._log(copy);
-  };*/
-</script>
 
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script> 
 <script type="text/javascript" src="../dist/peer.js"></script>
 <script>
 // Connect to PeerJS, have server assign an ID instead of providing one
-var peer = new Peer({key: 'lwjd5qra8257b9', debug: 3});
+// Showing off some of the configs available with PeerJS :).
+var peer = new Peer({
+  // Set API key for cloud server (you don't need this if you're running your
+  // own.
+  key: 'lwjd5qra8257b9',
+
+  // Set highest debug level (log everything!).
+  debug: 3,
+
+  // Set a logging function:
+  logFunction: function() {
+    var copy = Array.prototype.slice.call(arguments).join(' ');
+    $('.log').append(copy + '<br>');
+  }
+});
 var connectedPeers = {};
 
 // Show this peer's ID.
@@ -103,7 +108,11 @@ $(document).ready(function() {
     requestedPeer = $('#rid').val();
     if (!connectedPeers[requestedPeer]) {
       // Create 2 connections, one labelled chat and another labelled file.
-      var c = peer.connect(requestedPeer, { label: 'chat' });
+      var c = peer.connect(requestedPeer, {
+        label: 'chat',
+        serialization: 'none',
+        metadata: {message: 'hi i want to chat with you!'}
+      });
       c.on('open', function() {
         connect(c);
       });
