@@ -2189,7 +2189,7 @@ Socket.prototype.start = function(id) {
 
   this._startXhrStream();
   this._startWebSocket();
-};
+}
 
 
 /** Start up websocket communications. */
