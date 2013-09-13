@@ -9,8 +9,9 @@
   supported by your browser.
 
 ### Other changes
-* **Deprecate current Peer#connections format.** Connections will no longer be
+* **Deprecate current `Peer#connections` format.** Connections will no longer be
   keyed by label and will instead be in a list.
+  **Deprecate `Peer.browser`** in favor of `util.browser`.
 * Additional logging levels (warnings, errors, all).
 * Additional logging functionality (`logFunction`).
 * SSL option now in config rather than automatic.
