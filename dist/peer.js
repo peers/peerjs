@@ -1086,23 +1086,96 @@ var util = {
 
   // Lists which features are supported
   // Temporarily set everything to true
-  supports: (function(){
+  supports: (function() {
+    var data = true;
+    var audioVideo = true;
+
+    var pc, dc;
+    try {
+      pc = new RTCPeerConnection(defaultConfig, {optional: [{RtpDataChannels: true}]});
+    } catch (e) {
+      data = false;
+      audioVideo = false;
+    }
+
+    if (data) {
+      try {
+        dc = pc.createDataChannel('_PEERJSDATATEST');
+      } catch (e) {
+        data = false;
+      }
+    }
+    // FIXME: not really the best check...
+    if (audioVideo) {
+      audioVideo = !!pc.addStream;
+    }
+
+    pc.close();
+    dc.close();
+
     return {
-      audioVideo: true,
-      data: true,
-      binary: false,
-      reliable: (function() {
-        // Reliable (not RTP).
-        var pc = new RTCPeerConnection(defaultConfig, {});
+      audioVideo: audioVideo,
+      data: data,
+      binary: data && (function() {
+        var pc = new RTCPeerConnection(defaultConfig, {optional: [{RtpDataChannels: true}]});
+        var dc = pc.createDataChannel('_PEERJSBINARYTEST');
+
         try {
-          pc.createDataChannel('PEERJSRELIABLETEST');
+          dc.binaryType = 'blob';
         } catch (e) {
+          pc.close();
           if (e.name === 'NotSupportedError') {
             return false
           }
         }
+        pc.close();
+        dc.close();
+
+        return true;
       })(),
-      onnegotiationneeded: true,
+
+      reliable: data && (function() {
+        // Reliable (not RTP).
+        var pc = new RTCPeerConnection(defaultConfig, {});
+        var dc;
+        try {
+          dc = pc.createDataChannel('_PEERJSRELIABLETEST');
+        } catch (e) {
+          pc.close();
+          if (e.name === 'NotSupportedError') {
+            return false
+          }
+        }
+        pc.close();
+        dc.close();
+
+        return true;
+      })(),
+
+      onnegotiationneeded: (data || audioVideo) && (function() {
+        var pc = new RTCPeerConnection(defaultConfig, {});
+        // sync default check.
+        var called = false;
+        var pc = new RTCPeerConnection(defaultConfig, {optional: [{RtpDataChannels: true}]});
+        pc.onnegotiationneeded = function() {
+          called = true;
+          // async check.
+          if (util && util.supports) {
+            util.supports.onnegotiationneeded = true;
+          }
+        };
+        // FIXME: this is not great because it doesn't work for audio-only
+        // browsers (?).
+        var dc = pc.createDataChannel('_PEERJSRELIABLETEST');
+
+        pc.close();
+        dc.close();
+
+        return called;
+      })(),
+
+      // TODO(michelle): whether this browser can interop with a different
+      // browser. But the two browsers both have to support interop.
       interop: false
     };
   }()),
