@@ -1897,13 +1897,10 @@ MediaConnection.prototype.handleMessage = function(message) {
 
   switch (message.type) {
     case 'ANSWER':
-      // TODO: assert sdp exists.
-      // Should we pass `this`?
       // Forward to negotiator
       Negotiator.handleSDP(message.type, this, payload.sdp);
       break;
     case 'CANDIDATE':
-      // TODO
       Negotiator.handleCandidate(this, payload.candidate);
       break;
     default:
