@@ -1164,8 +1164,8 @@ var util = {
             util.supports.onnegotiationneeded = true;
           }
         };
-        // FIXME: this is not great because it doesn't work for audio-only
-        // browsers (?).
+        // FIXME: this is not great because in theory it doesn't work for
+        // av-only browsers (?).
         var dc = pc.createDataChannel('_PEERJSRELIABLETEST');
 
         pc.close();
@@ -2050,11 +2050,16 @@ Negotiator._startPeerConnection = function(connection) {
   util.log('Creating RTCPeerConnection.');
 
   var id = Negotiator._idPrefix + util.randomToken();
-  pc = new RTCPeerConnection(connection.provider.options.config, {
-    optional: [{
-      RtpDataChannels: true
-    }]
-  });
+  var optional = {};
+
+  if (connection.type === 'data' && !util.supports.reliable) {
+    optional = {optional: [{RtpDataChannels: true}]};
+  } else if (connection.type === 'media') {
+    // Interop req for chrome.
+    optional = {optional: [{DtlsSrtpKeyAgreement: true}]};
+  }
+
+  pc = new RTCPeerConnection(connection.provider.options.config, optional);
   Negotiator.pcs[connection.type][connection.peer][id] = pc;
 
   Negotiator._setupListeners(connection, pc, id);
