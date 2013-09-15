@@ -1,0 +1,19 @@
+{
+  "author": "Michelle Bu <michellebu@berkeley.edu>",
+  "name": "peerjs-docs",
+  "description": "PeerJS documentation",
+  "version": "0.2.8-60-gae41079",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/peers/peerjs.git"
+  },
+  "dependencies": {
+    "markdown": "~0.5.0",
+    "handlebars": "~1.0.12"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  }
+}
