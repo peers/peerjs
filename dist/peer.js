@@ -1029,7 +1029,7 @@ var util = {
 
   CLOUD_HOST: '0.peerjs.com',
   CLOUD_PORT: 9000,
-  
+
   // Logging logic
   logLevel: 0,
   setLogLevel: function(level) {
@@ -1038,7 +1038,7 @@ var util = {
       util.logLevel = debugLevel;
     } else {
       // If they are using truthy/falsy values for debug
-      util.logLevel = (!!level) ? 3 : 0;
+      util.logLevel = level ? 3 : 0;
     }
     util.log = util.warn = util.error = util.noop;
     if (util.logLevel > 0) {
@@ -1084,8 +1084,21 @@ var util = {
   defaultConfig: defaultConfig,
   //
 
+  // Returns the current browser.
+  browser: (function() {
+    if (window.mozRTCPeerConnection) {
+      return 'Firefox';
+    } else if (window.webkitRTCPeerConnection) {
+      return 'Chrome';
+    } else if (window.RTCPeerConnection) {
+      return 'Supported';
+    } else {
+      return 'Unsupported';
+    }
+  })(),
+  //
+
   // Lists which features are supported
-  // Temporarily set everything to true
   supports: (function() {
     var data = true;
     var audioVideo = true;
@@ -1193,14 +1206,7 @@ var util = {
   },
 
 
-  // OLD
-  chromeCompatible: true,
-  firefoxCompatible: true,
-  chromeVersion: 26,
-  firefoxVersion: 22,
-
   debug: false,
-  browserisms: '',
 
   inherits: function(ctor, superCtor) {
     ctor.super_ = superCtor;
@@ -1296,26 +1302,6 @@ var util = {
   },
   //
 
-  // When we have proper version/feature mappings we can remove this
-  isBrowserCompatible: function() {
-    var c, f;
-    if (this.chromeCompatible) {
-      if ((c = navigator.userAgent.split('Chrome/')) && c.length > 1) {
-        // Get version #.
-        var v = c[1].split('.')[0];
-        return parseInt(v) >= this.chromeVersion;
-      }
-    }
-    if (this.firefoxCompatible) {
-      if ((f = navigator.userAgent.split('Firefox/')) && f.length > 1) {
-        // Get version #.
-        var v = f[1].split('.')[0];
-        return parseInt(v) >= this.firefoxVersion;
-      }
-    }
-    return false;
-  },
-
   isSecure: function() {
     return location.protocol === 'https:';
   }
@@ -1356,7 +1342,6 @@ function Peer(id, options) {
   if (options.secure === undefined && options.host !== util.CLOUD_HOST) {
     options.secure = util.isSecure();
   }
-  // TODO: document this feature
   // Set a custom log function if present
   if (options.logFunction) {
     util.setLogFunction(options.logFunction);
@@ -1431,7 +1416,6 @@ util.inherits(Peer, EventEmitter);
 Peer.prototype._retrieveId = function(cb) {
   var self = this;
   var http = new XMLHttpRequest();
-  // TODO: apparently using ://something.com gives relative protocol?
   var protocol = this.options.secure ? 'https://' : 'http://';
   var url = protocol + this.options.host + ':' + this.options.port + '/' + this.options.key + '/id';
   var queryString = '?ts=' + new Date().getTime() + '' + Math.random();
@@ -1490,7 +1474,6 @@ Peer.prototype._handleMessage = function(message) {
       break;
 
     case 'EXPIRE': // The offer sent to a peer has expired without response.
-      // TODO: should this be on the DataConnection? It's currently here but I'm not so sure it belongs.
       this.emit('error', new Error('Could not connect to peer ' + peer));
       break;
     case 'OFFER': // we should consider switching this to CALL/CONNECT, but this is the least breaking option.
@@ -1536,7 +1519,6 @@ Peer.prototype._handleMessage = function(message) {
       }
       break;
     default:
-      // TODO: if out of order, must queue.
       if (!payload) {
         util.warn('You received a malformed message from ' + peer + ' of type ' + type);
         return;
@@ -1696,10 +1678,6 @@ Peer.prototype.disconnect = function() {
   });
 }
 
-/** The current browser. */
-// TODO: maybe expose util.supports
-Peer.browser = util.browserisms;
-
 exports.Peer = Peer;
 /**
  * Wraps a DataChannel between two Peers.
@@ -1729,11 +1707,7 @@ function DataConnection(peer, provider, options) {
   Negotiator.startConnection(
     this,
     this.options._payload || {
-      originator: true,
-      multiplex: this.options.multiplex // I don't think multiplex should be a
-                                        // top-level property because it only
-                                        // applies to the originator--otherwise
-                                        // we'd just have an options.pc to use.
+      originator: true
     }
   );
 }
@@ -1919,13 +1893,10 @@ MediaConnection.prototype.handleMessage = function(message) {
 
   switch (message.type) {
     case 'ANSWER':
-      // TODO: assert sdp exists.
-      // Should we pass `this`?
       // Forward to negotiator
       Negotiator.handleSDP(message.type, this, payload.sdp);
       break;
     case 'CANDIDATE':
-      // TODO
       Negotiator.handleCandidate(this, payload.candidate);
       break;
     default:
@@ -1955,6 +1926,7 @@ MediaConnection.prototype.answer = function(stream) {
 
 /** Allows user to close connection. */
 MediaConnection.prototype.close = function() {
+  // TODO: actually close PC.
   if (this.open) {
     this.open = false;
     this.emit('close')
@@ -2227,16 +2199,6 @@ Negotiator.handleSDP = function(type, connection, sdp) {
     util.log('Set remoteDescription:', type, 'for:', connection.peer);
 
     if (type === 'OFFER') {
-      if (connection.type === 'media') {
-        if (connection.localStream) {
-          // Add local stream (from answer).
-          pc.addStream(connection.localStream);
-        }
-        //util.setZeroTimeout(function(){
-        //  // Add remote streams
-        //  connection.addStream(pc.getRemoteStreams()[0]);
-        //});
-      }
       Negotiator._makeAnswer(connection);
     }
   }, function(err) {

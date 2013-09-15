@@ -3,34 +3,6 @@
 **Due to browsers' incomplete support of the WebRTC DataChannel specification, many features of PeerJS have caveats.
 [View the status page for full details](http://peerjs.com/status).**
 
-- [Class: peerjs.Peer](#class-peerjspeer)
-  - [new Peer([id], [options])](#new-peerid-options)
-  - [Peer.browser](#peerbrowser)
-  - [peer.id](#peerid)
-  - [peer.connections](#peerconnections)
-  - [peer.connect(id, [options])](#peerconnectid-options)
-  - [peer.destroy()](#peerdestroy)
-  - [peer.disconnect()](#peerdisconnect)
-  - [peer.disconnected](#peerdisconnected)
-  - [peer.destroyed](#peerdestroyed)
-  - [Event: 'connection'](#event-connection)
-  - [Event: 'open'](#event-open)
-  - [Event: 'error'](#event-error)
-  - [Event: 'close'](#event-close)
-- [Class: peerjs.DataConnection](#class-peerjsdataconnection)
-  - [EXPERIMENTAL reliable and large file transfer:](#experimental-reliable-and-large-file-transfer)
-  - [connection.peer](#connectionpeer)
-  - [connection.open](#connectionopen)
-  - [connection.metadata](#connectionmetadata)
-  - [connection.label](#connectionlabel)
-  - [connection.serialization](#connectionserialization)
-  - [connection.send(data)](#connectionsenddata)
-  - [connection.close()](#connectionclose)
-  - [Event: 'data'](#event-data)
-  - [Event: 'open'](#event-open-1)
-  - [Event: 'error'](#event-error-1)
-  - [Event: 'close'](#event-close-1)
-
 ## Class: peerjs.Peer
 
 This class is a Peer, which can connect to other peers and listen for connections. It is an `EventEmitter`.
@@ -55,7 +27,7 @@ In the options, either a PeerServer Cloud `key` must be provided or `host` and `
 
 The `config` object is passed straight into instances of `RTCPeerConnection`. For compatibility with symmetric NATs, you can provide your own TURN server. By default the STUN server provided by Google is used.
 
-### Peer.browser
+### Peer.browser (deprecated after 0.3.0)
 
 The type of browser the client is on. Currently WebRTC DataChannels are not
 interoperable so different browser types should not be connected.

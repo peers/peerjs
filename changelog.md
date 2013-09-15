@@ -1,16 +1,16 @@
 # PeerJS Changelog
 
-## Version 0.3.0 (TBA)
+## Version 0.3.0 (beta)
 
 ### Highlights
-* **Interoperable DataChannels and video/audio streams.**
-* Support for WebRTC video and audio streams.
+* Support for WebRTC video and audio streams in both Firefox and Chrome.
 * Add `util.supports.[FEATURE]` flags, which represent the WebRTC features
   supported by your browser.
+* **Deprecate current `Peer#connections` format.** Connections will no longer be
+  keyed by label and will instead be in a list.
 
 ### Other changes
-* **Deprecate current Peer#connections format.** Connections will no longer be
-  keyed by label and will instead be in a list.
+* **Deprecate `Peer.browser`** in favor of `util.browser`.
 * Additional logging levels (warnings, errors, all).
 * Additional logging functionality (`logFunction`).
 * SSL option now in config rather than automatic.
