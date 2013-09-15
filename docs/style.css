@@ -26,11 +26,15 @@ body, html {
   background-color: #f5f5f5;
 }
 
-.toplevel div {
-  padding: 0 0 5px 10px;
+.child {
+  padding: 8px 0 8px 15px;
 }
 
-.options, .arguments, .methods {
+.toplevel .children > .child {
+  padding-right: 15px;
+}
+
+.children {
   border-left: 1px dashed #ccc;
 }
 
@@ -38,8 +42,12 @@ body, html {
   margin: 0 0 5px 0;
 }
 
+.child:hover {
+  background-color: #fff;
+}
+
 /** Label stylings */
-.api .label {
+.api .type {
   display: inline-block;
   background-color: #454545;
   border-radius: 2px;
@@ -47,32 +55,41 @@ body, html {
   color: #fff;
   line-height: 11px;
   padding: 1px 2px;
+  margin-left: 5px;
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   text-shadow: 0px -1px 0px rgba(0,0,0,0.2);
-}
-
-span.label.type {
   background-color: #757E2B;
 }
 
-span.label.required {
-  background-color: #8E2603;
+.toplevel > .name {
+  font-size: 20px;
 }
 
-.options .label {
-  background-color: #E2A62E;
-}
 /** /Label stylings */
 
 .api .snippet {
   font: 12px Courier;
   display: inline-block;
+  background-color: #fff;
+  padding: 5px 10px;
+  margin-left: 5px;
 }
 
 .api .name {
   font-weight: 600;
   display: inline-block;
   margin-bottom: 5px;
+}
+
+.api .code {
+  font-family: Courier;
+}
+
+.tip {
+  background-color: #333;
+  font-size: 12px;
+  padding: 10px;
+  color: #fff;
 }
