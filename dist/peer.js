@@ -1423,7 +1423,7 @@ Peer.prototype._retrieveId = function(cb) {
 
   // If there's no ID we need to wait for one before trying to init socket.
   http.open('get', url, true);
-  http.onerror = function(e) { 
+  http.onerror = function(e) {
     util.error('Error retrieving ID', e);
     self._abort('server-error', 'Could not get an ID from the server');
   }
@@ -1470,6 +1470,7 @@ Peer.prototype._handleMessage = function(message) {
 
     //
     case 'LEAVE': // Another peer has closed its connection to this peer.
+      util.log('Received leave message from', peer);
       this._cleanupPeer(peer);
       break;
 
@@ -1647,6 +1648,7 @@ Peer.prototype._cleanup = function() {
   for (var i = 0, ii = peers.length; i < ii; i++) {
     this._cleanupPeer(peers[i]);
   }
+
   this.emit('close');
 }
 
@@ -1754,18 +1756,6 @@ DataConnection.prototype._configureDataChannel = function() {
   };
 }
 
-DataConnection.prototype._cleanup = function() {
-  // readyState is deprecated but still exists in older versions.
-  if (this.pc.readyState !== 'closed' || this.pc.signalingState !== 'closed') {
-    this.pc.close();
-    this.open = false;
-    Negotiator.cleanup(this);
-    this.emit('close');
-  } else {
-    this.emit('error', new Error('The connection has already been closed'));
-  }
-}
-
 // Handles a DataChannel message.
 DataConnection.prototype._handleDataMessage = function(e) {
   var self = this;
@@ -1801,7 +1791,9 @@ DataConnection.prototype.close = function() {
   if (!this.open) {
     return;
   }
-  this._cleanup();
+  this.open = false;
+  Negotiator.cleanup(this);
+  this.emit('close');
 }
 
 /** Allows user to send data. */
@@ -1926,11 +1918,12 @@ MediaConnection.prototype.answer = function(stream) {
 
 /** Allows user to close connection. */
 MediaConnection.prototype.close = function() {
-  // TODO: actually close PC.
-  if (this.open) {
-    this.open = false;
-    this.emit('close')
+  if (!this.open) {
+    return;
   }
+  this.open = false;
+  Negotiator.cleanup(this);
+  this.emit('close')
 };
 /**
  * Manages all negotiations between Peers.
@@ -2067,7 +2060,7 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
       case 'disconnected':
       case 'failed':
         util.log('iceConnectionState is disconnected, closing connections to ' + peerId);
-        Negotiator.cleanup(connection);
+        connection.close();
         break;
       case 'completed':
         pc.onicecandidate = util.noop;
@@ -2110,22 +2103,19 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
 }
 
 Negotiator.cleanup = function(connection) {
-  connection.close(); // Will fail safely if connection is already closed.
-  util.log('Cleanup PeerConnection for ' + connection.peer);
-  /*if (!!this.pc && (this.pc.readyState !== 'closed' || this.pc.signalingState !== 'closed')) {
-    this.pc.close();
-    this.pc = null;
-  }*/
+  util.log('Cleaning up PeerConnection to ' + connection.peer);
 
-  connection.provider.socket.send({
-    type: 'LEAVE',
-    dst: connection.peer
-  });
+  var pc = connection.pc;
+
+  if (!!pc && (pc.readyState !== 'closed' || pc.signalingState !== 'closed')) {
+    pc.close();
+    connection.pc = null;
+  }
 }
 
 Negotiator._makeOffer = function(connection) {
   var pc = connection.pc;
-
+  console.log('using constraints', connection.options.constraints);
   pc.createOffer(function(offer) {
     util.log('Created offer.');
 
@@ -2155,7 +2145,7 @@ Negotiator._makeOffer = function(connection) {
   }, function(err) {
     connection.provider.emit('error', err);
     util.log('Failed to createOffer, ', err);
-  });
+  }, connection.options.constraints);
 }
 
 Negotiator._makeAnswer = function(connection) {
