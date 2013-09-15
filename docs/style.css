@@ -1,0 +1,20 @@
+.api, .start {
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  overflow: scroll;
+  box-sizing: border-box;
+  padding: 20px;
+}
+
+.start {
+  right: 0px;
+  width: 60%;
+  background-color: #fff;
+}
+
+.api {
+  left: 0px;
+  width: 40%;
+  background-color: #ccc;
+}
