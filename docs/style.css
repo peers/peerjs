@@ -1,5 +1,6 @@
 body, html {
-  font: 14px Helvetica;
+  font-size: 14px;
+  font-family: "Lato", Helvetica, sans-serif;
   color: #454545;
   text-shadow: 0px -1px 0 rgba(255,255,255,0.6);
 }
@@ -27,15 +28,27 @@ body, html {
 }
 
 .child {
-  padding: 8px 0 8px 15px;
+  padding: 5px 0 5px 15px;
 }
 
-.toplevel .children > .child {
+.bracket {
+  color: #ccc;
+}
+
+.toplevel {
+  padding-top: 12px;
+}
+
+.toplevel > .children > .child {
   padding-right: 15px;
 }
 
 .children {
   border-left: 1px dashed #ccc;
+}
+
+.beta .children {
+  border-left: 1px dashed #E96151;
 }
 
 .api div p {
@@ -47,20 +60,40 @@ body, html {
 }
 
 /** Label stylings */
-.api .type {
+.tag {
   display: inline-block;
   background-color: #454545;
   border-radius: 2px;
-  border: 1px solid rgba(0,0,0,0.2);
   color: #fff;
   line-height: 11px;
   padding: 1px 2px;
   margin-left: 5px;
-  font-size: 10px;
+  font-size: 9px;
+  letter-spacing: 1px;
   font-weight: 600;
   text-transform: uppercase;
+  border: 1px solid rgba(0,0,0,0.2);
   text-shadow: 0px -1px 0px rgba(0,0,0,0.2);
+}
+
+.tag.type {
   background-color: #757E2B;
+}
+
+.tag.beta {
+  background-color: #E96151;
+}
+
+.tag.method {
+  background-color: #E2A62E;
+}
+
+.tag.class, .tag.constructor {
+  background-color: #454545;
+}
+
+.tag.event {
+  background-color: #1295D8;
 }
 
 .toplevel > .name {
@@ -74,7 +107,7 @@ body, html {
   display: inline-block;
   background-color: #fff;
   padding: 5px 10px;
-  margin-left: 5px;
+  margin: 5px 0 0 5px;
 }
 
 .api .name {
@@ -88,8 +121,20 @@ body, html {
 }
 
 .tip {
-  background-color: #333;
+  background-color: #454545;
   font-size: 12px;
-  padding: 10px;
+  border-radius: 2px;
+  padding: 8px;
   color: #fff;
+  border: 1px solid rgba(0,0,0,0.2);
+  text-shadow: 0px -1px 0px rgba(0,0,0,0.2);
+}
+
+#peer-options-debug .child {
+  padding: 0 15px;
+}
+
+#peer-options-debug .child .description {
+  display: inline-block;
+  margin-left: 10px;
 }
