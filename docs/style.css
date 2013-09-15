@@ -1,3 +1,9 @@
+body, html {
+  font: 14px Helvetica;
+  color: #454545;
+  text-shadow: 0px -1px 0 rgba(255,255,255,0.6);
+}
+
 .api, .start {
   position: absolute;
   top: 0px;
@@ -16,5 +22,57 @@
 .api {
   left: 0px;
   width: 40%;
-  background-color: #ccc;
+  border-right: 1px solid #ccc;
+  background-color: #f5f5f5;
+}
+
+.toplevel div {
+  padding: 0 0 5px 10px;
+}
+
+.options, .arguments, .methods {
+  border-left: 1px dashed #ccc;
+}
+
+.api div p {
+  margin: 0 0 5px 0;
+}
+
+/** Label stylings */
+.api .label {
+  display: inline-block;
+  background-color: #454545;
+  border-radius: 2px;
+  border: 1px solid rgba(0,0,0,0.2);
+  color: #fff;
+  line-height: 11px;
+  padding: 1px 2px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  text-shadow: 0px -1px 0px rgba(0,0,0,0.2);
+}
+
+span.label.type {
+  background-color: #757E2B;
+}
+
+span.label.required {
+  background-color: #8E2603;
+}
+
+.options .label {
+  background-color: #E2A62E;
+}
+/** /Label stylings */
+
+.api .snippet {
+  font: 12px Courier;
+  display: inline-block;
+}
+
+.api .name {
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 5px;
 }
