@@ -171,15 +171,15 @@ body, html {
 .tip {
   opacity: 0.9;
   display: block;
-  background-color: #8F4537;
+  background-color: #d1c7be;
   font-size: 13px;
   line-height: 18px;
-  font-weight: 400;
+  font-weight: 600;
   border-radius: 2px;
   padding: 5px 8px;
-  color: #ddaba2;
-  border: 1px solid rgba(0,0,0,0.2);
-  text-shadow: 0px -1px 0px rgba(0,0,0,0.2);
+  color: #544e4a;
+  border: 1px solid #544e4a;
+  text-shadow: 0px -1px 0px rgba(255,255,255,0.2);
   margin: 8px 0 0 0;
 }
 
