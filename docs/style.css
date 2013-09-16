@@ -169,7 +169,7 @@ body, html {
 /* /name */
 
 .tip {
-  opacity: 0.9;
+  opacity: 0.7;
   display: block;
   background-color: #d1c7be;
   font-size: 13px;
@@ -178,8 +178,8 @@ body, html {
   border-radius: 2px;
   padding: 5px 8px;
   color: #544e4a;
-  border: 1px solid #544e4a;
-  text-shadow: 0px -1px 0px #fff;
+  border: 2px solid rgba(0,0,0,0.2);
+  text-shadow: 0px -1px 0px rgba(255,255,255,0.2);
   margin: 8px 0 0 0;
 }
 
