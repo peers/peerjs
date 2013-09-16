@@ -1,8 +1,18 @@
 body, html {
   font-size: 14px;
+  line-height: 22px;
   font-family: "Lato", Helvetica, sans-serif;
   color: #454545;
-  text-shadow: 0px -1px 0 rgba(255,255,255,0.6);
+}
+
+.api h2 {
+  color: #E2A62E;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 15px;
+  margin: 0 0 10px 0;
+  padding: 5px 20px;
+  background-color: #50484e;
 }
 
 .api, .start {
@@ -11,43 +21,50 @@ body, html {
   bottom: 0px;
   overflow: scroll;
   box-sizing: border-box;
-  padding: 20px;
+  -moz-box-sizing: border-box;
 }
 
 .start {
+  width: 55%;
   right: 0px;
-  width: 60%;
-  background-color: #fff;
+  background-color: #f9f9f9;
+  text-shadow: 0px -1px 0 rgba(255,255,255,0.6);
 }
 
 .api {
+  color: #f5eff3;
+  font-weight: 300;
   left: 0px;
-  width: 40%;
-  border-right: 1px solid #ccc;
-  background-color: #f5f5f5;
+  width: 45%;
+  border-right: 4px solid #50484e;
+  background-color: #5a5157;
+  text-shadow: 0px -1px 0 #474045;
 }
 
 .child {
-  padding: 5px 0 5px 15px;
+  padding: 5px 0 5px 12px;
 }
 
 .bracket {
-  color: #ccc;
+  font-weight: 800;
+  display: inline-block;
+  margin: 0 2px;
+  color: rgba(255,255,255,0.2);
 }
 
 .toplevel {
-  padding-top: 12px;
+  padding: 10px 20px;
 }
 
 .toplevel > .children > .child {
-  padding-right: 15px;
+  padding-right: 5px;
 }
 
 .children {
-  border-left: 1px dashed #ccc;
+  border-left: 1px dashed rgba(255,255,255,0.2);
 }
 
-.beta .children {
+.beta_030 .children {
   border-left: 1px dashed #E96151;
 }
 
@@ -56,7 +73,7 @@ body, html {
 }
 
 .child:hover {
-  background-color: #fff;
+  background-color: #635960;
 }
 
 /** Label stylings */
@@ -64,15 +81,16 @@ body, html {
   display: inline-block;
   background-color: #454545;
   border-radius: 2px;
-  color: #fff;
+  color: rgba(255,255,255,0.8);
   line-height: 11px;
   padding: 1px 2px;
   margin-left: 5px;
   font-size: 9px;
   letter-spacing: 1px;
   font-weight: 600;
+  font-family: "Lato", Helvetica, sans-serif;
   text-transform: uppercase;
-  border: 1px solid rgba(0,0,0,0.2);
+  border: 1px solid rgba(0,0,0,0.4);
   text-shadow: 0px -1px 0px rgba(0,0,0,0.2);
 }
 
@@ -80,20 +98,33 @@ body, html {
   background-color: #757E2B;
 }
 
-.tag.beta {
+.tag.beta_030 {
   background-color: #E96151;
 }
 
-.tag.method {
+.tag.method, .tag.function {
   background-color: #E2A62E;
 }
 
-.tag.class, .tag.constructor {
-  background-color: #454545;
+.tag.class, .tag.constructor, .tag.utility {
+  background-color: #468F81;
+}
+
+.tag.error {
+  background-color: #8F4537;
 }
 
 .tag.event {
   background-color: #1295D8;
+}
+
+.api a {
+  color: #1295D8;
+  transition: color 200ms;
+}
+
+.api a:hover {
+  color: #33a2dc;
 }
 
 .toplevel > .name {
@@ -103,31 +134,53 @@ body, html {
 /** /Label stylings */
 
 .api .snippet {
-  font: 12px Courier;
+  color: #a2949d;
+  border-left: 1px solid #40393e;
+  border-top: 1px solid #40393e;
+  border-right: 1px solid #6b666a;
+  border-bottom: 1px solid #6b666a;
+  text-shadow: 0 -1px 0 #393438;
+  font-size: 12px;
+  font-family: Consolas, Inconsolata, 'Bitstream Vera Sans Mono', Menlo, Monaco, 'Andale Mono', 'Courier New', monospace;
+  font-weight: 400;
   display: inline-block;
-  background-color: #fff;
-  padding: 5px 10px;
-  margin: 5px 0 0 5px;
+  background-color: #474045;
+  padding: 3px 8px;
+  margin: 5px 0 0 10px;
 }
 
+/* We want to be able to use the names as an anchor. */
 .api .name {
   font-weight: 600;
   display: inline-block;
   margin-bottom: 5px;
 }
 
-.api .code {
-  font-family: Courier;
+.name a {
+  cursor: pointer;
+  color: #fff;
+  text-decoration: none;
+  transition: color 300ms;
 }
 
+.name a:hover {
+  color: #e7e0e5;
+}
+/* /name */
+
 .tip {
-  background-color: #454545;
-  font-size: 12px;
+  opacity: 0.9;
+  display: block;
+  background-color: #8F4537;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 400;
   border-radius: 2px;
-  padding: 8px;
-  color: #fff;
+  padding: 5px 8px;
+  color: #ddaba2;
   border: 1px solid rgba(0,0,0,0.2);
   text-shadow: 0px -1px 0px rgba(0,0,0,0.2);
+  margin: 8px 0 0 0;
 }
 
 #peer-options-debug .child {
@@ -138,3 +191,12 @@ body, html {
   display: inline-block;
   margin-left: 10px;
 }
+
+.api code {
+  font-family: Consolas, Inconsolata, 'Bitstream Vera Sans Mono', Menlo, Monaco, 'Andale Mono', 'Courier New', monospace;
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
+  font-size: 12px;
+  padding: 2px;
+,}
