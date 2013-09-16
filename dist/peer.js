@@ -1152,7 +1152,7 @@ var util = {
         var pc = new RTCPeerConnection(defaultConfig, {});
         var dc;
         try {
-          dc = pc.createDataChannel('_PEERJSRELIABLETEST');
+          dc = pc.createDataChannel('_PEERJSRELIABLETEST', {reliable: true});
         } catch (e) {
           pc.close();
           if (e.name === 'NotSupportedError') {
@@ -1510,12 +1510,9 @@ Peer.prototype._handleMessage = function(message) {
           return;
         }
         // Find messages.
-        var messages = this._lostMessages[connection.id];
-        if (messages) {
-          for (var i = 0, ii = messages.length; i < ii; i += 1) {
-            connection.handleMessage(messages[i]);
-          }
-          delete this._lostMessages[connection.id];
+        var messages = this._getMessages(connectionId);
+        for (var i = 0, ii = messages.length; i < ii; i += 1) {
+          connection.handleMessage(messages[i]);
         }
       }
       break;
@@ -1528,7 +1525,7 @@ Peer.prototype._handleMessage = function(message) {
       var id = payload.connectionId;
       var connection = this.getConnection(peer, id);
 
-      if (connection) {
+      if (connection && connection.pc) {
         // Pass it on.
         connection.handleMessage(message);
       } else if (id) {
@@ -1541,12 +1538,23 @@ Peer.prototype._handleMessage = function(message) {
   }
 }
 
-/** Stores messages without a connection, to be claimed later. */
+/** Stores messages without a set up connection, to be claimed later. */
 Peer.prototype._storeMessage = function(connectionId, message) {
   if (!this._lostMessages[connectionId]) {
     this._lostMessages[connectionId] = [];
   }
   this._lostMessages[connectionId].push(message);
+}
+
+/** Retrieve messages from lost message store */
+Peer.prototype._getMessages = function(connectionId) {
+  var messages = this._lostMessages[connectionId];
+  if (messages) {
+    delete this._lostMessages[connectionId];
+    return messages;
+  } else {
+    return [];
+  }
 }
 
 /**
@@ -1808,11 +1816,9 @@ DataConnection.prototype.send = function(data) {
     return;
   }
   var self = this;
-  if (this.serialization === 'none') {
-    this._dc.send(data);
-  } else if (this.serialization === 'json') {
+  if (this.serialization === 'json') {
     this._dc.send(JSON.stringify(data));
-  } else {
+  } else if ('binary-utf8'.indexOf(this.serialization) !== -1) {
     var utf8 = (this.serialization === 'binary-utf8');
     var blob = util.pack(data, utf8);
     // DataChannel currently only supports strings.
@@ -1823,6 +1829,8 @@ DataConnection.prototype.send = function(data) {
     } else {
       this._dc.send(blob);
     }
+  } else {
+    this._dc.send(data);
   }
 }
 
@@ -1855,7 +1863,6 @@ function MediaConnection(peer, provider, options) {
   this.type = 'media';
   this.peer = peer;
   this.provider = provider;
-
   this.metadata = this.options.metadata;
   this.localStream = this.options._stream;
 
@@ -1877,7 +1884,7 @@ MediaConnection.prototype.addStream = function(remoteStream) {
 
   this.remoteStream = remoteStream;
   this.emit('stream', remoteStream); // Should we call this `open`?
-  this.open = true;
+
 };
 
 MediaConnection.prototype.handleMessage = function(message) {
@@ -1887,6 +1894,7 @@ MediaConnection.prototype.handleMessage = function(message) {
     case 'ANSWER':
       // Forward to negotiator
       Negotiator.handleSDP(message.type, this, payload.sdp);
+      this.open = true;
       break;
     case 'CANDIDATE':
       Negotiator.handleCandidate(this, payload.candidate);
@@ -1899,7 +1907,7 @@ MediaConnection.prototype.handleMessage = function(message) {
 
 MediaConnection.prototype.answer = function(stream) {
   if (this.localStream) {
-    // Throw some error.
+    util.warn('Local stream already exists on this MediaConnection. Are you answering a call twice?');
     return;
   }
 
@@ -1910,6 +1918,12 @@ MediaConnection.prototype.answer = function(stream) {
     this,
     this.options._payload
   )
+  // Retrieve lost messages stored because PeerConnection not set up.
+  var messages = this.provider._getMessages(this.id);
+  for (var i = 0, ii = messages.length; i < ii; i += 1) {
+    this.handleMessage(messages[i]);
+  }
+  this.open = true;
 };
 
 /**
@@ -2115,7 +2129,6 @@ Negotiator.cleanup = function(connection) {
 
 Negotiator._makeOffer = function(connection) {
   var pc = connection.pc;
-  console.log('using constraints', connection.options.constraints);
   pc.createOffer(function(offer) {
     util.log('Created offer.');
 
