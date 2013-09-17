@@ -6,14 +6,40 @@ body, html {
 }
 
 .api h2 {
+  z-index: 100;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  border-right: 4px solid rgba(0,0,0,0.1);
   color: #E2A62E;
   letter-spacing: 1px;
   text-transform: uppercase;
   font-size: 15px;
-  margin: 0 0 10px 0;
-  padding: 5px 20px;
+  margin: 0;
+  padding: 6px 10px;
   background-color: #50484e;
+  position: fixed;
+  right: 0px;
+  left: 0px;
+  top: 0;
+  height: 35px;
+  width: 45%;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  text-align: right;
 }
+
+.api .icon {
+  color: #E2A62E;
+  cursor: pointer;
+  font-family: monospace;
+  font-size: 20px;
+  display: inline-block;
+  margin-left: 5px;
+}
+
+.icon.show {
+  display: none;
+}
+
 
 .api, .start {
   position: absolute;
@@ -22,13 +48,41 @@ body, html {
   overflow: scroll;
   box-sizing: border-box;
   -moz-box-sizing: border-box;
+  transition: all 300ms;
+}
+
+.api.fullscreen {
+  width: 100%;
+}
+.api.fullscreen h2 {
+  border: none;
+  background-color: #474045;
+}
+.api.fullscreen .toplevel {
+  border-top: 0;
+}
+
+.start.full {
+  left: 30px;
+  width: auto;
+}
+
+/** hiding */
+.api.hidden {
+  left: -370px;
+  width: 400px;
+  overflow: hidden;
+}
+
+.api.hidden > div {
+  opacity: 0.6;
 }
 
 .start {
   width: 55%;
   right: 0px;
-  background-color: #f9f9f9;
   text-shadow: 0px -1px 0 rgba(255,255,255,0.6);
+  z-index: 99;
 }
 
 .api {
@@ -36,9 +90,11 @@ body, html {
   font-weight: 300;
   left: 0px;
   width: 45%;
-  border-right: 4px solid #50484e;
+  border-right: 4px solid #474046;
   background-color: #5a5157;
   text-shadow: 0px -1px 0 #474045;
+  padding-top: 30px;
+  z-index: 100;
 }
 
 .child {
@@ -53,7 +109,9 @@ body, html {
 }
 
 .toplevel {
-  padding: 10px 20px;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding: 30px 20px;
 }
 
 .toplevel > .children > .child {
