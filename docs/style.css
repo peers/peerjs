@@ -11,6 +11,7 @@ body, html {
 }
 
 header.right, header.left {
+  cursor: pointer;
   z-index: 100;
   position: fixed;
   top: 0;
@@ -47,7 +48,7 @@ header.right {
 }
 
 .right h2 {
-  color: #474045;
+  color: #5a5157;
   text-shadow: 0 -1px 0 #fff;
 }
 
@@ -109,12 +110,27 @@ header.right {
 
 .start h1 {
   margin: 0;
-  font-size: 50px;
-  line-height: 50px;
+  font-size: 40px;
+  line-height: 30px;
+  padding: 20px 0 20px 0;
+  color: #5a5157;
 }
 
+h1 a {
+  color: #5a5157;
+  text-decoration: none;
+  transition: opacity 300ms;
+}
+
+h1 a:hover {
+  opacity: 0.8;
+}
+
+
 .start h2, h3, h4 {
+  color: #5a5157;
   margin: 5px 0;
+  font-size: 20px;
 }
 
 .api {
