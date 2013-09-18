@@ -1,3 +1,8 @@
+html{color:#000;background:#FFF;}body,div,dl,dt,dd,ul,ol,li,pre,code,form,fieldset,legend,input,button,textarea,p,blockquote,th,td{margin:0;padding:0;}table{border-collapse:collapse;border-spacing:0;}fieldset,img{border:0;}address,caption,cite,code,dfn,em,th,var,optgroup{font-style:inherit;font-weight:inherit;}del,ins{text-decoration:none;}li{list-style:none;}caption,th{text-align:left;}q:before,q:after{content:'';}abbr,acronym{border:0;font-variant:normal;}sup{vertical-align:baseline;}sub{vertical-align:baseline;}legend{color:#000;}input,button,textarea,select,optgroup,option{font-family:inherit;font-size:inherit;font-style:inherit;font-weight:inherit;}input,button,textarea,select{font-size:100%;}
+a {outline: none;} /* Gets rid of Firefox's dotted borders */
+a img {border: none;} /* Gets rid of IE's blue borders */
+
+
 body, html {
   font-size: 14px;
   line-height: 22px;
@@ -5,29 +10,48 @@ body, html {
   color: #454545;
 }
 
-.api h2 {
+header.right, header.left {
   z-index: 100;
+  position: fixed;
+  top: 0;
+  height: 35px;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+}
+
+header.left {
   border-bottom: 1px solid rgba(0,0,0,0.1);
   border-right: 4px solid rgba(0,0,0,0.1);
+  background-color: #50484e;
+  text-align: right;
+  left: 0;
+  width: 45%;
+}
+header.right {
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  border-left: 4px solid rgba(0,0,0,0.1);
+  background-color: #eee;
+  text-align: left;
+  right: 0;
+  width: 55%;
+}
+
+.left h2, .right h2 {
   color: #E2A62E;
   letter-spacing: 1px;
   text-transform: uppercase;
   font-size: 15px;
   margin: 0;
   padding: 6px 10px;
-  background-color: #50484e;
-  position: fixed;
-  right: 0px;
-  left: 0px;
-  top: 0;
-  height: 35px;
-  width: 45%;
-  box-sizing: border-box;
-  -moz-box-sizing: border-box;
-  text-align: right;
+  text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
 }
 
-.api .icon {
+.right h2 {
+  color: #474045;
+  text-shadow: 0 -1px 0 #fff;
+}
+
+.left .icon {
   color: #E2A62E;
   cursor: pointer;
   font-family: monospace;
@@ -54,13 +78,6 @@ body, html {
 .api.fullscreen {
   width: 100%;
 }
-.api.fullscreen h2 {
-  border: none;
-  background-color: #474045;
-}
-.api.fullscreen .toplevel {
-  border-top: 0;
-}
 
 .start.full {
   left: 30px;
@@ -79,21 +96,37 @@ body, html {
 }
 
 .start {
+  background-color: #fcfcfc;
+  border-top: 1px solid #fff;
+  border-left: 4px solid #ddd;
+  padding: 30px 20px;
   width: 55%;
   right: 0px;
-  text-shadow: 0px -1px 0 rgba(255,255,255,0.6);
+  top: 35px;
+  text-shadow: 0px -1px 0 #fff;
   z-index: 99;
+}
+
+.start h1 {
+  margin: 0;
+  font-size: 50px;
+  line-height: 50px;
+}
+
+.start h2, h3, h4 {
+  margin: 5px 0;
 }
 
 .api {
   color: #f5eff3;
   font-weight: 300;
+  top: 35px;
   left: 0px;
   width: 45%;
   border-right: 4px solid #474046;
+  border-top: 1px solid rgba(255,255,255,0.1);
   background-color: #5a5157;
   text-shadow: 0px -1px 0 #474045;
-  padding-top: 30px;
   z-index: 100;
 }
 
@@ -110,8 +143,11 @@ body, html {
 
 .toplevel {
   border-bottom: 1px solid rgba(0,0,0,0.1);
-  border-top: 1px solid rgba(255,255,255,0.1);
   padding: 30px 20px;
+}
+
+.api:not(:first-child) {
+  border-top: 1px solid rgba(255,255,255,0.1);
 }
 
 .toplevel > .children > .child {
