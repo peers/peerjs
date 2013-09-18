@@ -127,6 +127,8 @@ section.start pre {
   padding: 20px;
   color: #e7e0e5;
   text-shadow: 0 -1px 0 rgba(0,0,0,0.1);
+  max-width: 100%;
+  overflow: scroll;
 }
 /** /code */
 
