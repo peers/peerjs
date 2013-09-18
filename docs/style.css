@@ -70,7 +70,8 @@ header.right {
   position: absolute;
   top: 0px;
   bottom: 0px;
-  overflow: scroll;
+  overflow-y: scroll;
+  overflow-x: hidden;
   box-sizing: border-box;
   -moz-box-sizing: border-box;
   transition: all 300ms;
@@ -98,23 +99,34 @@ header.right {
 
 .start {
   background-color: #fcfcfc;
-  border-top: 1px solid #fff;
-  border-left: 4px solid #ddd;
-  padding: 30px 20px;
   width: 55%;
   right: 0px;
   top: 35px;
   text-shadow: 0px -1px 0 #fff;
+  border-top: 1px solid #fff;
   z-index: 99;
 }
 
 .start h1 {
   margin: 0;
   font-size: 40px;
-  line-height: 30px;
-  padding: 20px 0 20px 0;
+  line-height: 40px;
+  padding: 30px 20px 0 20px;
   color: #5a5157;
+  border-left: 4px solid #ddd;
 }
+
+/** Code stylings */
+section.start pre {
+  font-family: Consolas, Inconsolata, 'Bitstream Vera Sans Mono', Menlo, Monaco, 'Andale Mono', 'Courier New', monospace;
+  font-size: 12px;
+  background-color: #474045;
+  border-left: 4px solid #40393e;
+  padding: 20px;
+  color: #e7e0e5;
+  text-shadow: 0 -1px 0 rgba(0,0,0,0.1);
+}
+/** /code */
 
 h1 a {
   color: #5a5157;
@@ -132,11 +144,16 @@ h1 .title {
   font-size: 15px;
   text-transform: uppercase;
   background-color: #E2A62E;
-  padding: 2px 5px;
+  padding: 2px 4px;
   line-height: 15px;
   border-radius: 2px;
   border: 2px solid rgba(0,0,0,0.2);
   text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
+}
+
+.start > p, .start > div {
+  padding: 20px;
+  border-left: 4px solid #ddd;
 }
 
 .start h2, h3, h4 {
