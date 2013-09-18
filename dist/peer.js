@@ -1152,7 +1152,7 @@ var util = {
         var pc = new RTCPeerConnection(defaultConfig, {});
         var dc;
         try {
-          dc = pc.createDataChannel('_PEERJSRELIABLETEST', {reliable: true});
+          dc = pc.createDataChannel('_PEERJSRELIABLETEST', {maxRetransmits: 0});
         } catch (e) {
           pc.close();
           if (e.name === 'NotSupportedError') {
@@ -1698,7 +1698,8 @@ function DataConnection(peer, provider, options) {
 
   // TODO: perhaps default serialization should be binary-utf8?
   this.options = util.extend({
-    serialization: 'binary'
+    serialization: 'binary',
+    reliable: true
   }, options);
 
   // Connection is not open yet.
@@ -1745,7 +1746,7 @@ DataConnection.prototype._configureDataChannel = function() {
   }
 
   // Use the Reliable shim for non Firefox browsers
-  if (!util.supports.reliable) {
+  if (!util.supports.reliable && this.reliable) {
     this._reliable = new Reliable(this._dc, util.debug);
   }
 
@@ -1808,6 +1809,7 @@ DataConnection.prototype.close = function() {
 DataConnection.prototype.send = function(data) {
   if (!this.open) {
     this.emit('error', new Error('Connection is not open. You should listen for the `open` event before sending messages.'));
+    return;
   }
   if (this._reliable) {
     // Note: reliable shim sending will make it so that you cannot customize
@@ -1968,7 +1970,14 @@ Negotiator.startConnection = function(connection, options) {
   if (options.originator) {
     if (connection.type === 'data') {
       // Create the datachannel.
-      var dc = pc.createDataChannel(connection.label, {reliable: options.reliable});
+      var config = {};
+      if (util.supports.reliable && !options.reliable) {
+        // If we have canonical reliable support...
+        config = {maxRetransmits: false}
+      } else if (!util.supports.reliable) {
+        config = {reliable: options.reliable};
+      }
+      var dc = pc.createDataChannel(connection.label, config);
       connection.initialize(dc);
     }
 
