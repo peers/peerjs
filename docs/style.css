@@ -109,9 +109,11 @@ header.right {
 
 .start h1 {
   margin: 0;
+  background-color: #fff;
   font-size: 40px;
   line-height: 40px;
-  padding: 30px 20px 0 20px;
+  padding: 30px 20px;
+  border-bottom: 1px solid #eee;
   color: #5a5157;
   border-left: 4px solid #ddd;
 }
@@ -131,11 +133,11 @@ section.start pre {
 h1 a {
   color: #5a5157;
   text-decoration: none;
-  transition: opacity 300ms;
+  transition: color 300ms;
 }
 
 h1 a:hover {
-  opacity: 0.8;
+  color: #745e6d;
 }
 
 h1 .title {
@@ -152,15 +154,33 @@ h1 .title {
 }
 
 .start > p, .start > div {
-  padding: 20px;
+  padding: 5px 20px;
   border-left: 4px solid #ddd;
 }
 
 .start h2, h3, h4 {
   color: #5a5157;
-  margin: 5px 0;
+  padding: 5px 20px;
+  margin: 0;
   font-size: 20px;
+  border-left: 4px solid #ccc;
 }
+
+.start h3 {
+  font-size: 15px;
+  padding: 5px 20px;
+}
+
+a {
+  font-weight: 600;
+  color: #1295D8;
+  text-decoration: none;
+  transition: color 200ms;
+}
+a:hover {
+  color: #33a2dc;
+}
+
 
 .api {
   color: #f5eff3;
@@ -255,15 +275,6 @@ h1 .title {
 
 .tag.event {
   background-color: #1295D8;
-}
-
-.api a {
-  color: #1295D8;
-  transition: color 200ms;
-}
-
-.api a:hover {
-  color: #33a2dc;
 }
 
 .toplevel > .name {

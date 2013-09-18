@@ -22,7 +22,7 @@
         <p>Alternatively, <a href="http://github.com/peers/peerjs-server">PeerServer is
         available on GitHub</a> and on <a href="https://npmjs.org/package/peer">npm</a>:</a>
         <pre>npm install peer</pre>
-        <p>Setting up the server on your own is just a few lines of code:</a>
+        <p><br>Setting up the server on your own is just a few lines of code:</a>
         <pre>
 var PeerServer = require('peer').PeerServer;
 var server = new PeerServer({ port: 9000 });</pre>
@@ -67,10 +67,7 @@ conn.send({
   arrays: [1,2,3],
   evenbinary: new Blob([1,2,3]),
   andmore: {bool: true}
-});
-          </pre>
-          <p>With BinaryPack, the data is never converted to strings. Everything is binary end-to-end. This results in bandwidth savings.
-          </p>
+});</pre>
 
         <h3>Preconnection</h3>
 
