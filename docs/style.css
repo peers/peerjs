@@ -126,6 +126,18 @@ h1 a:hover {
   opacity: 0.8;
 }
 
+h1 .title {
+  color: #fff;
+  display: inline-block;
+  font-size: 15px;
+  text-transform: uppercase;
+  background-color: #E2A62E;
+  padding: 2px 5px;
+  line-height: 15px;
+  border-radius: 2px;
+  border: 2px solid rgba(0,0,0,0.2);
+  text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
+}
 
 .start h2, h3, h4 {
   color: #5a5157;
