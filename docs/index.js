@@ -16,6 +16,12 @@ $(document).ready(function() {
     init();
   });
 
+  var hash = window.location.hash;
+  if (hash === '#start' && width < THRESHOLD) {
+    hideAPI();
+  }
+
+
   function init() {
     if (width < THRESHOLD) {
       $api.addClass('fullscreen');
