@@ -408,6 +408,11 @@
         ]
       },
       {
+        "name": ".open",
+        "type": "boolean",
+        "description": "Whether the media connection is active (e.g. your call has been answered). You can check this if you want to set a maximum wait time for a one-sided call."
+      },
+      {
         "name": ".metadata",
         "description": "Any type of metadata associated with the connection, passed in by whoever initiated the connection."
       },
