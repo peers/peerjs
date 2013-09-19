@@ -2217,9 +2217,13 @@ Negotiator.handleSDP = function(type, connection, sdp) {
 }
 
 /** Handle a candidate. */
-Negotiator.handleCandidate = function(connection, candidate) {
-  var candidate = new RTCIceCandidate(candidate);
-  connection.pc.addIceCandidate(candidate);
+Negotiator.handleCandidate = function(connection, ice) {
+  var candidate = ice.candidate;
+  var sdpMLineIndex = ice.sdpMLineIndex;
+  connection.pc.addIceCandidate(new RTCIceCandidate({
+    sdpMLineIndex: sdpMLineIndex,
+    candidate: candidate
+  }));
   util.log('Added ICE candidate for:', connection.peer);
 }
 /**
