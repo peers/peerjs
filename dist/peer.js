@@ -1023,6 +1023,7 @@ Reliable.prototype.onmessage = function(msg) {};
 exports.Reliable = Reliable;
 exports.RTCSessionDescription = window.mozRTCSessionDescription || window.RTCSessionDescription;
 exports.RTCPeerConnection = window.mozRTCPeerConnection || window.webkitRTCPeerConnection || window.RTCPeerConnection;
+exports.RTCIceCandidate = window.mozRTCIceCandidate || window.RTCIceCandidate;
 var defaultConfig = {'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }]};
 var util = {
   noop: function() {},
@@ -1185,11 +1186,7 @@ var util = {
         dc.close();
 
         return called;
-      })(),
-
-      // TODO(michelle): whether this browser can interop with a different
-      // browser. But the two browsers both have to support interop.
-      interop: false
+      })()
     };
   }()),
   //
