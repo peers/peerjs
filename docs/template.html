@@ -10,11 +10,70 @@
 <body>
   <section class="start">
     <h1><a href="/">PeerJS</a> <span class="title">docs</span></h1>
-      <h2>Get started with PeerJS</h2>
+      <p>PeerJS simplifies peer-to-peer data, video, and audio calls.</p>
+      <p>This guide will show you the basic concepts of the PeerJS API. If you instead just want to see a working app, <a href="/examples">see the examples</a> page.</P>
+      <h2>Setup</h2>
+      <h3>1. Include the Javascript client</h3>
+      <p>Add the PeerJS client library to your webpage.</p>
+      <pre>&lt;script src="http://cdn.peerjs.com/0/peer.min.js"&gt;&lt;/script&gt;</pre>
+      <p>If you prefer, you can host it yourself: <a download href="http://cdn.peerjs.com/0/peer.js">peer.js</a> or <a download href="http://cdn.peerjs.com/0/peer.min.js">peer.min.js</a></p>
+      <h3>2. Create the Peer object</h3>
+      <p>The Peer object is where we create and receive connections.</p>
+      <pre>var peer = new Peer({key: 'lwjd5qra8257b9'});</pre>
+      <p>The 'key' we're passing in to the Peer constructor is a PeerServer cloud API key. You can use ours for now, but you should <a href="http://peerjs.com/peerserver">sign up for your own free key</a>. PeerJS uses PeerServer for session metadata and candidate signaling. You can also <a href="http://github.com/peers/peer-server">run your own PeerServer</a> if you don't like the cloud.</p>
+      <p>We're now ready to start making connections!</p>
 
-        <div class="warning">Due to browsers' incomplete support of the WebRTC DataChannel specification, many features of PeerJS have caveats.<br><a href="/status">View the status page for full details</a>.</div>
-        <p>PeerJS requires two components: the PeerJS client library and the PeerServer.</p>
+      <h2>Usage</h2>
+      <p>Every Peer object is assigned a random, unique, ID when it's created.</p>
+      <pre>peer.on('open', function(id){
+  console.log('My peer id is: ' + id);
+});</pre>
+      <p>When we want to connect to another peer, we'll need to know their peer id. You're in charge of communicating the peer ids between users of your site. </p>
 
+      <h3>Data connections</h3>
+      <p>Start a data connection by calling `connect` with the peer id of the destination peer. Anytime another peer attempts to connect to your peer id, you'll receive a `connection` event. </p>
+      <div class="two-col">
+        <div class="col col-header">Start connection</div>
+        <div class="col col-header">Receive connection</div>
+        <div class="col"><pre>var conn = peer.connect('dest-peer-id');</pre></div>
+        <div class="col"><pre>peer.on('connection', function(conn) { ... });</pre></div>
+        <div class="clear"></div>
+      </div>
+      <p>`peer.connect` and the callback of the `connection` event will both provide a `DataConnection` object. This object will allow you to send and receive data:</p>
+      <pre>conn.on('open', function(){
+  // Receive messages
+  conn.on('data', function(data){
+    console.log('Received', data);
+  });
+
+  // Send messages
+  conn.send('Hello!');
+});</pre>
+      <p>Read the DataConnection API reference for complete details on its methods and events.</p>
+      <h3>Video/audio calls</h3>
+      <p>Call another peer by calling `call` with the peer id of the destination peer. When a peer calls you, the `call` event is emitted.<p>
+      <p>Unlike data connections, when receiving a `call` event, the call must be answered or no connection is established.</p>
+      <div class="two-col">
+        <div class="col col-header">Start call</div>
+        <div class="col col-header">Answer call</div>
+        <div class="col"><pre>// Call a peer, providing our mediaStream
+var call = peer.call('dest-peer-id', mediaStream);
+
+
+</pre></div>
+        <div class="col"><pre>peer.on('call', function(call){
+  // Answer the call providing our mediaStream
+  call.answer(mediaStream);
+});</pre></div>
+        <div class="clear"></div>
+      </div>
+      <p>When calling or answering a call, a MediaStream should be provided. The MediaStream represents the local video (webcam) or audio stream and can be obtained with `navigator.getUserMedia`. When answering a call, the MediaStream is optional, and if none is provided then a one-way call is established.</p>
+      <p>`peer.call` and the callback of the `call` event provide a MediaConnection object. The MediaConnection object itself emits a stream event, representing the video/audio stream of the other peer.</p>
+      <pre>call.on('stream', function(stream){
+  // stream is the MediaStream of the remote peer
+});</pre>
+    <p>Read the MediaConnection API reference for complete details on its methods and events.</p>
+<!--
       <h2>PeerServer</h2>
 
         <p>The PeerServer brokers connections between PeerJS clients. Once two clients have established a connection with each other with the PeerServer's help, data is will flow between the clients directly.</p>
@@ -88,7 +147,7 @@ conn.send({
 
           <p><a href="/status">Detailed browser compatibility information</a></p>
           <p><a href="https://groups.google.com/forum/?fromgroups#!forum/peerjs">Discuss PeerJS on our Google Group</a></p>
-
+        -->
   </section>
 
   <header class="left">
