@@ -29,8 +29,8 @@ $(document).ready(function() {
       $show.hide();
       $hide.hide();
     } else {
-      $api.removeClass('fullscreen');
       $start.removeClass('full');
+      $api.removeClass('fullscreen');
       $show.show();
       $hide.show();
     }
@@ -49,17 +49,15 @@ $(document).ready(function() {
       $hide.hide();
       $show.show();
     }
-    $start.removeClass('hidden');
   }
 
   function showAPI() {
-    $api.removeClass('hidden');
     if (width >= THRESHOLD) {
       $start.removeClass('full');
       $show.hide();
       $hide.show();
     }
-    $start.addClass('hidden');
+    $api.removeClass('hidden');
   }
 
   $('body').on('click', '.left', function() {
@@ -67,7 +65,6 @@ $(document).ready(function() {
       showAPI();
     } else if ($api.attr('class').indexOf('fullscreen') === -1) {
       // Now the headers are only links.
-      console.log($api.attr('class'));
       hideAPI();
     }
   });
