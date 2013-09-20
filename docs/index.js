@@ -71,4 +71,9 @@ $(document).ready(function() {
   $('body').on('click', '.right', function() {
     hideAPI();
   });
+  $('body').on('click', 'a', function() {
+    if ($(this).attr('href').indexOf('#') === 0) {
+      showAPI();
+    }
+  });
 });
