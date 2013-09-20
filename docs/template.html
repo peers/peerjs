@@ -144,8 +144,14 @@ conn.send({
         <h3>What about latency/bandwidth?</h3>
 
           <p>Data sent between the two peers do not touch any other servers, so the connection speed is limited only by the upload and download rates of the two peers. This also means you don't have the additional latency of an intermediary server.</p>
-          <p>The latency to establish a connection is identified by two factors: the brokering of data and identifying of clients. PeerJS has been carefully coded to minimize latency in both applications. Data is brokered through an XHR streaming request before a WebSocket connection is established, then through WebSocket afterwards. Identity is self-provided and thus a new client can report identity, accept an outstanding offer, and and provide answer and thus establish the peer-to-peer connection in very few RTTs.</p>
-          <p>Note that in the infrequent case that both peers are behind symmetric NATs, this is no longer true. See below.</p>
+          <p>The latency to establish a connection can be split into two
+          components:
+          the brokering of data and the identification of clients. PeerJS has been
+          designed to minimize the time you spend in these two areas. For
+          brokering, data is sent through an XHR streaming request before a WebSocket
+          connection is established, then through WebSockets. For client
+          identification, we provide you the ability to pass in your own peer
+          IDs, thus eliminating the RTT for retrieving an ID from the server.</p>
 
         <h3>More questions?</h3>
           <p><a
