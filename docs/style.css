@@ -41,7 +41,7 @@ header.right {
   color: #E2A62E;
   letter-spacing: 1px;
   text-transform: uppercase;
-  font-size: 15px;
+  font-size: 14px;
   margin: 0;
   padding: 6px 10px;
   text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
@@ -128,7 +128,7 @@ section.start pre {
   color: #e7e0e5;
   text-shadow: 0 -1px 0 rgba(0,0,0,0.1);
   max-width: 100%;
-  overflow: scroll;
+  overflow: auto;
 }
 /** /code */
 
