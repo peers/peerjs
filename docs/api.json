@@ -115,7 +115,7 @@
     "name": "peer.call",
     "tags": ["beta (0.3.0)"],
     "type": "method",
-    "snippet": "var <a href='#mediaconnection'>mediaConnection</a> = peer.call(id, stream, [options]);",
+    "snippet": "var <a href='#mediaconnection'>mediaConnection</a> = peer.call(id, stream);",
     "description": "Calls the remote peer specified by <code>id</code> and returns a media connection. Be sure to listen on the <a href='#peeron-error'><code>error</code></a> event in case the connection fails.",
     "children": [
       {
@@ -127,16 +127,6 @@
         "name": "stream",
         "type": "MediaStream",
         "description": "Something else"
-      },
-      {
-        "name": "options",
-        "type": "object",
-        "optional": true,
-        "children": {
-          "name": "constraints",
-          "type": "object",
-          "description": "[TODO: fill this in.]"
-        }
       }
     ]
   },
