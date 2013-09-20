@@ -26,7 +26,7 @@ header.left {
   background-color: #50484e;
   text-align: right;
   left: 0;
-  width: 45%;
+  width: 50%;
 }
 header.right {
   border-bottom: 1px solid rgba(0,0,0,0.1);
@@ -34,7 +34,7 @@ header.right {
   background-color: #eee;
   text-align: left;
   right: 0;
-  width: 55%;
+  width: 50%;
 }
 
 .left h2, .right h2 {
@@ -99,7 +99,7 @@ header.right {
 
 .start {
   background-color: #fcfcfc;
-  width: 55%;
+  width: 50%;
   right: 0px;
   top: 35px;
   text-shadow: 0px -1px 0 #fff;
@@ -190,7 +190,7 @@ a:hover {
   font-weight: 300;
   top: 35px;
   left: 0px;
-  width: 45%;
+  width: 50%;
   border-right: 4px solid #474046;
   border-top: 1px solid rgba(255,255,255,0.1);
   background-color: #5a5157;
