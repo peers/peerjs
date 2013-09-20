@@ -1,6 +1,6 @@
 # PeerJS Changelog
 
-## Version 0.3.0 (beta)
+## Version 0.3.0 beta (20 Sept 2013)
 
 ### Highlights
 * Support for WebRTC video and audio streams in both Firefox and Chrome.
