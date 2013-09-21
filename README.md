@@ -1,4 +1,4 @@
-# PeerJS: Peer-to-peer data in the browser #
+# PeerJS: peer-to-peer in the browser #
 
 PeerJS provides a complete, configurable, and easy-to-use peer-to-peer API built on top of WebRTC, supporting both WebRTC data channels and media streams.
 
