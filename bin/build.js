@@ -41,12 +41,13 @@ var base = [
     '../deps/js-binarypack/lib/bufferbuilder.js'
   , '../deps/js-binarypack/lib/binarypack.js'
   , '../deps/EventEmitter/EventEmitter.js'
-  , 'util.js'
   , '../deps/reliable/lib/reliable.js'
   , 'adapter.js' 
+  , 'util.js'
   , 'peer.js'
   , 'dataconnection.js'
-  , 'connectionmanager.js'
+  , 'mediaconnection.js'
+  , 'negotiator.js'
   , 'socket.js'
 
 ];

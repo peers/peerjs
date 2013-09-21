@@ -1,58 +1,64 @@
-<!DOCTYPE HTML> 
-<html lang="en"> 
+<!DOCTYPE HTML>
+<html lang="en">
 <head>
 <title>PeerJS Hello World Code Example</title>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
-<meta http-equiv="Content-Language" content="en-us"> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="Content-Language" content="en-us">
 
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> 
-<script type="text/javascript" src="http://cdn.peerjs.com/0.3/peer.min.js"></script>
+<script>
+  // Just for demo.
+  console._log = console.log;
+  console.error = console.log = function() {
+    var copy = Array.prototype.slice.call(arguments);
+    $('.log').append(copy.join(' ') + '<br>');
+    console._log.apply(console, copy);
+  };
+</script>
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+<script type="text/javascript" src="../dist/peer.js"></script>
 <script>
   // This is a very simple code example. See chat.html for a more involved
   // example.
 
   $(document).ready(function() {
-
-    // Create a new Peer with our demo API key, with debug set to true so we can
-    // see what's going on.
-    peer1 = new Peer({ key: 'lwjd5qra8257b9', debug: 3});
-    // Create another Peer with our demo API key to connect to.
-    peer2 = new Peer({ key: 'lwjd5qra8257b9', debug: 3});
-
-    // The `open` event signifies that the Peer is ready to connect with other
-    // Peers and, if we didn't provide the Peer with an ID, that an ID has been
-    // assigned by the server.
-    peer1.on('open', function(id){
-      peerId1 = id;
-
-      var c = peer2.connect(peerId1);
-      c.on('data', function(data) {
-        // When we receive 'Hello', send ' world'.
-        $('#helloworld').append(data);
-        c.send(' peer');
+    navigator.webkitGetUserMedia({audio: true, video: true}, function(s){
+      window.ls = s;
+      // Create a new Peer with our demo API key, with debug set to true so we can
+      // see what's going on.
+      peer1 = new Peer(window.location.hash.substr(1), { key: 'lwjd5qra8257b9', debug: 3});
+      peer1.on('error', console.log);
+      peer1.on('close', function(){
+        console.log('peer closed')
       });
-    });
-
-    // Wait for a connection from the second peer.
-    peer1.on('connection', function(connection) {
-      // This `connection` is a DataConnection object with which we can send
-      // data.
-      // The `open` event firing means that the connection is now ready to
-      // transmit data.
-      connection.on('open', function() {
-        // Send 'Hello' on the connection.
-        connection.send('Hello,');
+      peer1.on('call', function(c){
+        window.c = c;
+        c.answer(s);
+        c.on('stream', function(s){
+          window.s = s;
+          z = $('<video></video>', {src: URL.createObjectURL(s), autoplay: true}).appendTo('body');
+        });
+        c.on('close', function(){
+          console.log('call closed')
+        });
       });
-      // The `data` event is fired when data is received on the connection.
-      connection.on('data', function(data) {
-        // Append the data to body.
-        $('#helloworld').append(data);
-      });
-    });
 
-    // Show browser version
-    $('#browsers').text(navigator.userAgent);
+
+
+
+    }, function(){});
+
   });
+  function call (name) {
+      mc = peer1.call(name, ls);
+      mc.on('stream', function(s){
+        window.remote = s;
+          z = $('<video></video>', {src: URL.createObjectURL(s), autoplay: true}).appendTo('body');
+      });
+      mc.on('close', function(){
+        console.log('my call closed');
+      });
+  }
 
 
 </script>
@@ -84,9 +90,9 @@
     font-weight: 600;
   }
 </style>
-</head> 
- 
-<body> 
+</head>
+
+<body>
   <a href="https://github.com/peers/peerjs"><img style="position: absolute; top: 0; right: 0; border: 0;"
     src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png"
     alt="Fork me on GitHub"></a>
@@ -111,5 +117,5 @@ information see <a href="http://peerjs.com/status">PeerJS WebRTC
   Status</a><br>Note that this demo may also fail if you are behind
 stringent firewalls.</div></div>
 <div class="log" style="color:#FF7500;text-shadow:none;padding:15px;"><strong>Connection status</strong>:<br></div>
-</body> 
-</html> 
+</body>
+</html>

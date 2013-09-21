@@ -1,9 +1,5 @@
 describe('adapter', function() {
 
-  it('sets browerisms', function() {
-    expect(exports.util.browserisms).to.match(/^Firefox||Webkit$/);
-  });
-
   it('sets RTCPeerConnection', function() {
     expect(RTCPeerConnection).to.be.a('function');
   });
