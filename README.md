@@ -1,30 +1,44 @@
 # PeerJS: peer-to-peer in the browser #
 
-PeerJS provides a complete, configurable, and easy-to-use peer-to-peer API built on top of WebRTC, supporting both WebRTC data channels and media streams.
+PeerJS provides a complete, configurable, and easy-to-use peer-to-peer API built on top of WebRTC, supporting both data channels and media streams.
 
-##[http://peerjs.com](http://peerjs.com)
+### [http://peerjs.com](http://peerjs.com)
+
+## Setup
 
 
 **Include the library**
 
-    <script src="http://cdn.peerjs.com/0.3/peer.js"></script>
+```html
+<script src="http://cdn.peerjs.com/0.3/peer.js"></script>
+```
 
-**Peer**
-
+**Create a Peer**
 ```javascript
-var peer = new Peer('thing1', {key: 'myapikey'}); // You can omit the ID if you want to get a random one from the server.
+var peer = new Peer('pick-an-id', {key: 'myapikey'}); 
+// You can pick your own id or omit the id if you want to get a random one from the server.
+```
 
-/** Data connections. */
+## Data connections
+```javascript
 
-peer.on('connection', function(connection) {
-  connection.on('data', function(data){
+// Connect
+var conn = peer.connect('a-peers-id');
+conn.on('open', function(){
+  conn.send('hi!');
+});
+
+// Receive
+peer.on('connection', function(conn) {
+  conn.on('data', function(data){
     // Will print 'hi!'
     console.log(data);
   });
 });
+```
 
-/** Media calls. */
-
+**Media calls**
+```javascript
 var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 peer.on('call', function(call) {
   getUserMedia({video: true, audio: true}, function(stream) {
@@ -36,6 +50,8 @@ peer.on('call', function(call) {
     console.log(err);
   });
 });
+```
+
 ```
 
 **Connecting peer**
