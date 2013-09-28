@@ -125,7 +125,7 @@ section.start pre {
   font-size: 12px;
   background-color: #474045;
   border-left: 4px solid #40393e;
-  padding: 15px 20px 15px 25px;
+  padding: 15px 30px 15px 40px;
   color: #e7e0e5;
   text-shadow: 0 -1px 0 rgba(0,0,0,0.1);
   max-width: 100%;
@@ -158,7 +158,7 @@ h1 .title {
 }
 
 .start > p, .start > div {
-  padding: 5px 20px 5px 25px;
+  padding: 5px 30px 5px 40px;
   border-left: 4px solid #ddd;
 }
 
@@ -168,7 +168,7 @@ h1 .title {
 
 .start h2, .start h3, .start h4 {
   color: #5a5157;
-  padding: 12px 20px 5px 15px;
+  padding: 12px 25px 5px 25px;
   margin: 0;
   font-size: 20px;
   border-left: 4px solid #ccc;
@@ -176,7 +176,7 @@ h1 .title {
 
 .start h3 {
   font-size: 15px;
-  padding: 12px 20px 5px 15px;
+  padding: 12px 25px 5px 25px;
   border-bottom: 1px solid #eee;
 }
 
@@ -205,7 +205,7 @@ a:hover {
 }
 
 .child {
-  padding: 5px 0 5px 12px;
+  padding: 10px 0 10px 15px;
 }
 
 .bracket {
@@ -217,7 +217,7 @@ a:hover {
 
 .toplevel {
   border-bottom: 1px solid rgba(0,0,0,0.1);
-  padding: 30px 20px;
+  padding: 30px 35px;
 }
 
 .api:not(:first-child) {
@@ -229,11 +229,11 @@ a:hover {
 }
 
 .children {
-  border-left: 1px dashed rgba(255,255,255,0.2);
+  border-left: 1px solid rgba(0,0,0,0.1);
 }
 
 .beta_030 .children {
-  border-left: 1px dashed #E96151;
+  border-left: 1px solid rgba(233, 97, 81, 0.5);
 }
 
 .api div p {
