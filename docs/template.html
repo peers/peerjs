@@ -33,7 +33,7 @@
 
       <h2>Usage</h2>
       <p>Every Peer object is assigned a random, unique ID when it's created.</p>
-      <pre>peer.on('open', function(id){
+      <pre>peer.on('open', function(id) {
   console.log('My peer ID is: ' + id);
 });</pre>
       <p>When we want to connect to another peer, we'll need to know their peer
@@ -59,9 +59,9 @@
       <p><code>peer.connect</code> and the callback of the
       <code>connection</code> event will both provide a
       <code>DataConnection</code> object. This object will allow you to send and receive data:</p>
-      <pre>conn.on('open', function(){
+      <pre>conn.on('open', function() {
   // Receive messages
-  conn.on('data', function(data){
+  conn.on('data', function(data) {
     console.log('Received', data);
   });
 
@@ -81,7 +81,7 @@ var call = peer.call('dest-peer-id',
   mediaStream);
 
 </pre></div>
-        <div class="col"><pre>peer.on('call', function(call){
+        <div class="col"><pre>peer.on('call', function(call) {
   // Answer the call, providing our mediaStream
   call.answer(mediaStream);
 });</pre></div>
@@ -97,7 +97,7 @@ var call = peer.call('dest-peer-id',
       <p><code>peer.call</code> and the callback of the <code>call</code> event
       provide a MediaConnection object. The MediaConnection object itself emits
       a <code>stream</code> event whose callback includes the video/audio stream of the other peer.</p>
-      <pre>call.on('stream', function(stream){
+      <pre>call.on('stream', function(stream) {
   // `stream` is the MediaStream of the remote peer.
   // Here you'd add it to an HTML video/canvas element.
 });</pre>
