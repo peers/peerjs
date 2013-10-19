@@ -1,5 +1,10 @@
 # PeerJS Changelog
 
+## Version 0.3.1 (19 Oct 2013)
+* Updated docs and examples for TURN server usage
+* Fixed global variable leak
+* DataConnections now have reliable: false by default. This will switch to on when reliable: true works in more browsers
+
 ## Version 0.3.0 beta (20 Sept 2013)
 
 ### Highlights
