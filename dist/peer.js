@@ -1696,7 +1696,7 @@ function DataConnection(peer, provider, options) {
   // TODO: perhaps default serialization should be binary-utf8?
   this.options = util.extend({
     serialization: 'binary',
-    reliable: true
+    reliable: false
   }, options);
 
   // Connection is not open yet.
