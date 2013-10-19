@@ -1028,8 +1028,8 @@ var defaultConfig = {'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }]};
 var util = {
   noop: function() {},
 
-  CLOUD_HOST: '0.peerjs.com',
-  CLOUD_PORT: 9000,
+  CLOUD_HOST: 'cloud.peerjs.com',
+  CLOUD_PORT: 80,
 
   // Logging logic
   logLevel: 0,
@@ -1363,7 +1363,7 @@ function Peer(id, options) {
     return;
   }
   // Ensure not using unsecure cloud server on SSL page
-  if (options.secure && options.host === '0.peerjs.com') {
+  if (options.secure && ['cloud.peerjs.com', '0.peerjs.com'].indexOf(options.host) !== -1) {
     this._delayedAbort('ssl-unavailable',
       'The cloud server currently does not support HTTPS. Please run your own PeerServer to use HTTPS.');
     return;
