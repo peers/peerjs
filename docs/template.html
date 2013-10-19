@@ -124,13 +124,22 @@ conn.send({
 
         <h3>Are there any caveats?</h3>
 
-          <p>A very low percentage of users are behind symmetric NATs. When two
+          <p>A small percentage of users are behind symmetric NATs. When two
           symmetric NAT users try to connect to each other, NAT traversal is
         impossible and no connection can be made. A workaround is to proxy
-      through what is known as a TURN server. The PeerServer cloud service does
+      through the connection through a TURN server. The PeerServer cloud service does
     not provide a TURN server. You'll have to find your own. You can pass a TURN
   server into the <code>Peer</code> object options. This will allow your PeerJS app to work seamlessly for this situation</p>
-
+        <h3>How do I use a TURN server?</h3>
+        <p>When creating your Peer object, pass in the ICE servers as the config key of the options hash.</p>
+<pre>
+var peer = new Peer({
+  config: {'iceServers': [
+    { url: 'stun:stun.l.google.com:19302' },
+    { url: 'turn:homeo@turn.bistri.com:80', credential: 'homeo' }
+  ]} /* Sample servers, please use appropriate ones */
+});
+</pre>
         <h3>What is the current state of browser compatibility?</h3>
 
           <p>We keep an frequently-updated catalogue of WebRTC compatibility
@@ -141,6 +150,10 @@ conn.send({
 
           <p>When you try to connect to a peer, PeerServer will hold a
           connection offer for up to 5 seconds before rejecting it. This is useful if you want to reconnect to a peer as it disconnects and reconnects rapidly between web pages.</p>
+
+        <h3>Why am I unable to connect?</h3>
+          <p>You could be behind a symmetric NAT, in which case you'll need to set up a TURN server.</p>
+          <p>Another possible issue is your network blocking port 9000, which the PeerServer cloud runs on. In this you must use your own PeerServer running on an appropriate port instead of the cloud service.</p>
 
         <h3>What about latency/bandwidth?</h3>
 

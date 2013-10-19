@@ -19,7 +19,7 @@
           {
             "name": "key",
             "type": "string",
-            "description": "API key for the cloud PeerServer. This is not used for servers other than <code>0.peerjs.com</code>."
+            "description": "API key for the cloud PeerServer. This is not used for servers other than <code>0.peerjs.com</code>.<span class='warn'>PeerServer cloud runs on port 9000. Please ensure it is not blocked or consider running your own PeerServer instead.</span>"
           },
           {
             "name": "host",
@@ -307,7 +307,7 @@
             "name": "'close'",
             "type": "event",
             "snippet": "dataConnection.on('close', function() { ... });",
-            "description": "Emitted when either you or the remote peer closes the data connection."
+            "description": "Emitted when either you or the remote peer closes the data connection.<span class='warn'>Firefox does not yet support this event.</span>"
           },
           {
             "name": "'error'",
@@ -388,7 +388,7 @@
             "name": "'close'",
             "type": "event",
             "snippet": "mediaConnection.on('close', function() { ... });",
-            "description": "Emitted when either you or the remote peer closes the media connection."
+            "description": "Emitted when either you or the remote peer closes the media connection.<span class='warn'>Firefox does not yet support this event.</span>"
           },
           {
             "name": "'error'",
