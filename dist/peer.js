@@ -2044,7 +2044,7 @@ Negotiator._startPeerConnection = function(connection) {
     optional = {optional: [{DtlsSrtpKeyAgreement: true}]};
   }
 
-  pc = new RTCPeerConnection(connection.provider.options.config, optional);
+  var pc = new RTCPeerConnection(connection.provider.options.config, optional);
   Negotiator.pcs[connection.type][connection.peer][id] = pc;
 
   Negotiator._setupListeners(connection, pc, id);
