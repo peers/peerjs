@@ -1,4 +1,4 @@
-/*! peerjs.js build:0.3.0, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
+/*! peerjs.js build:0.3.1, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
 (function(exports){
 var binaryFeatures = {};
 binaryFeatures.useBlobBuilder = (function(){
@@ -1970,7 +1970,7 @@ Negotiator.startConnection = function(connection, options) {
       var config = {};
       if (util.supports.reliable && !options.reliable) {
         // If we have canonical reliable support...
-        config = {maxRetransmits: false}
+        config = {maxRetransmits: 0}
       } else if (!util.supports.reliable) {
         config = {reliable: options.reliable};
       }
