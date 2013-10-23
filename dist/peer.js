@@ -1110,7 +1110,7 @@ var util = {
 
     var binary = false;
     var reliable = false;
-    var onnegotiationneeded = false;
+    var onnegotiationneeded = !!window.webkitRTCPeerConnection;
 
     var pc, dc;
     try {
@@ -1149,7 +1149,9 @@ var util = {
       audioVideo = !!pc.addStream;
     }
 
-    if (/** audioVideo || */data) {
+    // FIXME: this is not great because in theory it doesn't work for
+    // av-only browsers (?).
+    if (!onnegotiationneeded && data) {
       // sync default check.
       var negotiationPC = new RTCPeerConnection(defaultConfig, {optional: [{RtpDataChannels: true}]});
       negotiationPC.onnegotiationneeded = function() {
@@ -1159,20 +1161,15 @@ var util = {
           util.supports.onnegotiationneeded = true;
         }
       };
-      // FIXME: this is not great because in theory it doesn't work for
-      // av-only browsers (?).
-      var negotiationDC = negotiationPC.createDataChannel('_PEERJSRELIABLETEST');
+      var negotiationDC = negotiationPC.createDataChannel('_PEERJSNEGOTIATIONTEST');
 
-      negotiationPC.close();
-      negotiationDC.close();
+      setTimeout(function() {
+        negotiationPC.close();
+      }, 1000);
     }
 
-    // FIXME: Make SURE these are closed.
     if (pc) {
       pc.close();
-    }
-    if (dc) {
-      dc.close();
     }
 
     return {
