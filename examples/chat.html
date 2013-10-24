@@ -111,14 +111,13 @@ $(document).ready(function() {
       var c = peer.connect(requestedPeer, {
         label: 'chat',
         serialization: 'none',
-        reliable: false,
         metadata: {message: 'hi i want to chat with you!'}
       });
       c.on('open', function() {
         connect(c);
       });
       c.on('error', function(err) { alert(err); });
-      var f = peer.connect(requestedPeer, { label: 'file' });
+      var f = peer.connect(requestedPeer, { label: 'file', reliable: true });
       f.on('open', function() {
         connect(f);
       });
