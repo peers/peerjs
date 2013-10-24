@@ -1012,9 +1012,22 @@ Reliable.higherBandwidthSDP = function(sdp) {
   // AS stands for Application-Specific Maximum.
   // Bandwidth number is in kilobits / sec.
   // See RFC for more info: http://www.ietf.org/rfc/rfc2327.txt
-  var parts = sdp.split('b=AS:30');
-  var replace = 'b=AS:102400'; // 100 Mbps
-  return parts[0] + replace + parts[1];
+
+  // Chrome 31+ doesn't want us munging the SDP, so we'll let them have their
+  // way.
+  var version = navigator.appVersion.match(/Chrome\/(.*?) /);
+  if (version) {
+    version = parseInt(version[1].split('.').shift());
+    if (version < 31) {
+      var parts = sdp.split('b=AS:30');
+      var replace = 'b=AS:102400'; // 100 Mbps
+      if (parts.length > 1) {
+        return parts[0] + replace + parts[1];
+      }
+    }
+  }
+
+  return sdp;
 };
 
 // Overwritten, typically.
@@ -1968,10 +1981,14 @@ Negotiator.startConnection = function(connection, options) {
     if (connection.type === 'data') {
       // Create the datachannel.
       var config = {};
-      if (util.supports.reliable && !options.reliable) {
+      // Dropping reliable:false support, since it seems to be crashing
+      // Chrome.
+      /*if (util.supports.reliable && !options.reliable) {
         // If we have canonical reliable support...
-        config = {maxRetransmits: 0}
-      } else if (!util.supports.reliable) {
+        config = {maxRetransmits: 0};
+      }*/
+      // Fallback to ensure older browsers don't crash.
+      if (!util.supports.reliable) {
         config = {reliable: options.reliable};
       }
       var dc = pc.createDataChannel(connection.label, config);
@@ -2138,7 +2155,7 @@ Negotiator._makeOffer = function(connection) {
   pc.createOffer(function(offer) {
     util.log('Created offer.');
 
-    if (!util.supports.reliable && connection.type === 'data') {
+    if (!util.supports.reliable && connection.type === 'data' && connection.reliable) {
       offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
     }
 
@@ -2153,7 +2170,8 @@ Negotiator._makeOffer = function(connection) {
           reliable: connection.reliable,
           serialization: connection.serialization,
           metadata: connection.metadata,
-          connectionId: connection.id
+          connectionId: connection.id,
+          sctp: util.supports.reliable
         },
         dst: connection.peer,
       });
@@ -2173,7 +2191,7 @@ Negotiator._makeAnswer = function(connection) {
   pc.createAnswer(function(answer) {
     util.log('Created answer.');
 
-    if (!util.supports.reliable && connection.type === 'data') {
+    if (!util.supports.reliable && connection.type === 'data' && connection.reliable) {
       answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
     }
 
