@@ -1129,16 +1129,20 @@ var util = {
     }
 
     if (data) {
+      // Binary test
       try {
         dc.binaryType = 'blob';
         binary = true;
       } catch (e) {
       }
 
+      // Reliable test.
+      // Unfortunately Chrome is a bit unreliable about whether or not they
+      // support reliable.
       var reliablePC = new RTCPeerConnection(defaultConfig, {});
       try {
-        var reliableDC = reliablePC.createDataChannel('_PEERJSRELIABLETEST', {maxRetransmits: 0});
-        reliable = true;
+        var reliableDC = reliablePC.createDataChannel('_PEERJSRELIABLETEST', {});
+        reliable = reliableDC.reliable && navigator.mozRTCPeerConnection;
       } catch (e) {
       }
       reliablePC.close();
@@ -1962,8 +1966,6 @@ Negotiator.startConnection = function(connection, options) {
       if (util.supports.reliable && !options.reliable) {
         // If we have canonical reliable support...
         config = {maxRetransmits: 0}
-      } else if (!util.supports.reliable) {
-        config = {reliable: options.reliable};
       }
       var dc = pc.createDataChannel(connection.label, config);
       connection.initialize(dc);
@@ -2129,7 +2131,7 @@ Negotiator._makeOffer = function(connection) {
   pc.createOffer(function(offer) {
     util.log('Created offer.');
 
-    if (!util.supports.reliable && connection.type === 'data') {
+    if (!util.supports.reliable && connection.type === 'data' && connection.reliable) {
       offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
     }
 
@@ -2164,7 +2166,7 @@ Negotiator._makeAnswer = function(connection) {
   pc.createAnswer(function(answer) {
     util.log('Created answer.');
 
-    if (!util.supports.reliable && connection.type === 'data') {
+    if (!util.supports.reliable && connection.type === 'data' && connection.reliable) {
       answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
     }
 
