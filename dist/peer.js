@@ -1012,9 +1012,22 @@ Reliable.higherBandwidthSDP = function(sdp) {
   // AS stands for Application-Specific Maximum.
   // Bandwidth number is in kilobits / sec.
   // See RFC for more info: http://www.ietf.org/rfc/rfc2327.txt
-  var parts = sdp.split('b=AS:30');
-  var replace = 'b=AS:102400'; // 100 Mbps
-  return parts[0] + replace + parts[1];
+
+  // Chrome 31+ doesn't want us munging the SDP, so we'll let them have their
+  // way.
+  var version = navigator.appVersion.match(/Chrome\/(.*?) /);
+  if (version) {
+    version = parseInt(version[1].split('.').shift());
+    if (version < 31) {
+      var parts = sdp.split('b=AS:30');
+      var replace = 'b=AS:102400'; // 100 Mbps
+      if (parts.length > 1) {
+        return parts[0] + replace + parts[1];
+      }
+    }
+  }
+
+  return sdp;
 };
 
 // Overwritten, typically.
@@ -1101,8 +1114,16 @@ var util = {
 
   // Lists which features are supported
   supports: (function() {
+    if (typeof RTCPeerConnection === 'undefined') {
+      return {};
+    }
+
     var data = true;
     var audioVideo = true;
+
+    var binary = false;
+    var reliable = false;
+    var onnegotiationneeded = !!window.webkitRTCPeerConnection;
 
     var pc, dc;
     try {
@@ -1114,79 +1135,66 @@ var util = {
 
     if (data) {
       try {
-        dc = pc.createDataChannel('_PEERJSDATATEST');
+        dc = pc.createDataChannel('_PEERJSTEST');
       } catch (e) {
         data = false;
       }
     }
+
+    if (data) {
+      // Binary test
+      try {
+        dc.binaryType = 'blob';
+        binary = true;
+      } catch (e) {
+      }
+
+      // Reliable test.
+      // Unfortunately Chrome is a bit unreliable about whether or not they
+      // support reliable.
+      var reliablePC = new RTCPeerConnection(defaultConfig, {});
+      try {
+        var reliableDC = reliablePC.createDataChannel('_PEERJSRELIABLETEST', {});
+        reliable = reliableDC.reliable;
+      } catch (e) {
+      }
+      reliablePC.close();
+    }
+
     // FIXME: not really the best check...
     if (audioVideo) {
       audioVideo = !!pc.addStream;
     }
 
-    pc.close();
-    dc.close();
+    // FIXME: this is not great because in theory it doesn't work for
+    // av-only browsers (?).
+    if (!onnegotiationneeded && data) {
+      // sync default check.
+      var negotiationPC = new RTCPeerConnection(defaultConfig, {optional: [{RtpDataChannels: true}]});
+      negotiationPC.onnegotiationneeded = function() {
+        onnegotiationneeded = true;
+        // async check.
+        if (util && util.supports) {
+          util.supports.onnegotiationneeded = true;
+        }
+      };
+      var negotiationDC = negotiationPC.createDataChannel('_PEERJSNEGOTIATIONTEST');
+
+      setTimeout(function() {
+        negotiationPC.close();
+      }, 1000);
+    }
+
+    if (pc) {
+      pc.close();
+    }
 
     return {
       audioVideo: audioVideo,
       data: data,
-      binary: data && (function() {
-        var pc = new RTCPeerConnection(defaultConfig, {optional: [{RtpDataChannels: true}]});
-        var dc = pc.createDataChannel('_PEERJSBINARYTEST');
-
-        try {
-          dc.binaryType = 'blob';
-        } catch (e) {
-          pc.close();
-          if (e.name === 'NotSupportedError') {
-            return false
-          }
-        }
-        pc.close();
-        dc.close();
-
-        return true;
-      })(),
-
-      reliable: data && (function() {
-        // Reliable (not RTP).
-        var pc = new RTCPeerConnection(defaultConfig, {});
-        var dc;
-        try {
-          dc = pc.createDataChannel('_PEERJSRELIABLETEST', {maxRetransmits: 0});
-        } catch (e) {
-          pc.close();
-          if (e.name === 'NotSupportedError') {
-            return false
-          }
-        }
-        pc.close();
-        dc.close();
-
-        return true;
-      })(),
-
-      onnegotiationneeded: (data || audioVideo) && (function() {
-        var pc = new RTCPeerConnection(defaultConfig, {});
-        // sync default check.
-        var called = false;
-        var pc = new RTCPeerConnection(defaultConfig, {optional: [{RtpDataChannels: true}]});
-        pc.onnegotiationneeded = function() {
-          called = true;
-          // async check.
-          if (util && util.supports) {
-            util.supports.onnegotiationneeded = true;
-          }
-        };
-        // FIXME: this is not great because in theory it doesn't work for
-        // av-only browsers (?).
-        var dc = pc.createDataChannel('_PEERJSRELIABLETEST');
-
-        pc.close();
-        dc.close();
-
-        return called;
-      })()
+      binary: binary,
+      reliable: reliable,
+      onnegotiationneeded: onnegotiationneeded
     };
   }()),
   //
@@ -1968,12 +1976,12 @@ Negotiator.startConnection = function(connection, options) {
     if (connection.type === 'data') {
       // Create the datachannel.
       var config = {};
-      if (util.supports.reliable && !options.reliable) {
+      // Dropping reliable:false support, since it seems to be crashing
+      // Chrome.
+      /*if (util.supports.reliable && !options.reliable) {
         // If we have canonical reliable support...
-        config = {maxRetransmits: 0}
-      } else if (!util.supports.reliable) {
-        config = {reliable: options.reliable};
-      }
+        config = {maxRetransmits: 0};
+      }*/
       var dc = pc.createDataChannel(connection.label, config);
       connection.initialize(dc);
     }
@@ -2138,7 +2146,7 @@ Negotiator._makeOffer = function(connection) {
   pc.createOffer(function(offer) {
     util.log('Created offer.');
 
-    if (!util.supports.reliable && connection.type === 'data') {
+    if (!util.supports.reliable && connection.type === 'data' && connection.reliable) {
       offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
     }
 
@@ -2173,7 +2181,7 @@ Negotiator._makeAnswer = function(connection) {
   pc.createAnswer(function(answer) {
     util.log('Created answer.');
 
-    if (!util.supports.reliable && connection.type === 'data') {
+    if (!util.supports.reliable && connection.type === 'data' && connection.reliable) {
       answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
     }
 
