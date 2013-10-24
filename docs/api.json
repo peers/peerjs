@@ -104,7 +104,7 @@
           {
             "name": "reliable",
             "type": "boolean",
-            "description": "Whether the underlying data channels should be reliable (e.g. for large file transfers) or not (e.g. for gaming or streaming). Defaults to <code>false</code>.<span class='warn'>Setting reliable to true will use a shim for incompatible browsers and thus may not offer full performance.</span>"
+            "description": "Whether the underlying data channels should be reliable (e.g. for large file transfers) or not (e.g. for gaming or streaming). Defaults to <code>false</code>.<span class='warn'>Setting reliable to true will use a shim for incompatible browsers (Chrome 30 and below only) and thus may not offer full performance.</span>"
           }
         ]
       }

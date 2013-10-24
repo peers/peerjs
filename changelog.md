@@ -1,5 +1,12 @@
 # PeerJS Changelog
 
+## Version 0.3.2 (25 Oct 2013)
+* Use SCTP in Chrome 31+.
+* Work around Chrome 31+ tab crash. The crashes were due to Chrome's lack of support for the `maxRetransmits` parameter for modifying SDP.
+* Fix exceptions in Chrome 29 and below.
+* DataChannels are unreliable by default in Chrome 30 and below. In setting
+  reliable to `true`, the reliable shim is used only in Chrome 30 and below.
+
 ## Version 0.3.1 (19 Oct 2013)
 * Updated docs and examples for TURN server usage
 * Fixed global variable leak
