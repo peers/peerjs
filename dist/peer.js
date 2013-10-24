@@ -1114,8 +1114,16 @@ var util = {
 
   // Lists which features are supported
   supports: (function() {
+    if (typeof RTCPeerConnection === 'undefined') {
+      return {};
+    }
+
     var data = true;
     var audioVideo = true;
+
+    var binary = false;
+    var reliable = false;
+    var onnegotiationneeded = !!window.webkitRTCPeerConnection;
 
     var pc, dc;
     try {
@@ -1127,79 +1135,66 @@ var util = {
 
     if (data) {
       try {
-        dc = pc.createDataChannel('_PEERJSDATATEST');
+        dc = pc.createDataChannel('_PEERJSTEST');
       } catch (e) {
         data = false;
       }
     }
+
+    if (data) {
+      // Binary test
+      try {
+        dc.binaryType = 'blob';
+        binary = true;
+      } catch (e) {
+      }
+
+      // Reliable test.
+      // Unfortunately Chrome is a bit unreliable about whether or not they
+      // support reliable.
+      var reliablePC = new RTCPeerConnection(defaultConfig, {});
+      try {
+        var reliableDC = reliablePC.createDataChannel('_PEERJSRELIABLETEST', {});
+        reliable = reliableDC.reliable;
+      } catch (e) {
+      }
+      reliablePC.close();
+    }
+
     // FIXME: not really the best check...
     if (audioVideo) {
       audioVideo = !!pc.addStream;
     }
 
-    pc.close();
-    dc.close();
+    // FIXME: this is not great because in theory it doesn't work for
+    // av-only browsers (?).
+    if (!onnegotiationneeded && data) {
+      // sync default check.
+      var negotiationPC = new RTCPeerConnection(defaultConfig, {optional: [{RtpDataChannels: true}]});
+      negotiationPC.onnegotiationneeded = function() {
+        onnegotiationneeded = true;
+        // async check.
+        if (util && util.supports) {
+          util.supports.onnegotiationneeded = true;
+        }
+      };
+      var negotiationDC = negotiationPC.createDataChannel('_PEERJSNEGOTIATIONTEST');
+
+      setTimeout(function() {
+        negotiationPC.close();
+      }, 1000);
+    }
+
+    if (pc) {
+      pc.close();
+    }
 
     return {
       audioVideo: audioVideo,
       data: data,
-      binary: data && (function() {
-        var pc = new RTCPeerConnection(defaultConfig, {optional: [{RtpDataChannels: true}]});
-        var dc = pc.createDataChannel('_PEERJSBINARYTEST');
-
-        try {
-          dc.binaryType = 'blob';
-        } catch (e) {
-          pc.close();
-          if (e.name === 'NotSupportedError') {
-            return false
-          }
-        }
-        pc.close();
-        dc.close();
-
-        return true;
-      })(),
-
-      reliable: data && (function() {
-        // Reliable (not RTP).
-        var pc = new RTCPeerConnection(defaultConfig, {});
-        var dc;
-        try {
-          dc = pc.createDataChannel('_PEERJSRELIABLETEST', {maxRetransmits: 0});
-        } catch (e) {
-          pc.close();
-          if (e.name === 'NotSupportedError') {
-            return false
-          }
-        }
-        pc.close();
-        dc.close();
-
-        return true;
-      })(),
-
-      onnegotiationneeded: (data || audioVideo) && (function() {
-        var pc = new RTCPeerConnection(defaultConfig, {});
-        // sync default check.
-        var called = false;
-        var pc = new RTCPeerConnection(defaultConfig, {optional: [{RtpDataChannels: true}]});
-        pc.onnegotiationneeded = function() {
-          called = true;
-          // async check.
-          if (util && util.supports) {
-            util.supports.onnegotiationneeded = true;
-          }
-        };
-        // FIXME: this is not great because in theory it doesn't work for
-        // av-only browsers (?).
-        var dc = pc.createDataChannel('_PEERJSRELIABLETEST');
-
-        pc.close();
-        dc.close();
-
-        return called;
-      })()
+      binary: binary,
+      reliable: reliable,
+      onnegotiationneeded: onnegotiationneeded
     };
   }()),
   //
