@@ -41,8 +41,8 @@ peer.on('connection', function(conn) {
 ## Media calls
 **Call**
 ```javascript
-var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-getUserMedia({video: true, audio: true}, function(stream) {
+navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+navigator.getUserMedia({video: true, audio: true}, function(stream) {
   var call = peer.call('another-peers-id', stream);
   call.on('stream', function(remoteStream) {
     // Show stream in some <video> element.
