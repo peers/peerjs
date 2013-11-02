@@ -1495,7 +1495,7 @@ Peer.prototype._handleMessage = function(message) {
           var connection = new MediaConnection(peer, this, {
             connectionId: connectionId,
             _payload: payload,
-            metadata: payload.metadata,
+            metadata: payload.metadata
           });
           this._addConnection(peer, connection);
           this.emit('call', connection);
