@@ -2082,7 +2082,7 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
           type: connection.type,
           connectionId: connection.id
         },
-        dst: peerId,
+        dst: peerId
       });
     }
   };
