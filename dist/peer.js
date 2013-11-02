@@ -1,4 +1,4 @@
-/*! peerjs.js build:0.3.2, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
+/*! peerjs.js build:0.3.3, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
 (function(exports){
 var binaryFeatures = {};
 binaryFeatures.useBlobBuilder = (function(){
@@ -1657,11 +1657,12 @@ Peer.prototype.destroy = function() {
 
 /** Disconnects every connection on this peer. */
 Peer.prototype._cleanup = function() {
-  var peers = Object.keys(this.connections);
-  for (var i = 0, ii = peers.length; i < ii; i++) {
-    this._cleanupPeer(peers[i]);
+  if (this.connections) {
+    var peers = Object.keys(this.connections);
+    for (var i = 0, ii = peers.length; i < ii; i++) {
+      this._cleanupPeer(peers[i]);
+    }
   }
-
   this.emit('close');
 }
 
@@ -2168,7 +2169,7 @@ Negotiator._makeOffer = function(connection) {
           connectionId: connection.id,
           sctp: util.supports.reliable
         },
-        dst: connection.peer,
+        dst: connection.peer
       });
     }, function(err) {
       connection.provider.emit('error', err);

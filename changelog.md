@@ -1,5 +1,9 @@
 # PeerJS Changelog
 
+## Version 0.3.3 (2 Nov 2013)
+* Fix exceptions when peer emits errors upon creation
+* Remove extra commas
+
 ## Version 0.3.2 (25 Oct 2013)
 * Use SCTP in Chrome 31+.
 * Work around Chrome 31+ tab crash. The crashes were due to Chrome's lack of support for the `maxRetransmits` parameter for modifying SDP.
