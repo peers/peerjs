@@ -1121,8 +1121,8 @@ var util = {
     var data = true;
     var audioVideo = true;
 
-    var binary = false;
-    var reliable = false;
+    var binaryBlob = false;
+    var sctp = false;
     var onnegotiationneeded = !!window.webkitRTCPeerConnection;
 
     var pc, dc;
@@ -1145,7 +1145,7 @@ var util = {
       // Binary test
       try {
         dc.binaryType = 'blob';
-        binary = true;
+        binaryBlob = true;
       } catch (e) {
       }
 
@@ -1155,7 +1155,7 @@ var util = {
       var reliablePC = new RTCPeerConnection(defaultConfig, {});
       try {
         var reliableDC = reliablePC.createDataChannel('_PEERJSRELIABLETEST', {});
-        reliable = reliableDC.reliable;
+        sctp = reliableDC.reliable;
       } catch (e) {
       }
       reliablePC.close();
@@ -1192,8 +1192,10 @@ var util = {
     return {
       audioVideo: audioVideo,
       data: data,
-      binary: binary,
-      reliable: reliable,
+      binaryBlob: binaryBlob,
+      binary: sctp, // deprecated; sctp implies binary support.
+      reliable: sctp, // deprecated; sctp implies reliable data.
+      sctp: sctp,
       onnegotiationneeded: onnegotiationneeded
     };
   }()),
@@ -1741,7 +1743,6 @@ DataConnection.prototype.initialize = function(dc) {
 DataConnection.prototype._configureDataChannel = function() {
   var self = this;
   if (util.supports.binary) {
-    // Webkit doesn't support binary yet
     this._dc.binaryType = 'arraybuffer';
   }
   this._dc.onopen = function() {
@@ -1751,7 +1752,7 @@ DataConnection.prototype._configureDataChannel = function() {
   }
 
   // Use the Reliable shim for non Firefox browsers
-  if (!util.supports.reliable && this.reliable) {
+  if (!util.supports.sctp && this.reliable) {
     this._reliable = new Reliable(this._dc, util.debug);
   }
 
@@ -1830,8 +1831,14 @@ DataConnection.prototype.send = function(data) {
     var blob = util.pack(data, utf8);
     // DataChannel currently only supports strings.
     if (!util.supports.binary) {
-      util.blobToBinaryString(blob, function(str){
+      util.blobToBinaryString(blob, function(str) {
         self._dc.send(str);
+      });
+    } else if (!util.supports.binaryBlob) {
+      // We only do this if we really need to (e.g. blobs are not supported),
+      // because this conversion is costly.
+      util.blobToArrayBuffer(blob, function(ab) {
+        self._dc.send(ab);
       });
     } else {
       this._dc.send(blob);
@@ -1978,12 +1985,12 @@ Negotiator.startConnection = function(connection, options) {
       var config = {};
       // Dropping reliable:false support, since it seems to be crashing
       // Chrome.
-      /*if (util.supports.reliable && !options.reliable) {
+      /*if (util.supports.sctp && !options.reliable) {
         // If we have canonical reliable support...
         config = {maxRetransmits: 0};
       }*/
       // Fallback to ensure older browsers don't crash.
-      if (!util.supports.reliable) {
+      if (!util.supports.sctp) {
         config = {reliable: options.reliable};
       }
       var dc = pc.createDataChannel(connection.label, config);
@@ -2049,7 +2056,7 @@ Negotiator._startPeerConnection = function(connection) {
   var id = Negotiator._idPrefix + util.randomToken();
   var optional = {};
 
-  if (connection.type === 'data' && !util.supports.reliable) {
+  if (connection.type === 'data' && !util.supports.sctp) {
     optional = {optional: [{RtpDataChannels: true}]};
   } else if (connection.type === 'media') {
     // Interop req for chrome.
@@ -2150,7 +2157,7 @@ Negotiator._makeOffer = function(connection) {
   pc.createOffer(function(offer) {
     util.log('Created offer.');
 
-    if (!util.supports.reliable && connection.type === 'data' && connection.reliable) {
+    if (!util.supports.sctp && connection.type === 'data' && connection.reliable) {
       offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
     }
 
@@ -2166,7 +2173,7 @@ Negotiator._makeOffer = function(connection) {
           serialization: connection.serialization,
           metadata: connection.metadata,
           connectionId: connection.id,
-          sctp: util.supports.reliable
+          sctp: util.supports.sctp
         },
         dst: connection.peer,
       });
@@ -2186,7 +2193,7 @@ Negotiator._makeAnswer = function(connection) {
   pc.createAnswer(function(answer) {
     util.log('Created answer.');
 
-    if (!util.supports.reliable && connection.type === 'data' && connection.reliable) {
+    if (!util.supports.sctp && connection.type === 'data' && connection.reliable) {
       answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
     }
 
