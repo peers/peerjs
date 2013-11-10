@@ -1038,11 +1038,15 @@ exports.RTCSessionDescription = window.mozRTCSessionDescription || window.RTCSes
 exports.RTCPeerConnection = window.mozRTCPeerConnection || window.webkitRTCPeerConnection || window.RTCPeerConnection;
 exports.RTCIceCandidate = window.mozRTCIceCandidate || window.RTCIceCandidate;
 var defaultConfig = {'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }]};
+var MTU = 120000; // 120KB
+var dataCount = 1;
+
 var util = {
   noop: function() {},
 
   CLOUD_HOST: '0.peerjs.com',
   CLOUD_PORT: 9000,
+  MTU: MTU,
 
   // Logging logic
   logLevel: 0,
@@ -1283,6 +1287,32 @@ var util = {
   }(this)),
 
   // Binary stuff
+
+  // chunks a blob.
+  chunk: function(bl) {
+    var chunks = [];
+    var size = bl.size;
+    var start = index = 0;
+    while (start < size) {
+      var end = Math.min(size, start + MTU);
+      var b = bl.slice(start, end);
+
+      var chunk = {
+        __peerData: dataCount,
+        n: index,
+        data: b,
+        end: size === end ? index + 1 : null
+      };
+
+      chunks.push(chunk);
+
+      start = end;
+      index += 1;
+    }
+    dataCount += 1;
+    return chunks;
+  },
+
   blobToArrayBuffer: function(blob, cb){
     var fr = new FileReader();
     fr.onload = function(evt) {
@@ -1722,6 +1752,9 @@ function DataConnection(peer, provider, options) {
   this.serialization = this.options.serialization;
   this.reliable = this.options.reliable;
 
+  // For storing large data.
+  this._chunkedData = {};
+
   Negotiator.startConnection(
     this,
     this.options._payload || {
@@ -1794,6 +1827,28 @@ DataConnection.prototype._handleDataMessage = function(e) {
   } else if (this.serialization === 'json') {
     data = JSON.parse(data);
   }
+
+  // Check if we've chunked--if so, piece things back together.
+  // We're guaranteed that this isn't 0.
+  if (data.__peerData) {
+    // Since we're doing this over SCTP, we're guaranteed that the messages will
+    // arrive in order.
+    var id = data.__peerData;
+    var chunkInfo = this._chunkedData[id] || {data: [], count: 0};
+
+    chunkInfo['data'][data.n] = data.data;
+    chunkInfo['end'] = chunkInfo['end'] || data.end;
+    chunkInfo['count'] += 1;
+
+    if (chunkInfo['end'] === chunkInfo['count']) {
+      data = new Blob(chunkInfo['data']);
+      this._handleDataMessage({data: data});
+      return;
+    }
+
+    this._chunkedData[id] = chunkInfo;
+  }
+
   this.emit('data', data);
 }
 
@@ -1812,7 +1867,7 @@ DataConnection.prototype.close = function() {
 }
 
 /** Allows user to send data. */
-DataConnection.prototype.send = function(data) {
+DataConnection.prototype.send = function(data, chunked) {
   if (!this.open) {
     this.emit('error', new Error('Connection is not open. You should listen for the `open` event before sending messages.'));
     return;
@@ -1829,6 +1884,12 @@ DataConnection.prototype.send = function(data) {
   } else if ('binary-utf8'.indexOf(this.serialization) !== -1) {
     var utf8 = (this.serialization === 'binary-utf8');
     var blob = util.pack(data, utf8);
+
+    if (!chunked && blob.size > util.MTU) {
+      this._sendChunks(blob);
+      return;
+    }
+
     // DataChannel currently only supports strings.
     if (!util.supports.sctp) {
       util.blobToBinaryString(blob, function(str) {
@@ -1845,6 +1906,14 @@ DataConnection.prototype.send = function(data) {
     }
   } else {
     this._dc.send(data);
+  }
+}
+
+DataConnection.prototype._sendChunks = function(blob) {
+  var blobs = util.chunk(blob);
+  for (var i = 0, ii = blobs.length; i < ii; i += 1) {
+    var blob = blobs[i];
+    this.send(blob, true);
   }
 }
 
