@@ -30,13 +30,13 @@ BufferBuilder.prototype.append = function(data) {
   if(typeof data === 'number') {
     this._pieces.push(data);
   } else {
-    this._flush();
+    this.flush();
     this._parts.push(data);
   }
 };
 
-BufferBuilder.prototype._flush = function() {
-  if (this._pieces.length > 0) {    
+BufferBuilder.prototype.flush = function() {
+  if (this._pieces.length > 0) {
     var buf = new Uint8Array(this._pieces);
     if(!binaryFeatures.useArrayBufferView) {
       buf = buf.buffer;
@@ -47,7 +47,7 @@ BufferBuilder.prototype._flush = function() {
 };
 
 BufferBuilder.prototype.getBuffer = function() {
-  this._flush();
+  this.flush();
   if(binaryFeatures.useBlobBuilder) {
     var builder = new BlobBuilder();
     for(var i = 0, ii = this._parts.length; i < ii; i++) {
@@ -65,7 +65,8 @@ exports.BinaryPack = {
   },
   pack: function(data, utf8){
     var packer = new Packer(utf8);
-    var buffer = packer.pack(data);
+    packer.pack(data);
+    var buffer = packer.getBuffer();
     return buffer;
   }
 };
@@ -232,9 +233,9 @@ Unpacker.prototype.unpack_raw = function(size){
   }
   var buf = this.dataBuffer.slice(this.index, this.index + size);
   this.index += size;
-  
+
     //buf = util.bufferToString(buf);
-  
+
   return buf;
 }
 
@@ -307,10 +308,14 @@ Unpacker.prototype.read = function(length){
     throw new Error('BinaryPackFailure: read index out of range');
   }
 }
-  
+
 function Packer(utf8){
   this.utf8 = utf8;
   this.bufferBuilder = new BufferBuilder();
+}
+
+Packer.prototype.getBuffer = function(){
+  return this.bufferBuilder.getBuffer();
 }
 
 Packer.prototype.pack = function(value){
@@ -365,7 +370,7 @@ Packer.prototype.pack = function(value){
   } else {
     throw new Error('Type "' + type + '" not yet supported');
   }
-  return this.bufferBuilder.getBuffer();
+  this.bufferBuilder.flush();
 }
 
 
