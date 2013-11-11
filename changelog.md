@@ -1,5 +1,10 @@
 # PeerJS Changelog
 
+## Version 0.3.4 beta (11 Nov 2013)
+* Fix file transfer issue in Chrome by chunking for data over 120KB.
+* Use binary data when possible.
+* Update BinaryPack dependency to fix inefficiencies.
+
 ## Version 0.3.3 beta (2 Nov 2013)
 * Fix exceptions when peer emits errors upon creation
 * Remove extra commas
