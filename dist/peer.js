@@ -1038,7 +1038,6 @@ exports.RTCSessionDescription = window.mozRTCSessionDescription || window.RTCSes
 exports.RTCPeerConnection = window.mozRTCPeerConnection || window.webkitRTCPeerConnection || window.RTCPeerConnection;
 exports.RTCIceCandidate = window.mozRTCIceCandidate || window.RTCIceCandidate;
 var defaultConfig = {'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }]};
-var MTU = 120000; // 120KB
 var dataCount = 1;
 
 var util = {
@@ -1046,7 +1045,7 @@ var util = {
 
   CLOUD_HOST: '0.peerjs.com',
   CLOUD_PORT: 9000,
-  MTU: MTU,
+  chunkedMTU: 120000, // 120KB
 
   // Logging logic
   logLevel: 0,
@@ -1293,15 +1292,16 @@ var util = {
     var chunks = [];
     var size = bl.size;
     var start = index = 0;
+    var total = Math.ceil(size / util.chunkedMTU);
     while (start < size) {
-      var end = Math.min(size, start + MTU);
+      var end = Math.min(size, start + util.chunkedMTU);
       var b = bl.slice(start, end);
 
       var chunk = {
         __peerData: dataCount,
         n: index,
         data: b,
-        end: size === end ? index + 1 : null
+        total: total
       };
 
       chunks.push(chunk);
@@ -1831,18 +1831,19 @@ DataConnection.prototype._handleDataMessage = function(e) {
   // Check if we've chunked--if so, piece things back together.
   // We're guaranteed that this isn't 0.
   if (data.__peerData) {
-    // Since we're doing this over SCTP, we're guaranteed that the messages will
-    // arrive in order.
     var id = data.__peerData;
-    var chunkInfo = this._chunkedData[id] || {data: [], count: 0};
+    var chunkInfo = this._chunkedData[id] || {data: [], count: 0, total: data.total};
 
-    chunkInfo['data'][data.n] = data.data;
-    chunkInfo['end'] = chunkInfo['end'] || data.end;
-    chunkInfo['count'] += 1;
+    chunkInfo.data[data.n] = data.data;
+    chunkInfo.count += 1;
 
-    if (chunkInfo['end'] === chunkInfo['count']) {
-      data = new Blob(chunkInfo['data']);
+    if (chunkInfo.total === chunkInfo.count) {
+      // We've received all the chunks--time to construct the complete data.
+      data = new Blob(chunkInfo.data);
       this._handleDataMessage({data: data});
+
+      // We can also just delete the chunks now.
+      delete this._chunkedData[id];
       return;
     }
 
@@ -1885,7 +1886,7 @@ DataConnection.prototype.send = function(data, chunked) {
     var utf8 = (this.serialization === 'binary-utf8');
     var blob = util.pack(data, utf8);
 
-    if (!chunked && blob.size > util.MTU) {
+    if (!chunked && blob.size > util.chunkedMTU) {
       this._sendChunks(blob);
       return;
     }
