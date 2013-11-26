@@ -1905,8 +1905,15 @@ DataConnection.prototype.send = function(data, chunked) {
     } else if (!util.supports.binaryBlob) {
       // We only do this if we really need to (e.g. blobs are not supported),
       // because this conversion is costly.
-      util.blobToArrayBuffer(blob, function(ab) {
-        self._dc.send(ab);
+      util.blobToArrayBuffer(blob, function(ab) { 
+	    var interval = setInterval(trySend, 100);
+		function trySend() {
+			try {
+              self._dc.send(ab);
+			  clearInterval(interval);
+		    } catch(err) {
+		    }
+		}
       });
     } else {
       this._dc.send(blob);
