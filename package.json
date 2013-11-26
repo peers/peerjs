@@ -1,6 +1,6 @@
 {
   "name": "peerjs",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "PeerJS client",
   "repository": {
     "type": "git",
