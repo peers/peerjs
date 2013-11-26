@@ -1,5 +1,8 @@
 # PeerJS Changelog
 
+## Version 0.3.5 beta (26 Nov 2013)
+* Fix bug where chunks were being emitted.
+
 ## Version 0.3.4 beta (11 Nov 2013)
 * Fix file transfer issue in Chrome by chunking for data over 120KB.
 * Use binary data when possible.
