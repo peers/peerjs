@@ -1050,7 +1050,7 @@ var util = {
 
   CLOUD_HOST: '0.peerjs.com',
   CLOUD_PORT: 9000,
-  chunkedMTU: 100000, // 100KB
+  chunkedMTU: 60000, // 60KB
 
   // Logging logic
   logLevel: 0,
@@ -1920,7 +1920,7 @@ DataConnection.prototype._sendChunks = function(blob) {
   var self = this;
   var blobs = util.chunk(blob);
   var i = 0;
-  var interval = setInterval(sendChunk, 10);
+  var interval = setInterval(sendChunk, 50);
   function sendChunk() {
     self.send(blobs[i], true)
     i += 1;
