@@ -5,6 +5,7 @@
 * Add `.bufferSize` to DataConnection to indicate the size of the buffer queue.
 * Add `.dataChannel` to DataConnection as an alias for `._dc`, which contains
   the RTCDataChannel object associated with the DataConnection.
+* Update BinaryPack dependency.
 
 ## Version 0.3.5 beta (26 Nov 2013)
 * Fix bug where chunks were being emitted.
