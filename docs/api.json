@@ -349,6 +349,11 @@
         "name": ".type",
         "type": "string",
         "description": "For data connections, this is always <code>'data'</code>."
+      },
+      {
+        "name": ".bufferSize",
+        "type": "number",
+        "description": "The number of messages queued to be sent once the browser buffer is no longer full."
       }
     ]
   },
