@@ -1507,7 +1507,7 @@ Peer.prototype._handleMessage = function(message) {
       this._abort('unavailable-id', 'ID `' + this.id + '` is taken');
       break;
     case 'INVALID-KEY': // The given API key cannot be found.
-      this._abort('invalid-key', 'API KEY "' + this._key + '" is invalid');
+      this._abort('invalid-key', 'API KEY "' + this.options.key + '" is invalid');
       break;
 
     //
