@@ -2,7 +2,7 @@
 
 PeerJS provides a complete, configurable, and easy-to-use peer-to-peer API built on top of WebRTC, supporting both data channels and media streams.
 
-### [http://peerjs.com](http://peerjs.com)
+### [http://nttcom.github.io/skyway](https://nttcom.github.io/skyway)
 
 ## Setup
 
@@ -10,11 +10,11 @@ PeerJS provides a complete, configurable, and easy-to-use peer-to-peer API built
 **Include the library**
 
 ```html
-<script src="http://cdn.peerjs.com/0.3/peer.js"></script>
+<script src="https://skyway.io/dist/0.3/peer.js"></script>
 ```
 
 **Create a Peer**  
-Get a [free API key](http://peerjs.com/peerserver). Your id only needs to be unique to the namespace of your API key.
+Get a [free API key](http://nttcom.github.io/skyway/registration.html). Your id only needs to be unique to the namespace of your API key.
 ```javascript
 var peer = new Peer('pick-an-id', {key: 'myapikey'}); 
 // You can pick your own id or omit the id if you want to get a random one from the server.
@@ -66,9 +66,15 @@ peer.on('call', function(call) {
   });
 });
 ```
-## Links
+## SkyWay Links
 
-### [Documentation / API Reference](http://peerjs.com/docs)
+### [Documentation / API Reference](http://nttcom.github.io/skyway/docs)
+
+### [Changelog](https://github.com/nttcom/peerjs/blob/master/changelog.md)
+
+### [free API key](http://nttcom.github.io/skyway/registration.html)
+
+## PeerJS links
 
 ### [WebRTC Browser compatibility status](http://peerjs.com/status)
 
@@ -76,4 +82,3 @@ peer.on('call', function(call) {
 
 ### [Discuss PeerJS on our Google Group](https://groups.google.com/forum/?fromgroups#!forum/peerjs)
 
-### [Changelog](https://github.com/peers/peerjs/blob/master/changelog.md)

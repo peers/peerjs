@@ -1,4 +1,4 @@
-/*! peerjs.js build:0.3.5, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
+/*! peerjs.js build:0.3.5, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com>, 2013 NTT Communications Corporation */
 (function(exports){
 var binaryFeatures = {};
 binaryFeatures.useBlobBuilder = (function(){
@@ -1042,14 +1042,14 @@ exports.Reliable = Reliable;
 exports.RTCSessionDescription = window.mozRTCSessionDescription || window.RTCSessionDescription;
 exports.RTCPeerConnection = window.mozRTCPeerConnection || window.webkitRTCPeerConnection || window.RTCPeerConnection;
 exports.RTCIceCandidate = window.mozRTCIceCandidate || window.RTCIceCandidate;
-var defaultConfig = {'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }]};
+var defaultConfig = {'iceServers': [{ 'url': 'stun:stun.skyway.io:3478' }]};
 var dataCount = 1;
 
 var util = {
   noop: function() {},
 
-  CLOUD_HOST: '0.peerjs.com',
-  CLOUD_PORT: 9000,
+  CLOUD_HOST: 'skyway.io',
+  CLOUD_PORT: 443,
   chunkedMTU: 60000, // 60KB
 
   // Logging logic
@@ -1346,6 +1346,12 @@ var util = {
 
   isSecure: function() {
     return location.protocol === 'https:';
+  },
+  generateUUID: function() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+          return v.toString(16);
+      });
   }
 };
 
@@ -1360,7 +1366,7 @@ function Peer(id, options) {
   // Deal with overloading
   if (id && id.constructor == Object) {
     options = id;
-    id = undefined;
+    id = util.generateUUID();
   } else if (id) {
     // Ensure id is a string
     id = id.toString();
@@ -1380,8 +1386,10 @@ function Peer(id, options) {
   if (options.host === '/') {
     options.host = window.location.hostname;
   }
-  // Set whether we use SSL to same as current host
-  if (options.secure === undefined && options.host !== util.CLOUD_HOST) {
+  // Set whether we use SSL to same as current host unless hosted on skyway
+  if (options.host === util.CLOUD_HOST){
+      options.secure = true;
+  } else if (options.secure === undefined) {
     options.secure = util.isSecure();
   }
   // Set a custom log function if present
@@ -1447,7 +1455,8 @@ function Peer(id, options) {
   if (id) {
     this._initialize(id);
   } else {
-    this._retrieveId();
+//    this._retrieveId();
+      self._abort('socket-closed', 'User id is undefined.');
   }
   //
 };
@@ -2352,7 +2361,7 @@ Socket.prototype.start = function(id) {
   this._httpUrl += '/' + id + '/' + token;
   this._wsUrl += '&id='+id+'&token='+token;
 
-  this._startXhrStream();
+//  this._startXhrStream();
   this._startWebSocket();
 }
 
@@ -2507,13 +2516,13 @@ Socket.prototype.send = function(data) {
   var message = JSON.stringify(data);
   if (this._wsOpen()) {
     this._socket.send(message);
-  } else {
+  } /* else {
     var http = new XMLHttpRequest();
     var url = this._httpUrl + '/' + data.type.toLowerCase();
     http.open('post', url, true);
     http.setRequestHeader('Content-Type', 'application/json');
     http.send(message);
-  }
+  }*/
 }
 
 Socket.prototype.close = function() {

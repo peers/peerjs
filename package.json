@@ -6,7 +6,7 @@
     "type": "git",
     "url": "git://github.com/peers/peerjs.git"
   },
-  "author": "Michelle Bu, Eric Zhang",
+  "author": "Michelle Bu, Eric Zhang, NTT Communications",
   "license": "MIT",
   "devDependencies": {
     "uglify-js": "~1.3.4",
