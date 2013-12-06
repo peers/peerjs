@@ -13,7 +13,7 @@
   <section class="start">
     <h1><a href="/">PeerJS</a> <span class="title">docs</span><span class="title">SkyWay対応版</span></h1>
     <p><br>PeerJSは、WebRTCを利用したピア·ツー·ピアのデータ、ビデオ、オーディオ通信を簡単に実現することができます。このドキュメントでは、PeerJS APIの基本的な使い方を紹介します。PeerJSを用いた実装例をご覧になりたい方は, <a href="https://github.com/nttcom/peerjs/tree/master/examples">サンプル</a> ページを御覧ください。</P>
-      <p>このドキュメントは、NTTコミュニケーションズが提供する<a href="http://nttcom.github.io/skypeer-website/">クラウドサービス「SkyWay」</a>にて利用できるようにカスタマイズした<a href="https://github.com/nttcom/peerjs">PeerJS</a>を対象としています。</p>
+      <p>このドキュメントは、NTTコミュニケーションズが提供する<a href="http://nttcom.github.io/skyway/">クラウドサービス「SkyWay」</a>にて利用できるようにカスタマイズした<a href="https://github.com/nttcom/peerjs">PeerJS</a>を対象としています。</p>
       <h2>セットアップ</h2>
       <h3>1. PeerJSのクライアントライブラリをインクルード</h3>
       <p>PeerJSクライアントライブラリをあなたのアプリケーションにインクルードしてください。</p>
@@ -89,16 +89,16 @@ var call = peer.call('dest-peer-id',
 });</pre>
       <p>詳しくは <a href="#mediaconnection">MediaConnection API reference</a> をご覧ください。</p>
 
-      <h2>SkyWay WebAPIの使い方</h2>
+      <h2>SkyWay RestAPIの使い方</h2>
       <h3>/active/list/<APIKEY></h3>
       <p>APIキー毎のアクティブなPeerIDを取得します。<p>
       <pre>
-  Request : https://skyway.io/active/count/APIキー
+  Request : https://skyway.io/active/list/APIKEY
   Response : [peerid1,peerid2,peerid3,peerid4,.....]</pre>
-      <h3>/active/counts/<APIKEY></h3>
+      <h3>/active/count/<APIKEY></h3>
       <p>APIキー毎のアクティブなPeerIDの数を取得します。<p>
       <pre>
-  Request : https://skyway.io/active/list/APIKEY
+  Request : https://skyway.io/active/count/APIKEY
   Response : {"name":"active_session","count":0,"api_key":"APIKEY"}</pre>
 
       <p>SkyWay WebAPIはAPIキー申請時に申請していただいたドメインからのみアクセスが可能です。</p>
