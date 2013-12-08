@@ -301,7 +301,19 @@
             "name": "'chunk'",
             "type": "event",
             "snippet": "dataConnection.on('chunk', function(chunk) { ... });",
-            "description": "Emitted when a data chunk is received from the remote peer. The emitted <code>chunk</code> is used to keep track of data transfer progress."
+            "description": "Emitted when a data chunk is received from the remote peer. The emitted <code>chunk</code> is used to keep track of data transfer progress.",
+            "children": [
+			  {
+                 "name": "chunk.received",
+            	 "type": "number",
+             	 "description": "Number of chunks recieved from the remote peer."
+          	  },
+			  {
+                 "name": "chunk.total",
+            	 "type": "number",
+             	 "description": "Total number of chunks."
+          	  }
+		  	]
           },
           {
             "name": "'open'",

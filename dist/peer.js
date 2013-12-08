@@ -1844,7 +1844,7 @@ DataConnection.prototype._handleDataMessage = function(e) {
   if (data.__peerData) {
     var id = data.__peerData;
     var chunkInfo = this._chunkedData[id] || {data: [], count: 0, total: data.total};
-	var chunk = {id: id, n: data.n, total: data.total};
+	var chunk = {received: data.n, total: data.total};
 	this.emit('chunk', chunk);	
 
     chunkInfo.data[data.n] = data.data;
