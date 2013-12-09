@@ -317,6 +317,11 @@
         ]
       },
       {
+        "name": ".dataChannel",
+        "type": "object",
+        "description": "A reference to the RTCDataChannel object associated with the connection."
+      },
+      {
         "name": ".label",
         "type": "string",
         "description": "The optional label passed in or assigned by PeerJS when the connection was initiated."
@@ -344,6 +349,11 @@
         "name": ".type",
         "type": "string",
         "description": "For data connections, this is always <code>'data'</code>."
+      },
+      {
+        "name": ".bufferSize",
+        "type": "number",
+        "description": "The number of messages queued to be sent once the browser buffer is no longer full."
       }
     ]
   },
