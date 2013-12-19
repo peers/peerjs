@@ -300,7 +300,7 @@
           {
             "name": "'open'",
             "type": "event",
-            "snippet": "dataConnection.on('data', function() { ... });",
+            "snippet": "dataConnection.on('open', function() { ... });",
             "description": "Emitted when the connection is established and ready-to-use."
           },
           {
