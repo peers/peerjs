@@ -1633,7 +1633,7 @@ Peer.prototype.connect = function(peer, options) {
  * Returns a MediaConnection to the specified peer. See documentation for a
  * complete list of options.
  */
-Peer.prototype.call = function(peer, stream, options) {
+Peer.prototype.call = function(peer, streams, options) {
   if (this.disconnected) {
     util.warn('You cannot connect to a new Peer because you called '
         + '.disconnect() on this Peer and ended your connection with the'
@@ -1641,12 +1641,16 @@ Peer.prototype.call = function(peer, stream, options) {
     this.emit('error', new Error('Cannot connect to new Peer after disconnecting from server.'));
     return;
   }
-  if (!stream) {
-    util.error('To call a peer, you must provide a stream from your browser\'s `getUserMedia`.');
+  if (!streams) {
+    util.error('To call a peer, you must provide a stream or an array of streams from your browser\'s `getUserMedia`.');
     return;
   }
+  // Streams can either be one stream or an array of streams.
+  if (toString.call(streams) !== '[object Array]') {
+    streams = [streams];
+  }
   options = options || {};
-  options._stream = stream;
+  options._streams = streams;
   var call = new MediaConnection(peer, this, options);
   this._addConnection(peer, call);
   return call;
@@ -2010,13 +2014,14 @@ function MediaConnection(peer, provider, options) {
   this.peer = peer;
   this.provider = provider;
   this.metadata = this.options.metadata;
-  this.localStream = this.options._stream;
+  this.localStreams = this.options._streams;
+  this.remoteStreams = [];
 
   this.id = this.options.connectionId || MediaConnection._idPrefix + util.randomToken();
-  if (this.localStream) {
+  if (this.localStreams) {
     Negotiator.startConnection(
       this,
-      {_stream: this.localStream, originator: true}
+      {_streams: this.localStreams, originator: true}
     );
   }
 };
@@ -2028,7 +2033,7 @@ MediaConnection._idPrefix = 'mc_';
 MediaConnection.prototype.addStream = function(remoteStream) {
   util.log('Receiving stream', remoteStream);
 
-  this.remoteStream = remoteStream;
+  this.remoteStreams.push(remoteStream);
   this.emit('stream', remoteStream); // Should we call this `open`?
 
 };
@@ -2051,15 +2056,20 @@ MediaConnection.prototype.handleMessage = function(message) {
   }
 }
 
-MediaConnection.prototype.answer = function(stream) {
-  if (this.localStream) {
-    util.warn('Local stream already exists on this MediaConnection. Are you answering a call twice?');
+MediaConnection.prototype.answer = function(streams) {
+  // Streams can either be one stream or an array of streams.
+  if (toString.call(streams) !== '[object Array]') {
+    streams = [streams];
+  }
+
+  if (this.localStreams) {
+    util.warn('Local stream(s) already exists on this MediaConnection. Are you answering a call twice?');
     return;
   }
 
-  this.options._payload._stream = stream;
+  this.options._payload._streams = streams;
 
-  this.localStream = stream;
+  this.localStreams = streams;
   Negotiator.startConnection(
     this,
     this.options._payload
@@ -2103,9 +2113,13 @@ Negotiator._idPrefix = 'pc_';
 Negotiator.startConnection = function(connection, options) {
   var pc = Negotiator._getPeerConnection(connection, options);
 
-  if (connection.type === 'media' && options._stream) {
+  if (connection.type === 'media' && options._streams) {
     // Add the stream.
-    pc.addStream(options._stream);
+    for (var i = 0, ii = options._streams.length; i < ii; i += 1) {
+      var stream = options._streams[i];
+      console.log('Adding a stream', stream.label);
+      pc.addStream(stream);
+    }
   }
 
   // Set the connection's PC.

@@ -3,7 +3,7 @@
   <title>PeerJS - Video chat example</title>
   <link rel="stylesheet" href="style.css">
   <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
-  <script type="text/javascript" src="/dist/peer.js"></script>
+  <script type="text/javascript" src="../../dist/peer.js"></script>
   <script>
 
     // Compatibility shim
@@ -19,10 +19,11 @@
     // Receiving a call
     peer.on('call', function(call){
       // Answer the call automatically (instead of prompting user) for demo purposes
-      call.answer(window.localStream);
+      call.answer([window.localAudioStream, window.localVideoStream]);
       step3(call);
     });
     peer.on('error', function(err){
+        console.log(err);
       alert(err.message);
       // Return to step 2 if error occurs
       step2();
@@ -32,7 +33,8 @@
     $(function(){
       $('#make-call').click(function(){
         // Initiate a call!
-        var call = peer.call($('#callto-id').val(), window.localStream);
+        var call = peer.call($('#callto-id').val(), [window.localVideoStream,
+          window.localAudioStream]);
 
         step3(call);
       });
@@ -54,13 +56,17 @@
 
     function step1 () {
       // Get audio/video stream
-      navigator.getUserMedia({audio: true, video: true}, function(stream){
-        // Set your video displays
-        $('#my-video').prop('src', URL.createObjectURL(stream));
+      navigator.getUserMedia({audio: true, video: false}, function(audioStream) {
+        navigator.getUserMedia({audio: false, video: true}, function(videoStream) {
+          // Set your video displays
+          $('#my-video').prop('src', URL.createObjectURL(videoStream));
+          $('#my-audio').prop('src', URL.createObjectURL(audioStream));
 
-        window.localStream = stream;
-        step2();
-      }, function(){ $('#step1-error').show(); });
+          window.localVideoStream = videoStream;
+          window.localAudioStream = audioStream;
+          step2();
+        }, function() { $('#step1-error').show(); });
+      }, function() { $('#step1-error').show(); });
     }
 
     function step2 () {
@@ -100,6 +106,7 @@
       <div class="pure-u-2-3" id="video-container">
         <video id="their-video" autoplay></video>
         <video id="my-video" muted="true" autoplay></video>
+        <audio id="my-audio" muted="true" autoplay></audio>
       </div>
 
       <!-- Steps -->
