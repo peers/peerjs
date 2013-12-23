@@ -267,7 +267,7 @@
   {
     "name": "DataConnection",
     "type": "class",
-    "description": "Wraps WebRTC's DataChannel. To get one, use <a href='#peerconnect'><code>peer.connect</code></a> or listen for the <a href='#peeron-connect'><code>connect</code></a> event.<span class='tip'>Because Chrome currently does not support reliable messaging, PeerJS uses the <a href='https://github.com/michellebu/reliable'>Reliable shim</a> when necessary. A caveat is that with the shim you will not be able to customize <code>serialization</code> when the shim is used.</span>",
+    "description": "Wraps WebRTC's DataChannel. To get one, use <a href='#peerconnect'><code>peer.connect</code></a> or listen for the <a href='#peeron-connect'><code>connect</code></a> event.",
     "children": [
       {
         "name": ".send",
