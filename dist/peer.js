@@ -1063,7 +1063,10 @@ var util = {
 
   CLOUD_HOST: '0.peerjs.com',
   CLOUD_PORT: 9000,
-  chunkedMTU: 60000, // 60KB
+
+  // Browsers that need chunking:
+  chunkedBrowsers: {'Chrome': 1},
+  chunkedMTU: 16300, // The original 60000 bytes setting does not work when sending data from Firefox to Chrome, which is "cut off" after 16384 bytes and delivered individually.
 
   // Logging logic
   logLevel: 0,
@@ -1778,6 +1781,10 @@ function DataConnection(peer, provider, options) {
   // For storing large data.
   this._chunkedData = {};
 
+  if (this.options._payload) {
+    this._peerBrowser = this.options._payload.browser;
+  }
+
   Negotiator.startConnection(
     this,
     this.options._payload || {
@@ -1908,7 +1915,10 @@ DataConnection.prototype.send = function(data, chunked) {
   } else if (this.serialization === 'binary' || this.serialization === 'binary-utf8') {
     var blob = util.pack(data);
 
-    if (util.browser !== 'Firefox' && !chunked && blob.size > util.chunkedMTU) {
+    // For Chrome-Firefox interoperability, we need to make Firefox "chunk"
+    // the data it sends out.
+    var needsChunking = util.chunkedBrowsers[this._peerBrowser] || util.chunkedBrowsers[util.browser];
+    if (needsChunking && !chunked && blob.size > util.chunkedMTU) {
       this._sendChunks(blob);
       return;
     }
@@ -1985,6 +1995,8 @@ DataConnection.prototype.handleMessage = function(message) {
 
   switch (message.type) {
     case 'ANSWER':
+      this._peerBrowser = payload.browser;
+
       // Forward to negotiator
       Negotiator.handleSDP(message.type, this, payload.sdp);
       break;
@@ -2301,11 +2313,11 @@ Negotiator._makeOffer = function(connection) {
           sdp: offer,
           type: connection.type,
           label: connection.label,
+          connectionId: connection.id,
           reliable: connection.reliable,
           serialization: connection.serialization,
           metadata: connection.metadata,
-          connectionId: connection.id,
-          sctp: util.supports.sctp
+          browser: util.browser
         },
         dst: connection.peer
       });
@@ -2336,7 +2348,8 @@ Negotiator._makeAnswer = function(connection) {
         payload: {
           sdp: answer,
           type: connection.type,
-          connectionId: connection.id
+          connectionId: connection.id,
+          browser: util.browser
         },
         dst: connection.peer
       });
