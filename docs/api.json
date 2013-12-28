@@ -327,11 +327,6 @@
         "description": "A reference to the RTCDataChannel object associated with the connection."
       },
       {
-        "name": ".id",
-        "type": "string",
-        "description": "A unique, prefixed identifier shared across connected peers."
-      },
-      {
         "name": ".label",
         "type": "string",
         "description": "The optional label passed in or assigned by PeerJS when the connection was initiated."
@@ -346,12 +341,7 @@
         "description": "This is true if the connection is open and ready for read/write."
       },
       {
-        "name": ".options",
-        "type": "object",
-        "description": "Contains identifying details about the connection that are available on the <code>DataConnection</code> object itself."
-      },
-      {
-        "name": ".pc",
+        "name": ".peerConnection",
         "type": "object",
         "description": "A reference to the RTCPeerConnection object associated with the connection."
       },
@@ -359,11 +349,6 @@
         "name": ".peer",
         "type": "string",
         "description": "The ID of the peer on the other end of this connection."
-      },
-      {
-        "name": ".provider",
-        "type": "object",
-        "description": "A reference to the Peer object created through <code>new Peer()</code>."
       },
       {
         "name": ".reliable",
