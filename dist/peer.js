@@ -1373,7 +1373,8 @@ function Peer(id, options) {
     host: util.CLOUD_HOST,
     port: util.CLOUD_PORT,
     key: 'peerjs',
-    config: util.defaultConfig
+    config: util.defaultConfig,
+    compatibility: false
   }, options);
   this.options = options;
   // Detect relative URL host.
@@ -1482,11 +1483,30 @@ Peer.prototype._retrieveId = function(cb) {
   http.send(null);
 };
 
+Peer.prototype._sendCompatibility = function() {
+  if (!this.options.compatibility) {
+    return;
+  }
+
+  var req = new XMLHttpRequest();
+  var protocol = this.options.secure ? 'https://' : 'http://';
+  var url = protocol + this.options.host + ':' + this.options.port + '/'
+    + this.options.key + '/compatibility/' + this.id;
+  req.open('post', url, true);
+  req.onreadystatechange = function() {
+    if (req.readyState === 4 && req.status === 200) {
+      util.log('Sent compatibility info to PeerServer.');
+    }
+  };
+  req.send(JSON.stringify(util.supports));
+};
+
 /** Initialize a connection with the server. */
 Peer.prototype._initialize = function(id) {
   var self = this;
   this.id = id;
   this.socket.start(this.id);
+  this._sendCompatibility();
 }
 
 /** Handles messages from the server. */
@@ -1611,6 +1631,10 @@ Peer.prototype.connect = function(peer, options) {
     this.emit('error', new Error('Cannot connect to new Peer after disconnecting from server.'));
     return;
   }
+
+  // Legacy mode
+  options.compatibility = this.options.compatibility;
+
   var connection = new DataConnection(peer, this, options);
   this._addConnection(peer, connection);
   return connection;
@@ -1765,7 +1789,8 @@ function DataConnection(peer, provider, options) {
     this,
     this.options._payload || {
       originator: true
-    }
+    },
+    this.options.compatibility
   );
 }
 
@@ -2044,7 +2069,29 @@ var Negotiator = {
 Negotiator._idPrefix = 'pc_';
 
 /** Returns a PeerConnection object set up correctly (for data, media). */
-Negotiator.startConnection = function(connection, options) {
+Negotiator.startConnection = function(connection, options, compatibility) {
+  if (compatibility) {
+    var req = new XMLHttpRequest();
+    var peerOptions = connection.provider.options;
+    var protocol = peerOptions.secure ? 'https://' : 'http://';
+    var url = protocol + peerOptions.host + ':' + peerOptions.port + '/'
+      + peerOptions.key + '/compatibility/' + connection.peer;
+    req.open('get', url, true);
+    req.onreadystatechange = function() {
+      if (req.readyState === 4 && req.status === 200) {
+        util.log('Received compatibility information for ' + connection.peer);
+        var supports = req.responseText;
+        var fail = 0;
+        while (fail < 2 && typeof supports !== 'object') {
+          supports = JSON.parse(supports);
+          fail += 1;
+        }
+        console.log(supports);
+      }
+    };
+    req.send(null);
+  }
+
   var pc = Negotiator._getPeerConnection(connection, options);
 
   if (connection.type === 'media' && options._stream) {
