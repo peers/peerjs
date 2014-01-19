@@ -1563,7 +1563,8 @@ Peer.prototype._handleMessage = function(message) {
             metadata: payload.metadata,
             label: payload.label,
             serialization: payload.serialization,
-            reliable: payload.reliable
+            reliable: payload.reliable,
+            sctp: payload.sctp
           });
           this._addConnection(peer, connection);
           this.emit('connection', connection);
@@ -1781,6 +1782,7 @@ function DataConnection(peer, provider, options) {
   this.metadata = this.options.metadata;
   this.serialization = this.options.serialization;
   this.reliable = this.options.reliable;
+  this.sctp = this.options.sctp;
 
   // For storing large data.
   this._chunkedData = {};
@@ -2086,10 +2088,12 @@ Negotiator.startConnection = function(connection, options, compatibility) {
           supports = JSON.parse(supports);
           fail += 1;
         }
-        console.log(supports);
       }
+      Negotiator._configureDataConnectionFromSupports(connection, supports);
+      Negotiator.startConnection(connection, options, false);
     };
     req.send(null);
+    return;
   }
 
   var pc = Negotiator._getPeerConnection(connection, options);
@@ -2126,6 +2130,11 @@ Negotiator.startConnection = function(connection, options, compatibility) {
   } else {
     Negotiator.handleSDP('OFFER', connection, options.sdp);
   }
+}
+
+Negotiator._configureDataConnectionFromSupports = function(connection, supports) {
+  // TODO
+  connection.sctp = util.supports.sctp && supports.sctp;
 }
 
 Negotiator._getPeerConnection = function(connection, options) {
@@ -2179,7 +2188,7 @@ Negotiator._startPeerConnection = function(connection) {
   var id = Negotiator._idPrefix + util.randomToken();
   var optional = {};
 
-  if (connection.type === 'data' && !util.supports.sctp) {
+  if (connection.type === 'data' && !connection.sctp) {
     optional = {optional: [{RtpDataChannels: true}]};
   } else if (connection.type === 'media') {
     // Interop req for chrome.
@@ -2280,7 +2289,7 @@ Negotiator._makeOffer = function(connection) {
   pc.createOffer(function(offer) {
     util.log('Created offer.');
 
-    if (!util.supports.sctp && connection.type === 'data' && connection.reliable) {
+    if (!connection.sctp && connection.type === 'data' && connection.reliable) {
       offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
     }
 
@@ -2296,7 +2305,7 @@ Negotiator._makeOffer = function(connection) {
           serialization: connection.serialization,
           metadata: connection.metadata,
           connectionId: connection.id,
-          sctp: util.supports.sctp
+          sctp: connection.sctp
         },
         dst: connection.peer
       });
