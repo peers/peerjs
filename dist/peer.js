@@ -1,4 +1,4 @@
-/*! peerjs.js build:0.3.6, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com>, 2013 NTT Communications Corporation */
+/*! peerjs.js build:0.3.7, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com>, 2013 NTT Communications Corporation */
 (function(exports){
 var binaryFeatures = {};
 binaryFeatures.useBlobBuilder = (function(){
@@ -1050,7 +1050,10 @@ var util = {
 
   CLOUD_HOST: 'skyway.io',
   CLOUD_PORT: 443,
-  chunkedMTU: 60000, // 60KB
+
+  // Browsers that need chunking:
+  chunkedBrowsers: {'Chrome': 1},
+  chunkedMTU: 16300, // The original 60000 bytes setting does not work when sending data from Firefox to Chrome, which is "cut off" after 16384 bytes and delivered individually.
 
   // Logging logic
   logLevel: 0,
@@ -1748,7 +1751,6 @@ function DataConnection(peer, provider, options) {
   if (!(this instanceof DataConnection)) return new DataConnection(peer, provider, options);
   EventEmitter.call(this);
 
-  // TODO: perhaps default serialization should be binary-utf8?
   this.options = util.extend({
     serialization: 'binary',
     reliable: false
@@ -1774,6 +1776,10 @@ function DataConnection(peer, provider, options) {
 
   // For storing large data.
   this._chunkedData = {};
+
+  if (this.options._payload) {
+    this._peerBrowser = this.options._payload.browser;
+  }
 
   Negotiator.startConnection(
     this,
@@ -1902,11 +1908,13 @@ DataConnection.prototype.send = function(data, chunked) {
   var self = this;
   if (this.serialization === 'json') {
     this._bufferedSend(JSON.stringify(data));
-  } else if ('binary-utf8'.indexOf(this.serialization) !== -1) {
-    var utf8 = (this.serialization === 'binary-utf8');
-    var blob = util.pack(data, utf8);
+  } else if (this.serialization === 'binary' || this.serialization === 'binary-utf8') {
+    var blob = util.pack(data);
 
-    if (util.browser !== 'Firefox' && !chunked && blob.size > util.chunkedMTU) {
+    // For Chrome-Firefox interoperability, we need to make Firefox "chunk"
+    // the data it sends out.
+    var needsChunking = util.chunkedBrowsers[this._peerBrowser] || util.chunkedBrowsers[util.browser];
+    if (needsChunking && !chunked && blob.size > util.chunkedMTU) {
       this._sendChunks(blob);
       return;
     }
@@ -1983,6 +1991,8 @@ DataConnection.prototype.handleMessage = function(message) {
 
   switch (message.type) {
     case 'ANSWER':
+      this._peerBrowser = payload.browser;
+
       // Forward to negotiator
       Negotiator.handleSDP(message.type, this, payload.sdp);
       break;
@@ -2299,11 +2309,11 @@ Negotiator._makeOffer = function(connection) {
           sdp: offer,
           type: connection.type,
           label: connection.label,
+          connectionId: connection.id,
           reliable: connection.reliable,
           serialization: connection.serialization,
           metadata: connection.metadata,
-          connectionId: connection.id,
-          sctp: util.supports.sctp
+          browser: util.browser
         },
         dst: connection.peer
       });
@@ -2334,7 +2344,8 @@ Negotiator._makeAnswer = function(connection) {
         payload: {
           sdp: answer,
           type: connection.type,
-          connectionId: connection.id
+          connectionId: connection.id,
+          browser: util.browser
         },
         dst: connection.peer
       });

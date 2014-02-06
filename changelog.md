@@ -1,5 +1,11 @@
 # PeerJS Changelog
 
+## Version 0.3.7 beta (23 Dec 2013)
+* Chrome 31+/Firefox 27+ DataConnection interop for files.
+* Deprecate `binary-utf8` in favor of faster support for UTF8 in the regular
+  `binary` serialization.
+* Fix `invalid-key` error message.
+
 ## Version 0.3.6 beta (3 Dec 2013)
 * Workaround for hitting Chrome 31+ buffer limit.
 * Add `.bufferSize` to DataConnection to indicate the size of the buffer queue.
