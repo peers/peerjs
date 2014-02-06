@@ -12,7 +12,7 @@ var fs = require('fs')
  * @api private
  */
 
-var template = '/*! peerjs.%ext% build:' + package.version + ', %type%. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com>, 2013 NTT Communications Corporation */'
+var template = '/*! peerjs.%ext% build:' + package.version + ', %type%. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com>, 2014 NTT Communications Corporation */'
   , prefix = '\n(function(exports){\n'
   , development = template.replace('%type%', 'development').replace('%ext%', 'js')
   , production = template.replace('%type%', 'production').replace('%ext%', 'min.js')
