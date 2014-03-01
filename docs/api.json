@@ -32,6 +32,11 @@
             "description": "Server port. Defaults to <code>80</code>."
           },
           {
+            "name": "path",
+            "type": "string",
+            "description": "The path where your self-hosted PeerServer is running. Defaults to <code>'/'</code>."
+          },
+          {
             "name": "secure",
             "type": "boolean",
             "tags": ["beta (0.3.0)"],

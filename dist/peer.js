@@ -1389,6 +1389,7 @@ function Peer(id, options) {
     host: util.CLOUD_HOST,
     port: util.CLOUD_PORT,
     key: 'peerjs',
+    path: '/',
     config: util.defaultConfig
   }, options);
   this.options = options;
@@ -1396,6 +1397,14 @@ function Peer(id, options) {
   if (options.host === '/') {
     options.host = window.location.hostname;
   }
+  // Set path correctly.
+  if (options.path[0] !== '/') {
+    options.path = '/' + options.path;
+  }
+  if (options.path[options.path.length - 1] !== '/') {
+    options.path += '/';
+  }
+
   // Set whether we use SSL to same as current host
   if (options.secure === undefined && options.host !== util.CLOUD_HOST) {
     options.secure = util.isSecure();
@@ -1445,7 +1454,7 @@ function Peer(id, options) {
   // Initialize the 'socket' (which is actually a mix of XHR streaming and
   // websockets.)
   var self = this;
-  this.socket = new Socket(this.options.secure, this.options.host, this.options.port, this.options.key);
+  this.socket = new Socket(this.options.secure, this.options.host, this.options.port, this.options.path, this.options.key);
   this.socket.on('message', function(data) {
     self._handleMessage(data);
   });
@@ -1475,7 +1484,8 @@ Peer.prototype._retrieveId = function(cb) {
   var self = this;
   var http = new XMLHttpRequest();
   var protocol = this.options.secure ? 'https://' : 'http://';
-  var url = protocol + this.options.host + ':' + this.options.port + '/' + this.options.key + '/id';
+  var url = protocol + this.options.host + ':' + this.options.port
+    + this.options.path + this.options.key + '/id';
   var queryString = '?ts=' + new Date().getTime() + '' + Math.random();
   url += queryString;
 
@@ -1483,7 +1493,13 @@ Peer.prototype._retrieveId = function(cb) {
   http.open('get', url, true);
   http.onerror = function(e) {
     util.error('Error retrieving ID', e);
-    self._abort('server-error', 'Could not get an ID from the server');
+    var pathError = '';
+    if (self.options.path === '/' && self.options.host !== util.CLOUD_HOST) {
+      pathError = ' If you passed in a `path` to your self-hosted PeerServer, '
+        + 'you\'ll also need to pass in that same path when creating a new'
+        + ' Peer.';
+    }
+    self._abort('server-error', 'Could not get an ID from the server.' + pathError);
   }
   http.onreadystatechange = function() {
     if (http.readyState !== 4) {
@@ -2121,7 +2137,7 @@ Negotiator.startConnection = function(connection, options) {
   }
 
   // Set the connection's PC.
-  connection.pc = pc;
+  connection.pc = connection.peerConnection = pc;
   // What do we need to do now?
   if (options.originator) {
     if (connection.type === 'data') {
@@ -2395,8 +2411,8 @@ Negotiator.handleCandidate = function(connection, ice) {
  * An abstraction on top of WebSockets and XHR streaming to provide fastest
  * possible connection for peers.
  */
-function Socket(secure, host, port, key) {
-  if (!(this instanceof Socket)) return new Socket(secure, host, port, key);
+function Socket(secure, host, port, path, key) {
+  if (!(this instanceof Socket)) return new Socket(secure, host, port, path, key);
 
   EventEmitter.call(this);
 
@@ -2406,8 +2422,8 @@ function Socket(secure, host, port, key) {
 
   var httpProtocol = secure ? 'https://' : 'http://';
   var wsProtocol = secure ? 'wss://' : 'ws://';
-  this._httpUrl = httpProtocol + host + ':' + port + '/' + key;
-  this._wsUrl = wsProtocol + host + ':' + port + '/peerjs?key=' + key;
+  this._httpUrl = httpProtocol + host + ':' + port + path + key;
+  this._wsUrl = wsProtocol + host + ':' + port + path + 'peerjs?key=' + key;
 }
 
 util.inherits(Socket, EventEmitter);
