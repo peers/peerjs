@@ -38,6 +38,11 @@
             "description": "<code>true</code> if you're using SSL.<span class='tip'>Note that our cloud-hosted server and assets may not support SSL.</span>"
           },
           {
+            "name": "prefix",
+            "type": "string",
+            "description": "Default prefix for building paths. Useful when using behind a proxy with another server. Default to <code>'/'</code>"
+          },
+          {
             "name": "config",
             "type": "object",
             "description": "Configuration hash passed to RTCPeerConnection. This hash contains any custom ICE/TURN server configuration. Defaults to <code>{ 'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }] }</code>"
