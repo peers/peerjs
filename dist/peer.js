@@ -1798,7 +1798,7 @@ Peer.prototype.listAllPeers = function(cb) {
         helpfulError = 'You need to enable `allow_discovery` on your self-hosted'
           + ' PeerServer to use this feature.';
       }
-      self._abort('permissions-error', 'It doesn\'t look like you have permission to list peers IDs.');
+      throw new Error('It doesn\'t look like you have permission to list peers IDs. ' + helpfulError);
       cb([]);
       return;
     } else if (http.status !== 200) {
