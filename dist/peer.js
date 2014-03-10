@@ -1800,7 +1800,6 @@ Peer.prototype.listAllPeers = function(cb) {
       }
       throw new Error('It doesn\'t look like you have permission to list peers IDs. ' + helpfulError);
       cb([]);
-      return;
     } else if (http.status !== 200) {
       cb([]);
     } else {
