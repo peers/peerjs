@@ -1,6 +1,6 @@
 # PeerJS Changelog
 
-## Version 0.3.8 beta (pending)
+## Version 0.3.8 beta (18 Mar 2014)
 * **The following changes are only compatible with PeerServer 0.2.4.**
 * Added the ability to specify a custom path when connecting to a self-hosted
   PeerServer.
