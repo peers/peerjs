@@ -285,7 +285,7 @@ Unpacker.prototype.unpack_float = function(){
   var sign = uint32 >> 31;
   var exp  = ((uint32 >> 23) & 0xff) - 127;
   var fraction = ( uint32 & 0x7fffff ) | 0x800000;
-  return (sign == 0 ? 1 : -1) *
+  return (sign === 0 ? 1 : -1) *
     fraction * Math.pow(2, exp - 23);
 }
 
@@ -297,7 +297,7 @@ Unpacker.prototype.unpack_double = function(){
   var hfrac = ( h32 & 0xfffff ) | 0x100000;
   var frac = hfrac * Math.pow(2, exp - 20) +
     l32   * Math.pow(2, exp - 52);
-  return (sign == 0 ? 1 : -1) * frac;
+  return (sign === 0 ? 1 : -1) * frac;
 }
 
 Unpacker.prototype.read = function(length){
