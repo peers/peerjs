@@ -1,5 +1,11 @@
 # PeerJS Changelog
 
+## Version 0.3.8 beta (18 Mar 2014)
+* **The following changes are only compatible with PeerServer 0.2.4.**
+* Added the ability to specify a custom path when connecting to a self-hosted
+  PeerServer.
+* Added the ability to retrieve a list of all peers connected to the server.
+
 ## Version 0.3.7 beta (23 Dec 2013)
 * Chrome 31+/Firefox 27+ DataConnection interop for files.
 * Deprecate `binary-utf8` in favor of faster support for UTF8 in the regular
