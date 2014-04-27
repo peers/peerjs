@@ -106,7 +106,7 @@ $(document).ready(function() {
 
   // Connect to a peer
   $('#connect').click(function() {
-    requestedPeer = $('#rid').val();
+    var requestedPeer = $('#rid').val();
     if (!connectedPeers[requestedPeer]) {
       // Create 2 connections, one labelled chat and another labelled file.
       var c = peer.connect(requestedPeer, {
