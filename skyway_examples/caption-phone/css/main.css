@@ -93,7 +93,7 @@ button {
 /*
 ## チャットページ内部の指定
 */
-.container {
+#chatContainer {
   position: absolute;
   left: 0;
   top: 0;
