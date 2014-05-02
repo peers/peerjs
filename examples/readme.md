@@ -9,7 +9,7 @@
 
 ###[Live demo: Simple hello world demo](http://cdn.peerjs.com/demo/helloworld.html)
 
-###[Wikipedia Golf](http://wikigolf.herokuapp.com/)
+###[Contrib: Chat demo](http://MakeAHarp.com/peer.htm)
 
 ### More on the way!
 
