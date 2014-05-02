@@ -108,13 +108,14 @@ var currSessionId_ = null;
  */
 var isFirstMessage = true;
 
-
-
-/**
- * disconnect button listener
- * destroy peer connection and stop recognition of webspeechapi
- */
 $(document).ready(function(){
+    //
+    var isAndroid = /android/.test(navigator.userAgent.toLowerCase());
+    if(isAndroid || !('getUserMedia' in navigator) || !('webkitSpeechRecognition' in window)){
+        ui.showModal('error', 'Support Error', 'Your browser is not supported. Please try again using an up-to-date version of Google Chrome for desktop.');
+        return;
+    }
+
     init();
     loadHistory();
 });
@@ -610,6 +611,8 @@ function connect(peerid){
                 enableForm_('disconnect');
             })
             ui.changePhoneState('connected');
+        }, function(){
+            ui.showModal('error', 'userMediaError', "Failed to get user microphone.");
         })
     });
 }
@@ -662,6 +665,8 @@ function acceptCall(){
             ui.scrollToBottom();
         }
         ui.changePhoneState('connected');
+    }, function(){
+        ui.showModal('error', 'Media Error', "Failed to get user microphone.");
     })
 }
 
