@@ -190,25 +190,6 @@ function init(){
             reset();
         });
 
-        peer_.on('close', function() {
-            $remoteAudio_[0].pause();
-            enableForm_('connect');
-            if($('.session:last .message').length > 0){
-                var isAtBottom = ui.checkIsAtBottom();
-                $('.session:last').append(
-                    '<div class="datetime">' +
-                        '<time>'+new Date().toLocaleString()+'</time>' +
-                    '</div>');
-                if(isAtBottom){
-                    ui.scrollToBottom();
-                }
-            }
-            if(!isDisconnector_){
-                destroyPCs();
-                reset();
-                init();
-            }
-        });
     }
 }
 
@@ -397,10 +378,6 @@ function destroyPCs(){
     if(peerCall_){
         peerCall_.close();
         peerCall_ = null;
-    }
-    if(peer_){
-        peer_.disconnect();
-        peer_ = null;
     }
 }
 
@@ -627,6 +604,21 @@ function connect(peerid){
                 $remoteAudio_[0].play();
                 enableForm_('disconnect');
             })
+            peerCall_.on('close',function(){
+                var $remoteAudio_ = $('#remote');
+                $remoteAudio_[0].pause();
+                enableForm_('connect');
+                if($('.session:last .message').length > 0){
+                    var isAtBottom = ui.checkIsAtBottom();
+                    $('.session:last').append(
+                        '<div class="datetime">' +
+                            '<time>'+new Date().toLocaleString()+'</time>' +
+                            '</div>');
+                    if(isAtBottom){
+                        ui.scrollToBottom();
+                    }
+                }
+            })
             ui.changePhoneState('connected');
         }, function(){
             ui.showModal('error', 'userMediaError', "Failed to get user microphone.");
@@ -654,6 +646,21 @@ function acceptCall(){
     peerid_ = peerCall_.peer;
     navigator.getUserMedia({"video":false,"audio":true}, function(stream){
         peerCall_.answer(stream);
+        peerCall_.on('close',function(){
+            var $remoteAudio_ = $('#remote');
+            $remoteAudio_[0].pause();
+            enableForm_('connect');
+            if($('.session:last .message').length > 0){
+                var isAtBottom = ui.checkIsAtBottom();
+                $('.session:last').append(
+                    '<div class="datetime">' +
+                        '<time>'+new Date().toLocaleString()+'</time>' +
+                        '</div>');
+                if(isAtBottom){
+                    ui.scrollToBottom();
+                }
+            }
+        })
         localset_ = true;
 
 
