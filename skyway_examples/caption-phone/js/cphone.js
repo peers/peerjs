@@ -108,12 +108,32 @@ var currSessionId_ = null;
  */
 var isFirstMessage = true;
 
+/**
+ * Default speech recognition options
+ * @type {{continuous: boolean, interimResults: boolean, lang: string}}
+ * @private
+ */
+var speechOptions_ = {
+    continuous: true,
+    interimResults: true,
+    lang: 'ja-jp'
+}
+
 $(document).ready(function(){
-    //
+    //Check if browser is compatible
     var isAndroid = /android/.test(navigator.userAgent.toLowerCase());
     if(isAndroid || !('getUserMedia' in navigator) || !('webkitSpeechRecognition' in window)){
         ui.showModal('error', 'Support Error', 'Your browser is not supported. Please try again using an up-to-date version of Google Chrome for desktop.');
         return;
+    }
+
+    //Set recognition language
+    if(!location.hash.length){
+        var lang = navigator.language;
+        location.hash = '#'+lang;
+        speechOptions_.lang = lang;
+    } else {
+        speechOptions_.lang = location.hash.substr(1);
     }
 
     init();
@@ -132,6 +152,12 @@ function init(){
 
     $('#userListHeader').text(myid_+"のユーザリスト");
     speech_ = new Speech();
+    $(window).on('hashchange', function(){
+        speechOptions_.lang = location.hash.substr(1);
+        if(speech_.isRecognizing){
+            speech_.recognition.stop();
+        }
+    })
 
     if(storage_ == null) storage_ = new Wrapper.storage();
     if(myid_ == null){
@@ -228,12 +254,7 @@ function connectedAnother(c){
                 if(isAtBottom){
                     ui.scrollToBottom();
                 }
-                var options = {
-                    continuous: $('#continuous').is(':checked'),
-                    interimResults: $('#interimResults').is(':checked'),
-                    lang: $('#lang').val()
-                };
-                speech_.startRecognition(options);
+                speech_.startRecognition(speechOptions_);
                 break;
             case 'reject':
                 ui.stopRing('rbt');
@@ -275,6 +296,7 @@ function reset(){
     peerid_ = null;
     isFirstMessage = true;
     $('[contenteditable="true"]').removeAttr('contenteditable').unbind();
+    $(window).off('hashchange');
 
     ui.changePhoneState('disconnected');
     isCaller_ = false;
@@ -454,7 +476,7 @@ function speechRecognitionCallback(event){
                 messageID = $message.data('mytranscript');
                 $message.text(result[0].transcript);
                 time = $message.data('timestamp');
-            } else {
+            } else if( $('.my.current').length === 0 ) {
                 messageID = generateUUID();
                 var $currText =
                     $('<div class="message-wrapper">'+
@@ -536,7 +558,7 @@ function peerTextCallback(message){
         if(isUpdate){
             $message.text(message.transcript);
             time = $message.data('timestamp');
-        } else {
+        } else if ($('.your.current').length === 0 ){
             $('.session[data-session="'+currSessionId_+'"]').append(
                 '<div class="message-wrapper">'+
                     '<article class="your message current" ' +
@@ -570,12 +592,7 @@ function speechEndCallback(){
     }
     speech_.timer = now;
     if(speech_.isRecognizing){
-        var options = {
-            continuous: $('#continuous').is(':checked'),
-            interimResults: $('#interimResults').is(':checked'),
-            lang: $('#lang').val()
-        };
-        speech_.startRecognition(options);
+        speech_.startRecognition(speechOptions_);
         speech_.recognition.onresult = speechRecognitionCallback;
         speech_.recognition.onend = speechEndCallback;
     }
@@ -645,12 +662,7 @@ function acceptCall(){
             type:'start',
             sessionID:currSessionId_
         };
-        var options = {
-            continuous: $('#continuous').is(':checked'),
-            interimResults: $('#interimResults').is(':checked'),
-            lang: $('#lang').val()
-        };
-        speech_.startRecognition(options);
+        speech_.startRecognition(speechOptions_);
 
 
         var isAtBottom = ui.checkIsAtBottom();
