@@ -150,7 +150,6 @@ $(window).on('beforeunload',function(){
 function init(){
     $('#myid').val(myid_);
 
-    $('#userListHeader').text(myid_+"のユーザリスト");
     speech_ = new Speech();
     $(window).on('hashchange', function(){
         speechOptions_.lang = location.hash.substr(1);
@@ -239,8 +238,8 @@ function connectedAnother(c){
                 break;
             case 'reject':
                 ui.stopRing('rbt');
-                $('#phone-status').removeClass('label-success').text('相手切断');
                 reset();
+                init();
                 break;
         }
     });
@@ -268,7 +267,6 @@ function reset(){
         speech_.abortRecognition();
     }
 
-    speech_ = new Speech();
     $('#anotherid').val('');
     localset_ = false;
     remoteset_ = false;
@@ -698,6 +696,7 @@ function rejectCall(){
         type: 'reject'
     };
     reset();
+    init();
     peerConn_.send(message);
 }
 
