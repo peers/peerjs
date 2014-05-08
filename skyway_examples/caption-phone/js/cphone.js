@@ -108,13 +108,34 @@ var currSessionId_ = null;
  */
 var isFirstMessage = true;
 
-
-
 /**
- * disconnect button listener
- * destroy peer connection and stop recognition of webspeechapi
+ * Default speech recognition options
+ * @type {{continuous: boolean, interimResults: boolean, lang: string}}
+ * @private
  */
+var speechOptions_ = {
+    continuous: true,
+    interimResults: true,
+    lang: 'ja-jp'
+}
+
 $(document).ready(function(){
+    //Check if browser is compatible
+    var isAndroid = /android/.test(navigator.userAgent.toLowerCase());
+    if(isAndroid || !('getUserMedia' in navigator) || !('webkitSpeechRecognition' in window)){
+        ui.showModal('error', 'Support Error', 'Your browser is not supported. Please try again using an up-to-date version of Google Chrome for desktop.');
+        return;
+    }
+
+    //Set recognition language
+    if(!location.hash.length){
+        var lang = navigator.language;
+        location.hash = '#'+lang;
+        speechOptions_.lang = lang;
+    } else {
+        speechOptions_.lang = location.hash.substr(1);
+    }
+
     init();
     loadHistory();
 });
@@ -129,8 +150,13 @@ $(window).on('beforeunload',function(){
 function init(){
     $('#myid').val(myid_);
 
-    $('#userListHeader').text(myid_+"のユーザリスト");
     speech_ = new Speech();
+    $(window).on('hashchange', function(){
+        speechOptions_.lang = location.hash.substr(1);
+        if(speech_.isRecognizing){
+            speech_.recognition.stop();
+        }
+    })
 
     if(storage_ == null) storage_ = new Wrapper.storage();
     if(myid_ == null){
@@ -163,25 +189,6 @@ function init(){
             reset();
         });
 
-        peer_.on('close', function() {
-            $remoteAudio_[0].pause();
-            enableForm_('connect');
-            if($('.session:last .message').length > 0){
-                var isAtBottom = ui.checkIsAtBottom();
-                $('.session:last').append(
-                    '<div class="datetime">' +
-                        '<time>'+new Date().toLocaleString()+'</time>' +
-                    '</div>');
-                if(isAtBottom){
-                    ui.scrollToBottom();
-                }
-            }
-            if(!isDisconnector_){
-                destroyPCs();
-                reset();
-                init();
-            }
-        });
     }
 }
 
@@ -227,17 +234,12 @@ function connectedAnother(c){
                 if(isAtBottom){
                     ui.scrollToBottom();
                 }
-                var options = {
-                    continuous: $('#continuous').is(':checked'),
-                    interimResults: $('#interimResults').is(':checked'),
-                    lang: $('#lang').val()
-                };
-                speech_.startRecognition(options);
+                speech_.startRecognition(speechOptions_);
                 break;
             case 'reject':
                 ui.stopRing('rbt');
-                $('#phone-status').removeClass('label-success').text('相手切断');
                 reset();
+                init();
                 break;
         }
     });
@@ -265,7 +267,6 @@ function reset(){
         speech_.abortRecognition();
     }
 
-    speech_ = new Speech();
     $('#anotherid').val('');
     localset_ = false;
     remoteset_ = false;
@@ -274,6 +275,7 @@ function reset(){
     peerid_ = null;
     isFirstMessage = true;
     $('[contenteditable="true"]').removeAttr('contenteditable').unbind();
+    $(window).off('hashchange');
 
     ui.changePhoneState('disconnected');
     isCaller_ = false;
@@ -375,10 +377,6 @@ function destroyPCs(){
         peerCall_.close();
         peerCall_ = null;
     }
-    if(peer_){
-        peer_.disconnect();
-        peer_ = null;
-    }
 }
 
 /**
@@ -453,7 +451,7 @@ function speechRecognitionCallback(event){
                 messageID = $message.data('mytranscript');
                 $message.text(result[0].transcript);
                 time = $message.data('timestamp');
-            } else {
+            } else if( $('.my.current').length === 0 ) {
                 messageID = generateUUID();
                 var $currText =
                     $('<div class="message-wrapper">'+
@@ -535,7 +533,7 @@ function peerTextCallback(message){
         if(isUpdate){
             $message.text(message.transcript);
             time = $message.data('timestamp');
-        } else {
+        } else if ($('.your.current').length === 0 ){
             $('.session[data-session="'+currSessionId_+'"]').append(
                 '<div class="message-wrapper">'+
                     '<article class="your message current" ' +
@@ -569,12 +567,7 @@ function speechEndCallback(){
     }
     speech_.timer = now;
     if(speech_.isRecognizing){
-        var options = {
-            continuous: $('#continuous').is(':checked'),
-            interimResults: $('#interimResults').is(':checked'),
-            lang: $('#lang').val()
-        };
-        speech_.startRecognition(options);
+        speech_.startRecognition(speechOptions_);
         speech_.recognition.onresult = speechRecognitionCallback;
         speech_.recognition.onend = speechEndCallback;
     }
@@ -609,7 +602,24 @@ function connect(peerid){
                 $remoteAudio_[0].play();
                 enableForm_('disconnect');
             })
+            peerCall_.on('close',function(){
+                var $remoteAudio_ = $('#remote');
+                $remoteAudio_[0].pause();
+                enableForm_('connect');
+                if($('.session:last .message').length > 0){
+                    var isAtBottom = ui.checkIsAtBottom();
+                    $('.session:last').append(
+                        '<div class="datetime">' +
+                            '<time>'+new Date().toLocaleString()+'</time>' +
+                            '</div>');
+                    if(isAtBottom){
+                        ui.scrollToBottom();
+                    }
+                }
+            })
             ui.changePhoneState('connected');
+        }, function(){
+            ui.showModal('error', 'userMediaError', "Failed to get user microphone.");
         })
     });
 }
@@ -634,6 +644,21 @@ function acceptCall(){
     peerid_ = peerCall_.peer;
     navigator.getUserMedia({"video":false,"audio":true}, function(stream){
         peerCall_.answer(stream);
+        peerCall_.on('close',function(){
+            var $remoteAudio_ = $('#remote');
+            $remoteAudio_[0].pause();
+            enableForm_('connect');
+            if($('.session:last .message').length > 0){
+                var isAtBottom = ui.checkIsAtBottom();
+                $('.session:last').append(
+                    '<div class="datetime">' +
+                        '<time>'+new Date().toLocaleString()+'</time>' +
+                        '</div>');
+                if(isAtBottom){
+                    ui.scrollToBottom();
+                }
+            }
+        })
         localset_ = true;
 
 
@@ -642,12 +667,7 @@ function acceptCall(){
             type:'start',
             sessionID:currSessionId_
         };
-        var options = {
-            continuous: $('#continuous').is(':checked'),
-            interimResults: $('#interimResults').is(':checked'),
-            lang: $('#lang').val()
-        };
-        speech_.startRecognition(options);
+        speech_.startRecognition(speechOptions_);
 
 
         var isAtBottom = ui.checkIsAtBottom();
@@ -662,6 +682,8 @@ function acceptCall(){
             ui.scrollToBottom();
         }
         ui.changePhoneState('connected');
+    }, function(){
+        ui.showModal('error', 'Media Error', "Failed to get user microphone.");
     })
 }
 
@@ -674,6 +696,7 @@ function rejectCall(){
         type: 'reject'
     };
     reset();
+    init();
     peerConn_.send(message);
 }
 
