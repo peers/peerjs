@@ -1532,7 +1532,7 @@ Peer.prototype._handleMessage = function(message) {
       this._abort('invalid-key', 'API KEY "' + this.options.key + '" is invalid');
       break;
     case 'PING':
-      this.socket.send({type:'PONG'});
+      this.socket.sendPong();
       break;
     case 'LEAVE': // Another peer has closed its connection to this peer.
       util.log('Received leave message from', peer);
@@ -2508,6 +2508,7 @@ Socket.prototype._startWebSocket = function(id) {
         self._http = null;
       }, 5000);
     }
+    self._setWSTimeout()
     self._sendQueuedMessages();
     util.log('Socket open');
   };
@@ -2604,6 +2605,16 @@ Socket.prototype._setHTTPTimeout = function() {
   }, 25000);
 }
 
+Socket.prototype._setWSTimeout = function(){
+    var self = this;
+    this._wsTimeout = setTimeout(function(){
+        if(self._wsOpen()){
+            self._socket.close();
+            util.error('WS timed out');
+        }
+    }, 45000)
+}
+
 /** Is the websocket currently open? */
 Socket.prototype._wsOpen = function() {
   return this._socket && this._socket.readyState == 1;
@@ -2643,6 +2654,16 @@ Socket.prototype.send = function(data) {
     http.open('post', url, true);
     http.setRequestHeader('Content-Type', 'application/json');
     http.send(message);
+  }
+}
+
+Socket.prototype.sendPong = function() {
+  if (this._wsOpen()) {
+    this.send({type:'PONG'});
+    if (this._wsTimeout) {
+      clearTimeout(this._wsTimeout);
+    }
+    this._setWSTimeout();
   }
 }
 
