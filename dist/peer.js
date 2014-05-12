@@ -1349,7 +1349,8 @@ var util = {
 
   isSecure: function() {
     return location.protocol === 'https:';
-  }
+  },
+  supportsKeepAlive: false
 };
 
 exports.util = util;
@@ -1394,10 +1395,16 @@ function Peer(id, options) {
   }
 
   // Set whether we use SSL to same as current host unless hosted on skyway
-  if (options.host === util.CLOUD_HOST){
+  if (options.host === util.CLOUD_HOST) {
     options.secure = true;
   } else if (options.secure === undefined) {
     options.secure = util.isSecure();
+  }
+  // Set whether the server supports WS keepalives
+  if (options.host === util.CLOUD_HOST) {
+      util.supportsKeepAlive = true;
+  } else if (options.keepalive) {
+      util.supportsKeepAlive = options.keepalive;
   }
   // Set a custom log function if present
   if (options.logFunction) {
@@ -2508,7 +2515,9 @@ Socket.prototype._startWebSocket = function(id) {
         self._http = null;
       }, 5000);
     }
-    self._setWSTimeout()
+    if (util.supportsKeepAlive) {
+      self._setWSTimeout();
+    }
     self._sendQueuedMessages();
     util.log('Socket open');
   };
