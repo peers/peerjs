@@ -322,11 +322,6 @@
         ]
       },
       {
-        "name": ".bufferSize",
-        "type": "number",
-        "description": "The number of messages queued to be sent once the browser buffer is no longer full."
-      },
-      {
         "name": ".dataChannel",
         "type": "object",
         "description": "A reference to the RTCDataChannel object associated with the connection."
