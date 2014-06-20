@@ -1350,12 +1350,7 @@ var util = {
   isSecure: function() {
     return location.protocol === 'https:';
   },
-  generateUUID: function() {
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-          return v.toString(16);
-      });
-  }
+  supportsKeepAlive: false
 };
 
 exports.util = util;
@@ -1369,7 +1364,7 @@ function Peer(id, options) {
   // Deal with overloading
   if (id && id.constructor == Object) {
     options = id;
-    id = util.generateUUID();
+    id = undefined;
   } else if (id) {
     // Ensure id is a string
     id = id.toString();
@@ -1382,7 +1377,7 @@ function Peer(id, options) {
     host: util.CLOUD_HOST,
     port: util.CLOUD_PORT,
     key: 'peerjs',
-    path: '/',
+    path: '/v2/',
     config: util.defaultConfig
   }, options);
   this.options = options;
@@ -1400,10 +1395,16 @@ function Peer(id, options) {
   }
 
   // Set whether we use SSL to same as current host unless hosted on skyway
-  if (options.host === util.CLOUD_HOST){
+  if (options.host === util.CLOUD_HOST) {
     options.secure = true;
   } else if (options.secure === undefined) {
     options.secure = util.isSecure();
+  }
+  // Set whether the server supports WS keepalives
+  if (options.host === util.CLOUD_HOST) {
+      util.supportsKeepAlive = true;
+  } else if (options.keepalive) {
+      util.supportsKeepAlive = options.keepalive;
   }
   // Set a custom log function if present
   if (options.logFunction) {
@@ -1468,8 +1469,7 @@ function Peer(id, options) {
   if (id) {
     this._initialize(id);
   } else {
-//    this._retrieveId();
-      self._abort('socket-closed', 'User id is undefined.');
+    this._retrieveId();
   }
   //
 };
@@ -1538,8 +1538,9 @@ Peer.prototype._handleMessage = function(message) {
     case 'INVALID-KEY': // The given API key cannot be found.
       this._abort('invalid-key', 'API KEY "' + this.options.key + '" is invalid');
       break;
-
-    //
+    case 'PING':
+      this.socket.sendPong();
+      break;
     case 'LEAVE': // Another peer has closed its connection to this peer.
       util.log('Received leave message from', peer);
       this._cleanupPeer(peer);
@@ -1772,7 +1773,7 @@ Peer.prototype.listAllPeers = function(cb) {
   var http = new XMLHttpRequest();
   var protocol = this.options.secure ? 'https://' : 'http://';
   var url = protocol + this.options.host + ':' + this.options.port
-    + this.options.path + 'active/list/' + this.options.key;
+    + this.options.path + this.options.key + '/peers';
 
   // If there's no ID we need to wait for one before trying to init socket.
   http.open('get', url, true);
@@ -2478,7 +2479,7 @@ Socket.prototype.start = function(id) {
   this._httpUrl += '/' + id + '/' + token;
   this._wsUrl += '&id='+id+'&token='+token;
 
-//  this._startXhrStream();
+  this._startXhrStream();
   this._startWebSocket();
 }
 
@@ -2514,9 +2515,22 @@ Socket.prototype._startWebSocket = function(id) {
         self._http = null;
       }, 5000);
     }
+    if (util.supportsKeepAlive) {
+      self._setWSTimeout();
+    }
     self._sendQueuedMessages();
     util.log('Socket open');
   };
+
+  this._socket.onerror = function(err) {
+    util.error('WS error code '+err.code);
+  }
+
+  // Fall back to XHR if WS closes
+  this._socket.onclose = function(msg) {
+      util.error("WS closed with code "+msg.code);
+      self._startXhrStream();
+  }
 }
 
 /** Start XHR streaming. */
@@ -2600,6 +2614,16 @@ Socket.prototype._setHTTPTimeout = function() {
   }, 25000);
 }
 
+Socket.prototype._setWSTimeout = function(){
+    var self = this;
+    this._wsTimeout = setTimeout(function(){
+        if(self._wsOpen()){
+            self._socket.close();
+            util.error('WS timed out');
+        }
+    }, 45000)
+}
+
 /** Is the websocket currently open? */
 Socket.prototype._wsOpen = function() {
   return this._socket && this._socket.readyState == 1;
@@ -2633,13 +2657,23 @@ Socket.prototype.send = function(data) {
   var message = JSON.stringify(data);
   if (this._wsOpen()) {
     this._socket.send(message);
-  } /* else {
+  } else if(data.type !== 'PONG') {
     var http = new XMLHttpRequest();
     var url = this._httpUrl + '/' + data.type.toLowerCase();
     http.open('post', url, true);
     http.setRequestHeader('Content-Type', 'application/json');
     http.send(message);
-  }*/
+  }
+}
+
+Socket.prototype.sendPong = function() {
+  if (this._wsOpen()) {
+    this.send({type:'PONG'});
+    if (this._wsTimeout) {
+      clearTimeout(this._wsTimeout);
+    }
+    this._setWSTimeout();
+  }
 }
 
 Socket.prototype.close = function() {
