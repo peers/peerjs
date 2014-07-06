@@ -1478,7 +1478,7 @@ Peer.prototype._initializeServerConnection = function() {
   this.socket.on('disconnected', function() {
     // If we haven't explicitly disconnected, emit error and disconnect.
     if (!self.disconnected) {
-      self._error('network', 'Lost connection to server.')
+      self.emitError('network', 'Lost connection to server.')
       self.disconnect();
     }
   });
@@ -1488,20 +1488,6 @@ Peer.prototype._initializeServerConnection = function() {
       self._abort('socket-closed', 'Underlying socket is already closed.');
     }
   });
-};
-
-Peer.prototype.reconnect = function() {
-  if (this.disconnected && !this.destroyed) {
-    this._initializeServerConnection();
-    this._initialize(this._lastServerId);
-  } else if (this.destroyed) {
-    throw new Error('This peer cannot reconnect to the server. It has already been destroyed.');
-  } else if (!this.disconnected && !this.open) {
-    // Do nothing. We're still connecting the first time.
-    util.error('In a hurry? We\'re still trying to make the initial connection!');
-  } else {
-    throw new Error('Peer ' + this.id + ' cannot reconnect because it is not disconnected from the server!');
-  }
 };
 
 /** Get a unique ID from the server via XHR. */
@@ -1663,7 +1649,8 @@ Peer.prototype.connect = function(peer, options) {
   if (this.disconnected) {
     util.warn('You cannot connect to a new Peer because you called '
         + '.disconnect() on this Peer and ended your connection with the'
-        + ' server. You can create a new Peer to reconnect.');
+        + ' server. You can create a new Peer to reconnect, or call reconnect'
+        + ' on this peer if you believe its ID to still be available.');
     this.emitError('disconnected', 'Cannot connect to new Peer after disconnecting from server.');
     return;
   }
@@ -1724,9 +1711,16 @@ Peer.prototype._delayedAbort = function(type, message) {
   });
 }
 
-/** Destroys the Peer and emits an error message. */
+/**
+ * Destroys the Peer and emits an error message.
+ * The Peer is not destroyed if it's in a disconnected state, in which case
+ * it retains its disconnected state and its existing connections.
+ */
 Peer.prototype._abort = function(type, message) {
   util.error('Aborting!');
+  if (!this.disconnected) {
+    this.destroy();
+  }
   this.emitError(type, message);
 };
 
@@ -1795,6 +1789,22 @@ Peer.prototype.disconnect = function() {
     }
   });
 }
+
+/** Attempts to reconnect with the same ID. */
+Peer.prototype.reconnect = function() {
+  if (this.disconnected && !this.destroyed) {
+    util.log('Attempting reconnection to server with ID ' + this._lastServerId);
+    this._initializeServerConnection();
+    this._initialize(this._lastServerId);
+  } else if (this.destroyed) {
+    throw new Error('This peer cannot reconnect to the server. It has already been destroyed.');
+  } else if (!this.disconnected && !this.open) {
+    // Do nothing. We're still connecting the first time.
+    util.error('In a hurry? We\'re still trying to make the initial connection!');
+  } else {
+    throw new Error('Peer ' + this.id + ' cannot reconnect because it is not disconnected from the server!');
+  }
+};
 
 /**
  * Get a list of available peer IDs. If you're running your own server, you'll
