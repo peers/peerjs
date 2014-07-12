@@ -1,4 +1,4 @@
-/*! peerjs.js build:0.3.8, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
+/*! peerjs.js build:0.3.9, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */
 (function(exports){
 var binaryFeatures = {};
 binaryFeatures.useBlobBuilder = (function(){
@@ -1718,8 +1718,10 @@ Peer.prototype._delayedAbort = function(type, message) {
  */
 Peer.prototype._abort = function(type, message) {
   util.error('Aborting!');
-  if (!this.disconnected) {
+  if (!this._lastServerId) {
     this.destroy();
+  } else {
+    this.disconnect();
   }
   this.emitError(type, message);
 };
@@ -1794,6 +1796,7 @@ Peer.prototype.disconnect = function() {
 Peer.prototype.reconnect = function() {
   if (this.disconnected && !this.destroyed) {
     util.log('Attempting reconnection to server with ID ' + this._lastServerId);
+    this.disconnected = false;
     this._initializeServerConnection();
     this._initialize(this._lastServerId);
   } else if (this.destroyed) {

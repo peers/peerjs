@@ -1,5 +1,12 @@
 # PeerJS Changelog
 
+## Version 0.3.9 (11 July 2014)
+* Allow an external adapter to be used (for `RTCPeerConnection` and such). (Thanks, @khankuan!)
+* Fixed a bug where `_chunkedData` was not being cleared recursively, causing memory to be eaten up unnecessarily. (Thanks, @UnsungHero97!)
+* Added `peer.reconnect()`, which allows a peer to reconnect to the signalling server with the same ID it had before after it has been disconnected. (Thanks, @jure, for the amazing input :)!)
+* Added previously-missing error types, such as `webrtc`, `network`, and `peer-unavailable` error types. (Thanks, @mmis1000 for reporting!)
+* Fixed a bug where the peer would infinitely attempt to start XHR streaming when there is no network connection available. Now, the peer will simply emit a `network` error and disconnect. (Thanks, @UnsungHero97 for reporting!)
+
 ## Version 0.3.8 beta (18 Mar 2014)
 * **The following changes are only compatible with PeerServer 0.2.4.**
 * Added the ability to specify a custom path when connecting to a self-hosted
