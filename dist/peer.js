@@ -19,7 +19,8 @@ binaryFeatures.useArrayBufferView = !binaryFeatures.useBlobBuilder && (function(
 })();
 
 exports.binaryFeatures = binaryFeatures;
-exports.BlobBuilder = window.WebKitBlobBuilder || window.MozBlobBuilder || window.MSBlobBuilder || window.BlobBuilder;
+BlobBuilder = window.WebKitBlobBuilder || window.MozBlobBuilder || window.MSBlobBuilder || window.BlobBuilder;
+exports.BlobBuilder = BlobBuilder;
 
 function BufferBuilder(){
   this._pieces = [];
@@ -58,7 +59,7 @@ BufferBuilder.prototype.getBuffer = function() {
     return new Blob(this._parts);
   }
 };
-exports.BinaryPack = {
+BinaryPack = {
   unpack: function(data){
     var unpacker = new Unpacker(data);
     return unpacker.unpack();
@@ -70,6 +71,8 @@ exports.BinaryPack = {
     return buffer;
   }
 };
+
+exports.BinaryPack = BinaryPack;
 
 function Unpacker (data){
   // Data is ArrayBuffer
@@ -1052,9 +1055,12 @@ Reliable.higherBandwidthSDP = function(sdp) {
 Reliable.prototype.onmessage = function(msg) {};
 
 exports.Reliable = Reliable;
-exports.RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription;
-exports.RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
-exports.RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate;
+RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription;
+exports.RTCSessionDescription = RTCSessionDescription;
+RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+exports.RTCPeerConnection = RTCPeerConnection;
+RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate;
+exports.RTCIceCandidate = RTCIceCandidate;
 var defaultConfig = {'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }]};
 var dataCount = 1;
 
@@ -2546,11 +2552,11 @@ Socket.prototype._startWebSocket = function(id) {
   this._socket.onmessage = function(event) {
     try {
       var data = JSON.parse(event.data);
-      self.emit('message', data);
     } catch(e) {
       util.log('Invalid server message', event.data);
       return;
     }
+    self.emit('message', data);
   };
 
   this._socket.onclose = function(event) {
