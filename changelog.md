@@ -1,5 +1,8 @@
 # PeerJS Changelog
 
+## Version 0.3.10 (29 Aug 2014)
+* Fixed a bug where `disconnected` would be emitted for XHR requests that were aborted on purpose.
+
 ## Version 0.3.9 (11 July 2014)
 * Allow an external adapter to be used (for `RTCPeerConnection` and such). (Thanks, @khankuan!)
 * Fixed a bug where `_chunkedData` was not being cleared recursively, causing memory to be eaten up unnecessarily. (Thanks, @UnsungHero97!)
