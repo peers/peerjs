@@ -2582,17 +2582,18 @@ Socket.prototype._startXhrStream = function(n) {
     this._http._index = 1;
     this._http._streamIndex = n || 0;
     this._http.open('post', this._httpUrl + '/id?i=' + this._http._streamIndex, true);
+    this._http.onerror = function() {
+      // If we get an error, likely something went wrong.
+      // Stop streaming.
+      clearTimeout(self._timeout);
+      self.emit('disconnected');
+    }
     this._http.onreadystatechange = function() {
       if (this.readyState == 2 && this.old) {
         this.old.abort();
         delete this.old;
       } else if (this.readyState > 2 && this.status === 200 && this.responseText) {
         self._handleStream(this);
-      } else if (this.status !== 200) {
-        // If we get a different status code, likely something went wrong.
-        // Stop streaming.
-        clearTimeout(self._timeout);
-        self.emit('disconnected');
       }
     };
     this._http.send(null);

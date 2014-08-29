@@ -36,6 +36,10 @@ peer.on('open', function(id){
 // Await connections from others
 peer.on('connection', connect);
 
+peer.on('error', function(err) {
+  console.log(err);
+})
+
 // Handle a connection object.
 function connect(c) {
   // Handle a chat connection.
