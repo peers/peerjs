@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "eventemitter3": "^0.1.5",
-    "js-binarypack": "0.0.7",
-    "reliable": "^0.1.0"
+    "js-binarypack": "git+https://github.com/lmb/js-binarypack.git",
+    "reliable": "git+https://github.com/lmb/reliable.git"
   }
 }
