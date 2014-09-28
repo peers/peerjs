@@ -1,5 +1,8 @@
 # PeerJS Changelog
 
+## Version 0.3.11 (28 Sep 2014)
+* Browserify build system
+
 ## Version 0.3.10 (29 Aug 2014)
 * Fixed a bug where `disconnected` would be emitted for XHR requests that were aborted on purpose.
 
