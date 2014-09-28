@@ -77,3 +77,7 @@ peer.on('call', function(call) {
 ### [Discuss PeerJS on our Google Group](https://groups.google.com/forum/?fromgroups#!forum/peerjs)
 
 ### [Changelog](https://github.com/peers/peerjs/blob/master/changelog.md)
+
+##License
+Peerjs is licensed under the [MIT License](https://tldrlegal.com/l/mit).
+
