@@ -1,6 +1,6 @@
 {
   "name": "peerjs",
-  "version": "0.3.10",
+  "version": "0.3.11",
   "description": "PeerJS client",
   "main": "./lib/peer.js",
   "repository": {
@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "eventemitter3": "^0.1.5",
-    "js-binarypack": "git+https://github.com/lmb/js-binarypack.git",
-    "reliable": "git+https://github.com/lmb/reliable.git"
+    "js-binarypack": "0.0.8",
+    "reliable": "git+https://github.com/michelle/reliable.git"
   }
 }
