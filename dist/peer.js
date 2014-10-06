@@ -1377,7 +1377,7 @@ function Peer(id, options) {
     host: util.CLOUD_HOST,
     port: util.CLOUD_PORT,
     key: 'peerjs',
-    path: '/v2/',
+    path: '/',
     config: util.defaultConfig
   }, options);
   this.options = options;
