@@ -864,6 +864,7 @@ Peer.prototype._handleMessage = function(message) {
   var type = message.type;
   var payload = message.payload;
   var peer = message.src;
+  var connection;
 
   switch (type) {
     case 'OPEN': // The connection to the server is open.
@@ -891,7 +892,7 @@ Peer.prototype._handleMessage = function(message) {
       break;
     case 'OFFER': // we should consider switching this to CALL/CONNECT, but this is the least breaking option.
       var connectionId = payload.connectionId;
-      var connection = this.getConnection(peer, connectionId);
+      connection = this.getConnection(peer, connectionId);
 
       if (connection) {
         util.warn('Offer received for existing Connection ID:', connectionId);
@@ -1464,7 +1465,7 @@ var util = {
         err = true;
       }
     }
-    err ? console.error.apply(console, copy) : console.log.apply(console, copy);  
+    err ? console.error.apply(console, copy) : console.log.apply(console, copy);
   },
   //
 
@@ -1552,7 +1553,7 @@ var util = {
           util.supports.onnegotiationneeded = true;
         }
       };
-      var negotiationDC = negotiationPC.createDataChannel('_PEERJSNEGOTIATIONTEST');
+      negotiationPC.createDataChannel('_PEERJSNEGOTIATIONTEST');
 
       setTimeout(function() {
         negotiationPC.close();
