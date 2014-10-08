@@ -2463,25 +2463,13 @@ binaryFeatures.useArrayBufferView = !binaryFeatures.useBlobBuilder && (function(
     return true;
   }
 })();
-binaryFeatures.supportsBinaryWebsockets = (function(){
-  try {
-    var wstest = new WebSocket('ws://null');
-    wstest.onerror = function(){};
-    if (typeof(wstest.binaryType) !== "undefined") {
-      return true;
-    } else {
-      return false;
-    }
-    wstest.close();
-    wstest = null;
-  } catch (e) {
-    return false;
-  }
-})();
 
 module.exports.binaryFeatures = binaryFeatures;
-var BlobBuilder = module.exports.BlobBuilder = window.WebKitBlobBuilder ||
-  window.MozBlobBuilder || window.MSBlobBuilder || window.BlobBuilder;
+var BlobBuilder = module.exports.BlobBuilder;
+if (typeof window != 'undefined') {
+  BlobBuilder = module.exports.BlobBuilder = window.WebKitBlobBuilder ||
+    window.MozBlobBuilder || window.MSBlobBuilder || window.BlobBuilder;
+}
 
 function BufferBuilder(){
   this._pieces = [];
