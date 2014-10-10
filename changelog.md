@@ -1,5 +1,8 @@
 # PeerJS Changelog
 
+## Version 0.3.14
+* Patch for #246, which started as of Chrome 38.
+
 ## Version 0.3.11 (28 Sep 2014)
 * Browserify build system
 
