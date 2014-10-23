@@ -74,6 +74,8 @@ peer.on('call', function(call) {
 
 ### [free API key](http://nttcom.github.io/skyway/registration.html)
 
+### [Discuss SkyWay on our Google Group](https://groups.google.com/forum/#!forum/skywayjs)
+
 ## PeerJS links
 
 ### [WebRTC Browser compatibility status](http://peerjs.com/status)
@@ -81,4 +83,5 @@ peer.on('call', function(call) {
 ### [PeerServer](https://github.com/peers/peerjs-server)
 
 ### [Discuss PeerJS on our Google Group](https://groups.google.com/forum/?fromgroups#!forum/peerjs)
+
 

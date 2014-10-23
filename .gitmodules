@@ -1,9 +1,0 @@
-[submodule "deps/EventEmitter"]
-	path = deps/EventEmitter
-	url = git://github.com/peers/EventEmitter.git
-[submodule "deps/js-binarypack"]
-	path = deps/js-binarypack
-	url = git://github.com/peers/js-binarypack.git
-[submodule "deps/reliable"]
-	path = deps/reliable
-	url = git://github.com/michellebu/reliable.git
