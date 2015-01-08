@@ -21,7 +21,7 @@ module.exports = function(grunt) {
       dev: {
         options: {
           banner: '/*! <%= pkg.name %> build:<%= pkg.version %>, development. '+
-            'Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> 2014 NTT Communications Corporation */'
+            'Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> 2015 NTT Communications Corporation */'
         },
         src: 'dist/peer.js',
         dest: 'dist/peer.js',

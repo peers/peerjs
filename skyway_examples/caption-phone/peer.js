@@ -1,4 +1,4 @@
-/*! peerjs build:0.3.14, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> 2015 NTT Communications Corporation */(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+/*! peerjs build:0.3.14, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> 2014 NTT Communications Corporation */(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 module.exports.RTCSessionDescription = window.RTCSessionDescription ||
 	window.mozRTCSessionDescription;
 module.exports.RTCPeerConnection = window.RTCPeerConnection ||
@@ -410,11 +410,11 @@ Negotiator.startConnection = function(connection, options) {
   // SkyWay Original Code
   if(connection.provider.options.turn === true){
       if(connection.provider.credential !== undefined){
-          connection.provider.options.config.iceServers = {
-              url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT,
-              username: connection.provider.id,
-              credential: connection.provider.credential
-          }
+          connection.provider.options.config.iceServers[1] =
+              { 'url': 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=udp',
+                  'username': connection.provider.id,
+                  'credential': connection.provider.credential
+              };
       }
   }
 
@@ -698,11 +698,21 @@ Negotiator.handleSDP = function(type, connection, sdp) {
 Negotiator.handleCandidate = function(connection, ice) {
   var candidate = ice.candidate;
   var sdpMLineIndex = ice.sdpMLineIndex;
-  connection.pc.addIceCandidate(new RTCIceCandidate({
-    sdpMLineIndex: sdpMLineIndex,
-    candidate: candidate
-  }));
-  util.log('Added ICE candidate for:', connection.peer);
+
+    // foce turn
+    var components = candidate.split(" ");
+    //if (components[7] == "relay") {
+
+      connection.pc.addIceCandidate(new RTCIceCandidate({
+        sdpMLineIndex: sdpMLineIndex,
+        candidate: candidate
+      }));
+
+      util.log('Added ICE candidate for:', connection.peer);
+      util.log('candidate for:', candidate);
+
+   //}
+
 }
 
 module.exports = Negotiator;
@@ -889,20 +899,21 @@ Peer.prototype._retrieveId = function(cb) {
 };
 
 /** Initialize a connection with the server. */
-Peer.prototype._initialize = function(id) {
-  // SkyWay Original Code
-  try {
-      _response = JSON.parse(response);
-      if(_response.id === undefined) {
-          this.id = response;
-      }else{
-          this.id = _response.id;
-          if(_response.credential !== undefined) this.credential = _response.credential;
-      }
-  } catch (e){
-      this.id = response;
-  }
-  this.socket.start(this.id, this.options.token);
+Peer.prototype._initialize = function(response) {
+    // SkyWay Original Code
+    try {
+        _response = JSON.parse(response);
+        if(_response.id === undefined) {
+            this.id = response;
+        }else{
+            this.id = _response.id;
+            if(_response.credential !== undefined) this.credential = _response.credential;
+        }
+    } catch (e){
+        this.id = response;
+    }
+
+    this.socket.start(this.id, this.options.token);
 };
 
 /** Handles messages from the server. */
@@ -1482,7 +1493,7 @@ Socket.prototype.close = function() {
 module.exports = Socket;
 
 },{"./util":8,"eventemitter3":9}],8:[function(require,module,exports){
-var defaultConfig = {'iceServers': [{ 'url': 'stun:stun.skyway.io:3478' }]};
+var defaultConfig = {'iceServers': [{ 'url': 'stun:153.149.16.149:3478' }]};
 var dataCount = 1;
 
 var BinaryPack = require('js-binarypack');
@@ -1493,7 +1504,7 @@ var util = {
 
   CLOUD_HOST: 'skyway.io',
   CLOUD_PORT: 443,
-  TURN_HOST: '192.168.100.70',
+  TURN_HOST: '153.149.16.149',
   TURN_PORT: '3478',
 
   // Browsers that need chunking:
