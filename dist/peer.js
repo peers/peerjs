@@ -410,11 +410,22 @@ Negotiator.startConnection = function(connection, options) {
   // SkyWay Original Code
   if(connection.provider.options.turn === true){
       if(connection.provider.credential !== undefined){
-          connection.provider.options.config.iceServers = {
-              url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT,
+          connection.provider.options.config.iceServers.push({
+              url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=udp',
               username: connection.provider.id,
               credential: connection.provider.credential
-          }
+          });
+          connection.provider.options.config.iceServers.push({
+            url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=tcp',
+            username: connection.provider.id,
+            credential: connection.provider.credential
+          });
+          connection.provider.options.config.iceServers.push({
+            url: 'turns:' + util.TURN_HOST + ':' + util.TURNS_PORT + '?transport=tcp',
+            username: connection.provider.id,
+            credential: connection.provider.credential
+          });
+        //connection.provider.options.config.iceTransports = 'all';
       }
   }
 
@@ -745,7 +756,7 @@ function Peer(id, options) {
 
   // SkyWay Original Code
   if(options.turn === undefined){
-      options.turn = false;
+      options.turn = true;
   }
 
   // Detect relative URL host.
@@ -816,9 +827,10 @@ function Peer(id, options) {
   //
 
   // Start the server connection
+  // SkyWay Original Code
   this._initializeServerConnection();
   if (id) {
-    this._initialize(id);
+    this._retrieveId(id);
   } else {
     this._retrieveId();
   }
@@ -854,13 +866,19 @@ Peer.prototype._initializeServerConnection = function() {
 };
 
 /** Get a unique ID from the server via XHR. */
-Peer.prototype._retrieveId = function(cb) {
+// SkyWay Original Code
+Peer.prototype._retrieveId = function(id) {
   var self = this;
   var http = new XMLHttpRequest();
   var protocol = this.options.secure ? 'https://' : 'http://';
   var url = protocol + this.options.host + ':' + this.options.port +
     this.options.path + this.options.key + '/id';
-  var queryString = '?ts=' + new Date().getTime() + '' + Math.random();
+  if(id !== undefined){
+    var queryString = '?ts=' + new Date().getTime() + '' + Math.random() + '&id=' + id;
+  }else{
+    var queryString = '?ts=' + new Date().getTime() + '' + Math.random();
+  }
+
   url += queryString;
 
   // If there's no ID we need to wait for one before trying to init socket.
@@ -892,15 +910,15 @@ Peer.prototype._retrieveId = function(cb) {
 Peer.prototype._initialize = function(id) {
   // SkyWay Original Code
   try {
-      _response = JSON.parse(response);
+      _response = JSON.parse(id);
       if(_response.id === undefined) {
-          this.id = response;
+          this.id = _response;
       }else{
           this.id = _response.id;
           if(_response.credential !== undefined) this.credential = _response.credential;
       }
   } catch (e){
-      this.id = response;
+      this.id = id;
   }
   this.socket.start(this.id, this.options.token);
 };
@@ -1493,8 +1511,9 @@ var util = {
 
   CLOUD_HOST: 'skyway.io',
   CLOUD_PORT: 443,
-  TURN_HOST: '192.168.100.70',
-  TURN_PORT: '3478',
+  TURN_HOST: 'turn.skyway.io',
+  TURN_PORT: 3478,
+  TURNS_PORT: 5349,
 
   // Browsers that need chunking:
   chunkedBrowsers: {'Chrome': 1},
