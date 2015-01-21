@@ -412,17 +412,17 @@ Negotiator.startConnection = function(connection, options) {
       if(connection.provider.credential !== undefined){
           connection.provider.options.config.iceServers.push({
               url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=udp',
-              username: connection.provider.id,
+              username: connection.provider.options.key + '$' + connection.provider.id,
               credential: connection.provider.credential
           });
           connection.provider.options.config.iceServers.push({
             url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=tcp',
-            username: connection.provider.id,
+            username: connection.provider.options.key + '$' + connection.provider.id,
             credential: connection.provider.credential
           });
           connection.provider.options.config.iceServers.push({
             url: 'turns:' + util.TURN_HOST + ':' + util.TURNS_PORT + '?transport=tcp',
-            username: connection.provider.id,
+            username: connection.provider.options.key + '$' + connection.provider.id,
             credential: connection.provider.credential
           });
         //connection.provider.options.config.iceTransports = 'all';
