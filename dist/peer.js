@@ -406,29 +406,6 @@ Negotiator._idPrefix = 'pc_';
 
 /** Returns a PeerConnection object set up correctly (for data, media). */
 Negotiator.startConnection = function(connection, options) {
-
-  // SkyWay Original Code
-  if(connection.provider.options.turn === true){
-      if(connection.provider.credential !== undefined){
-          connection.provider.options.config.iceServers.push({
-              url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=udp',
-              username: connection.provider.options.key + '$' + connection.provider.id,
-              credential: connection.provider.credential
-          });
-          connection.provider.options.config.iceServers.push({
-            url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=tcp',
-            username: connection.provider.options.key + '$' + connection.provider.id,
-            credential: connection.provider.credential
-          });
-          connection.provider.options.config.iceServers.push({
-            url: 'turns:' + util.TURN_HOST + ':' + util.TURNS_PORT + '?transport=tcp',
-            username: connection.provider.options.key + '$' + connection.provider.id,
-            credential: connection.provider.credential
-          });
-        //connection.provider.options.config.iceTransports = 'all';
-      }
-  }
-
   var pc = Negotiator._getPeerConnection(connection, options);
 
   if (connection.type === 'media' && options._stream) {
@@ -901,25 +878,48 @@ Peer.prototype._retrieveId = function(id) {
       http.onerror();
       return;
     }
-    self._initialize(http.responseText);
+    self._initialize(http.responseText,id);
   };
   http.send(null);
 };
 
 /** Initialize a connection with the server. */
-Peer.prototype._initialize = function(id) {
+Peer.prototype._initialize = function(serverid,myid) {
   // SkyWay Original Code
   try {
-      _response = JSON.parse(id);
-      if(_response.id === undefined) {
-          this.id = _response;
-      }else{
-          this.id = _response.id;
-          if(_response.credential !== undefined) this.credential = _response.credential;
-      }
+    _response = JSON.parse(serverid);
+    this.id = _response.id;
+    this.credential = _response.credential;
   } catch (e){
-      this.id = id;
+    if(myid){
+      this.id = myid;
+    }else {
+      this.id = serverid;
+    }
   }
+
+  // SkyWay Original Code
+  if(this.options.turn === true){
+    if(this.credential){
+      this.options.config.iceServers.push({
+        url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=udp',
+        username: this.options.key + '$' + this.id,
+        credential: this.credential
+      });
+      this.options.config.iceServers.push({
+        url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=tcp',
+        username: this.options.key + '$' + this.id,
+        credential: this.credential
+      });
+      this.options.config.iceServers.push({
+        url: 'turns:' + util.TURN_HOST + ':' + util.TURNS_PORT + '?transport=tcp',
+        username: this.options.key + '$' + this.id,
+        credential: this.credential
+      });
+      //connection.provider.options.config.iceTransports = 'all';
+    }
+  }
+
   this.socket.start(this.id, this.options.token);
 };
 
