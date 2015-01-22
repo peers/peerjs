@@ -920,6 +920,12 @@ Peer.prototype._initialize = function(serverid,myid) {
     }
   }
 
+  if(this.credential && this.options.turn == true){
+    util.log('SkyWay TURN Server is available');
+  }else{
+    util.log('SkyWay TURN Server is unavailable');
+  }
+
   this.socket.start(this.id, this.options.token);
 };
 
