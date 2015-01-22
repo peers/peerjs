@@ -1685,12 +1685,12 @@ var util = {
   // Ensure alphanumeric ids
   validateId: function(id) {
     // Allow empty ids
-    return !id || /^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(id);
+    return !id || /^[A-Za-z0-9_-]+(?:[ _-][A-Za-z0-9]+)*$/.exec(id);
   },
 
   validateKey: function(key) {
     // Allow empty keys
-    return !key || /^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(key);
+    return !key || /^[A-Za-z0-9_-]+(?:[ _-][A-Za-z0-9]+)*$/.exec(key);
   },
 
 
