@@ -902,21 +902,16 @@ Peer.prototype._initialize = function(serverid,myid) {
   if(this.options.turn === true){
     if(this.credential){
       this.options.config.iceServers.push({
-        url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=udp',
+        url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT,
         username: this.options.key + '$' + this.id,
         credential: this.credential
       });
       this.options.config.iceServers.push({
-        url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=tcp',
+        url: 'turns:' + util.TURN_HOST + ':' + util.TURNS_PORT,
         username: this.options.key + '$' + this.id,
         credential: this.credential
       });
-      this.options.config.iceServers.push({
-        url: 'turns:' + util.TURN_HOST + ':' + util.TURNS_PORT + '?transport=tcp',
-        username: this.options.key + '$' + this.id,
-        credential: this.credential
-      });
-      //connection.provider.options.config.iceTransports = 'all';
+      this.options.config.iceTransports = 'all';
     }
   }
 
@@ -1519,7 +1514,7 @@ var util = {
   CLOUD_PORT: 443,
   TURN_HOST: 'turn.skyway.io',
   TURN_PORT: 3478,
-  TURNS_PORT: 5349,
+  TURNS_PORT: 443,
 
   // Browsers that need chunking:
   chunkedBrowsers: {'Chrome': 1},
