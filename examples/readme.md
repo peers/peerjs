@@ -9,7 +9,17 @@
 
 ###[Live demo: Simple hello world demo](http://cdn.peerjs.com/demo/helloworld.html)
 
-###[Wikipedia Golf](http://wikigolf.herokuapp.com/)
+###[Contrib: Chat demo](http://MakeAHarp.com/peer.htm)
+Chat demo, with downloads.
+
+###[nutty.io](https://nutty.io/)
+Terminal sharing in the browser.
+
+###[portals.io](http://www.portals.io/ )
+Connect to folks around you using WebRTC/WebSockets!
+
+###[sharedrop.io](https://www.sharedrop.io)
+Built with a modified version of PeerJS.
 
 ### More on the way!
 

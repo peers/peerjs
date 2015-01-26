@@ -8,6 +8,7 @@
 <link href="fancy.css" rel="stylesheet" type="text/css">
 
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+
 <script type="text/javascript" src="https://skyway.io/dist/0.3/peer.js"></script>
 
 <script>
@@ -36,6 +37,10 @@ peer.on('open', function(id){
 
 // Await connections from others
 peer.on('connection', connect);
+
+peer.on('error', function(err) {
+  console.log(err);
+})
 
 // Handle a connection object.
 function connect(c) {
@@ -107,7 +112,7 @@ $(document).ready(function() {
 
   // Connect to a peer
   $('#connect').click(function() {
-    requestedPeer = $('#rid').val();
+    var requestedPeer = $('#rid').val();
     if (!connectedPeers[requestedPeer]) {
       // Create 2 connections, one labelled chat and another labelled file.
       var c = peer.connect(requestedPeer, {

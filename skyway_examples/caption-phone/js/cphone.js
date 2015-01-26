@@ -16,7 +16,7 @@ navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia 
  * @type {string}
  * @private
  */
-var APIKEY_ = '6165842a-5c0d-11e3-b514-75d3313b9d05';
+var APIKEY_ = '49550ca4-476f-11e4-b041-4133352a1835';
 
 /**
  * The peerjs object
@@ -163,8 +163,10 @@ function init(){
         myid_ = generateId();
     }
     if(peer_ == null){
+
         peer_ = new Peer(myid_,
-            {key: APIKEY_, debug: true});
+            {host:'172.16.0.137',
+                port:8081,key: APIKEY_, debug: true});
         ui.changeServiceState('online', peer_.id);
 
         var $remoteAudio_ = $('#remote');

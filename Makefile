@@ -1,5 +1,5 @@
 default: compress
 
 compress:
-	@node bin/build.js;
+	@./node_modules/.bin/grunt
   
