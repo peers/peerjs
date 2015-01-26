@@ -16,7 +16,7 @@ navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia 
  * @type {string}
  * @private
  */
-var APIKEY_ = '49550ca4-476f-11e4-b041-4133352a1835';
+var APIKEY_ = '6165842a-5c0d-11e3-b514-75d3313b9d05';
 
 /**
  * The peerjs object
