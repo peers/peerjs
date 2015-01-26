@@ -165,8 +165,7 @@ function init(){
     if(peer_ == null){
 
         peer_ = new Peer(myid_,
-            {port:8081,key: APIKEY_, debug: true});
-
+            {key: APIKEY_, debug: true});
         ui.changeServiceState('online', peer_.id);
 
         var $remoteAudio_ = $('#remote');
