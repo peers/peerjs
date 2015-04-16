@@ -166,10 +166,12 @@ function init(){
 
         peer_ = new Peer(myid_,
             {key: APIKEY_, debug: true});
-        ui.changeServiceState('online', peer_.id);
 
         var $remoteAudio_ = $('#remote');
 
+        peer_.on('open', function(id){
+            ui.changeServiceState('online', peer_.id);
+        });
         peer_.on('connection', connectedAnother);
         peer_.on('call', function(call){
             peerCall_ = call;
