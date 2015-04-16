@@ -1,5 +1,7 @@
 <head>
-  <title>PeerJS Documentation</title>
+  <title>PeerJS ドキュメント</title>
+  <meta charset="UTF-8" />
+  <meta property="og:locale" content="ja_JP" />  
   <meta name="viewport" content="width=device-width, maximum-scale=1">
   <link href='http://fonts.googleapis.com/css?family=Lato:300,400,700,900' rel='stylesheet' type='text/css'>
   <link href="./style.css" rel="stylesheet" type="text/css">
@@ -9,73 +11,61 @@
 
 <body>
   <section class="start">
-    <h1><a href="/">PeerJS</a> <span class="title">docs</span></h1>
-    <p><br>PeerJS simplifies peer-to-peer data, video, and audio calls.</p>
-      <p>This guide will show you the basic concepts of the PeerJS API. If
-      you learn better from seeing a working app, <a href="/examples">see the examples</a> page.</P>
-      <h2>Setup</h2>
-      <h3>1. Include the Javascript client</h3>
-      <p>Add the PeerJS client library to your webpage.</p>
-      <pre>&lt;script src="http://cdn.peerjs.com/0.3/peer.min.js"&gt;&lt;/script&gt;</pre>
-      <p>If you prefer, you can host it yourself: <a download
-        href="http://cdn.peerjs.com/0.3/peer.js">peer.js</a>, <a download
-      href="http://cdn.peerjs.com/0.3/peer.min.js">peer.min.js</a>, or <a
-      href="https://github.com/peers/peerjs">fork us on Github</a>.</p>
-      <h3>2. Create the Peer object</h3>
-      <p>The Peer object is where we create and receive connections.</p>
-      <pre>var peer = new Peer({key: 'lwjd5qra8257b9'});</pre>
-      <p>The 'key' we're passing in to the Peer constructor is a PeerServer
-      cloud API key. You can use ours for now, but you should <a
-      href="http://peerjs.com/peerserver">sign up for your own free key</a>.
-    PeerJS uses PeerServer for session metadata and candidate signaling. You can
-    also <a href="http://github.com/peers/peerjs-server">run your own PeerServer</a> if you don't like the cloud.</p>
-      <p>We're now ready to start making connections!</p>
+    <h1><a href="/">PeerJS</a> <span class="title">docs</span><span class="title">SkyWay対応版</span></h1>
+    <p><br>PeerJSは、WebRTCを利用したピア·ツー·ピアのデータ、ビデオ、オーディオ通信を簡単に実現することができます。このドキュメントでは、PeerJS APIの基本的な使い方を紹介します。PeerJSを用いた実装例をご覧になりたい方は, <a href="https://github.com/nttcom/peerjs/tree/master/examples">サンプル</a> ページを御覧ください。</P>
+      <p>このドキュメントは、NTTコミュニケーションズが提供する<a href="http://nttcom.github.io/skyway/">クラウドサービス「SkyWay」</a>にて利用できるようにカスタマイズした<a href="https://github.com/nttcom/peerjs">PeerJS</a>を対象としています。</p>
+      <h2>セットアップ</h2>
+      <h3>1. PeerJSのクライアントライブラリをインクルード</h3>
+      <p>PeerJSクライアントライブラリをあなたのアプリケーションにインクルードしてください。</p>
+      <pre>&lt;script src="https://skyway.io/dist/0.3/peer.js"&gt;&lt;/script&gt;</pre>
+      <p>PeerJSライブラリ（<a download href="https://skyway.io/dist/0.3/peer.js">peer.js</a>, <a download href="https://skyway.io/dist/0.3/peer.min.js">peer.min.js</a>）はあなたのサーバ上に設置することができます。
+      ソースコードは<a href="https://github.com/nttcom/peerjs">Githubからfork</a>する事ができます。</p>
+      <h3>2. Peerオブジェクトを作成</h3>
+      <p>Peerオブジェクトは、Peerコネクションを生成、受信する為に利用します。</p>
+      <pre>var peer = new Peer({key: 'APIKEY'});</pre>
+      <p>Peerのコンストラクタに渡す'APIKEY'は、SkyWayのAPIキーです。<a
+      href="http://nttcom.github.io/skypeer-website/registration.html">APIキーの申し込み</a>を行うことで無料で取得することができます。APIキー申込時には利用ドメインを申請していただきます。APIキーは申請したドメインからのみ利用可能です。</p>
 
-      <h2>Usage</h2>
-      <p>Every Peer object is assigned a random, unique ID when it's created.</p>
+      <p>PeerJSのセッション情報交換やシグナリングに利用するサーバを、自身で構築することもできます。
+          詳しくは<a href="http://github.com/peers/peerjs-server">peerjs-server</a>をご覧ください。</p>
+      <p>これで利用するための準備はすべて整いました！</p>
+
+      <h2>使い方</h2>
+      <p>Peerオブジェクトは生成時、ランダムなID（以下、PeerID）が付与されます。</p>
       <pre>peer.on('open', function(id) {
   console.log('My peer ID is: ' + id);
 });</pre>
-      <p>When we want to connect to another peer, we'll need to know their peer
-      id. You're in charge of communicating the peer IDs between users of your
-      site. Optionally, you can pass in your own IDs to the <a href="#peer"><code>Peer</code>
-        constructor</a>.</p>
+      <p>他のPeerと接続したい場合は、接続先のPeerIDが必要になります。
+      RestAPIを利用して接続先のPeerIDを入手するか、何らかの仕組みでPeerIDを交換してください。<a href="#peer"><code>Peer</code> constructor</a>のオプションに自身のPeerIDを指定すると、この処理を省略することができます。</p>
 
-      <p>Read the <a href="#peer">Peer API reference</a> for complete
-      information on its <a href="#peer-options">options</a>, methods, <a href="#peeron">events</a>, and <a
-        href="#peeron-error">error handling</a>.</p>
+      <p>その他の<a href="#peer-options">オプション</a>、メソッド、<a href="#peeron">イベント</a>、<a href="#peeron-error">エラー処理</a>などの詳細は、<a href="#peer">Peer API リファレンス</a>をお読みください。</p>
 
       <h3>Data connections</h3>
-      <p>Start a data connection by calling <code>peer.connect</code> with the peer ID of the
-      destination peer. Anytime another peer attempts to connect to your peer
-      ID, you'll receive a <code>connection</code> event. </p>
+      <p>相手のPeerIDを指定して<code>peer.connect</code>を実行するとData connectionを開始します。相手から接続要求はいつでも<code>connection</code> イベントを利用して受け取ることができます。 </p>
       <div class="two-col">
-        <div class="col col-header">Start connection</div>
-        <div class="col col-header">Receive connection</div>
+        <div class="col col-header">接続開始</div>
+        <div class="col col-header">接続イベントの受信</div>
         <div class="col"><pre>var conn = peer.connect('dest-peer-id');</pre></div>
         <div class="col"><pre>peer.on('connection', function(conn) { ... });</pre></div>
         <div class="clear"></div>
       </div>
-      <p><code>peer.connect</code> and the callback of the
-      <code>connection</code> event will both provide a
-      <code>DataConnection</code> object. This object will allow you to send and receive data:</p>
+      <p><code>peer.connect</code>と<code>connection</code>イベントのコールバックでは<code>DataConnection</code>オブジェクトを提供します。このオブジェクトを使用してデータの送受信を行うことができます。</p>
       <pre>conn.on('open', function() {
-  // Receive messages
+  // メッセージを受信
   conn.on('data', function(data) {
     console.log('Received', data);
   });
 
-  // Send messages
+  // メッセージを送信
   conn.send('Hello!');
 });</pre>
-      <p>Read the <a href="#dataconnection">DataConnection API reference</a> for complete details on its methods and events.</p>
+      <p>メソッドとイベントの詳細は、<a href="#dataconnection">DataConnection API リファレンス</a>をご覧ください。</p>
       <h3>Video/audio calls</h3>
-      <p>Call another peer by calling <code>peer.call</code> with the peer ID of the destination
-      peer. When a peer calls you, the <code>call</code> event is emitted.</p>
-      <p>Unlike data connections, when receiving a <code>call</code> event, the call must be answered or no connection is established.</p>
+      <p>相手のPeerIDを指定して<code>peer.call</code>を実行することで、その相手を呼び出すことができます。相手があなたを呼び出した場合、 <code>call</code>イベントが発生します。
+      <p><code>call</code>イベントを受信した時は、必ずそのイベントに応答する必要があります。応答しなければ接続は確立しません。</p>
       <div class="two-col">
-        <div class="col col-header">Start call</div>
-        <div class="col col-header">Answer call</div>
+        <div class="col col-header">呼び出し開始</div>
+        <div class="col col-header">呼び出しへの応答</div>
         <div class="col"><pre>// Call a peer, providing our mediaStream
 var call = peer.call('dest-peer-id',
   mediaStream);
@@ -87,32 +77,37 @@ var call = peer.call('dest-peer-id',
 });</pre></div>
         <div class="clear"></div>
       </div>
-      <p>When calling or answering a call, a MediaStream should be provided. The
-      MediaStream represents the local video (webcam) or audio stream and can be
-      obtained with some (browser-specific) version of <a
-        href="https://developer.mozilla.org/en-US/docs/Web/API/Navigator.getUserMedia"><code>navigator.getUserMedia</code></a>. When answering a
-      call, the MediaStream is optional and if none is provided then a one-way
-      call is established. Once the call is established, its <code>open</code> property is
-      set to true.</p>
-      <p><code>peer.call</code> and the callback of the <code>call</code> event
-      provide a MediaConnection object. The MediaConnection object itself emits
-      a <code>stream</code> event whose callback includes the video/audio stream of the other peer.</p>
+      <p>相手を呼び出す時、または、呼び出しに応答する時には、MediaStreamを提供する必要があります。
+      MediaStreamにはビデオストリーム（ウェブカメラの映像）やオーディオストリームなどがあり、<a href="https://developer.mozilla.org/en-US/docs/Web/API/Navigator.getUserMedia"><code>navigator.getUserMedia</code></a>によって取得することができます。取得できる内容はブラウザによってことなります。
+      尚、呼び出しに応答する時のMediaStreamは必須ではありません。もし応答時にMediaStreamをセットしなければ、一方向の通話が確立されます。
+      通話が確立されると、<code>open</code>プロパティにtrueがセットされます。
+      <p><code>peer.call</code> と <code>call</code> イベントのコールバックではMediaConnectionオブジェクトを提供します。
+      MediaConnectionオブジェクトは<code>stream</code> イベントをキャッチすることができます。<code>stream</code>イベントのコールバックには相手の映像／音声ストリームが含まれます。</p>
       <pre>call.on('stream', function(stream) {
   // `stream` is the MediaStream of the remote peer.
   // Here you'd add it to an HTML video/canvas element.
 });</pre>
-      <p>Read the <a href="#mediaconnection">MediaConnection API reference</a> for complete details on its methods and events.</p>
+      <p>詳しくは <a href="#mediaconnection">MediaConnection API reference</a> をご覧ください。</p>
 
-      <h2>Common questions</h2>
+      <h2>SkyWay RestAPIの使い方</h2>
+      <h3>/active/list/<APIKEY></h3>
+      <p>APIキー毎のアクティブなPeerIDを取得します。<p>
+      <pre>
+  Request : https://skyway.io/active/list/APIKEY
+  Response : [peerid1,peerid2,peerid3,peerid4,.....]</pre>
+      <h3>/active/count/<APIKEY></h3>
+      <p>APIキー毎のアクティブなPeerIDの数を取得します。<p>
+      <pre>
+  Request : https://skyway.io/active/count/APIKEY
+  Response : {"name":"active_session","count":0,"api_key":"APIKEY"}</pre>
 
-        <h3>What kind of data can I send?</h3>
+      <p>SkyWay WebAPIはAPIキー申請時に申請していただいたドメインからのみアクセスが可能です。</p>
 
-        <p>PeerJS has the <a
-          href="https://github.com/binaryjs/js-binarypack">BinaryPack</a>
-        serialization format built-in. This means you can send any JSON type as
-        well as binary Blobs and ArrayBuffers. Simply send arbitrary data and
-        you'll get it out the
-        other side:</p>
+      <h2>FAQ</h2>
+
+        <h3>どのような種類のデータを送ることができますか？</h3>
+
+        <p>PeerJSは <a href="https://github.com/binaryjs/js-binarypack">BinaryPack</a>シリアライゼーションフォーマットを利用しています。JSONやバイナリBlobs、ArrayBuffersなど様々なデータを簡単な手順で送受信することができます。</p>
           <pre>
 conn.send({
   strings: 'hi!',
@@ -122,55 +117,41 @@ conn.send({
   andMore: {bool: true}
 });</pre>
 
-        <h3>Are there any caveats?</h3>
+        <h3>PeerJSを利用することができないシーンはありますか？</h3>
 
-          <p>A small percentage of users are behind symmetric NATs. When two
-          symmetric NAT users try to connect to each other, NAT traversal is
-        impossible and no connection can be made. A workaround is to proxy
-      through the connection through a TURN server. The PeerServer cloud service does
-    not provide a TURN server. You'll have to find your own. You can pass a TURN
-  server into the <code>Peer</code> object options. This will allow your PeerJS app to work seamlessly for this situation</p>
-        <h3>How do I use a TURN server?</h3>
-        <p>When creating your Peer object, pass in the ICE servers as the config key of the options hash.</p>
+          <p>シンメトリックNATの内側にいるクライアント同士はNATを超えることができないため、通信することができません。
+              ただし、TURNサーバを利用して接続を中継すれば回避することができます。TURNサーバは提供していないため必要であれば別途用意してください。
+              TURNサーバの情報は、<code>Peer</code>オブジェクトのオプションで指定することができます。</p>
+        <h3>TURNサーバはどのようにして利用するのでしょうか？</h3>
+        <p>Peerオブジェクトを生成する際、オプションのiceServersにURL等の情報を設定してください。</p>
 <pre>
 var peer = new Peer({
   config: {'iceServers': [
-    { url: 'stun:stun.l.google.com:19302' },
+    { url: 'stun:stun.skyway.io:3478' },
     { url: 'turn:homeo@turn.bistri.com:80', credential: 'homeo' }
   ]} /* Sample servers, please use appropriate ones */
 });
 </pre>
-        <h3>What is the current state of browser compatibility?</h3>
+        <h3>現在のブラウザ対応状況は?</h3>
 
-          <p>We keep an frequently-updated catalogue of WebRTC compatibility
-          information and caveats <a href="/status">here</a>.</p>
+        　<p>WebRTC仕様との互換性並びにブラウザの対応状況は<a href="http://peerjs.com/status">こちら</a>をご覧ください。尚、SkyWay対応版のPeerJSについては、動作に差異がある可能性があります。</p>
 
-        <h3>What if my peer has not yet connected to the server when I attempt
-          to connect to it?</h3>
+        <h3>接続しようとしてるピアに接続できない場合はどうなりますか？</h3>
 
-          <p>When you try to connect to a peer, PeerServer will hold a
-          connection offer for up to 5 seconds before rejecting it. This is useful if you want to reconnect to a peer as it disconnects and reconnects rapidly between web pages.</p>
+          <p>ピアに接続できない場合はPeerServerにて接続要求を5秒間保持します。ピアが一時的に再接続するような場合、コネクションを切らずに保持することができます。尚、SkyWayは現時点ではこの機能に対応していません。</p>
 
-        <h3>Why am I unable to connect?</h3>
-          <p>You could be behind a symmetric NAT, in which case you'll need to set up a TURN server.</p>
-          <p>Another possible issue is your network blocking port 9000, which the PeerServer cloud runs on. In this you must use your own PeerServer running on an appropriate port instead of the cloud service.</p>
+        <h3>ピアとつながらない場合は何を確認するべきでしょうか？</h3>
+          <p>ピア同士がシンメトリックNATの内側にいる可能性があります。この場合はTURNサーバを利用してください。</p>
+          <p>ファイアウォール等でUDPのポート3478（STUNサーバへの問い合わせに必要）をブロックしているかもしれません。STUNサーバへの問い合わせが可能な状況でご利用ください。</p>
 
-        <h3>What about latency/bandwidth?</h3>
+        <h3>遅延／帯域幅は?</h3>
+          <p>ピア同士のデータのやり取りはサーバを経由しないため、それが原因となる遅延などは発生しません。ピア同士の処理性能やネットワーク環境に依存します。</p>
+          <p>ピア同士のコネクション確立に関する遅延は、セッション情報の中継（以下、シグナリング）とユーザの識別という2つに分類できます。PeerJSでは、シグナリングの時間を短縮するために、XHRストリーミングリクエストでデータを送った後、WebSocketで送ります。ユーザの識別に関しては手動でIDを指定することで、サーバ側にてIDを生成する際のRTT（Round-Trip delay Time）を短縮することができます。尚、SkyWayに関してはXHRでの接続に現時点では対応していません。</p>
+        <h3>その他</h3>
+          <p><a href="https://groups.google.com/forum/?fromgroups#!forum/peerjs">PeerJS Google Group(英語のみ)</a></p>
+      <h3>免責事項</h3>
+      <p>本ドキュメントは<a href="http://peerjs.com/docs/">http://peerjs.com/docs/</a>を元に、NTTコミュニケーションズが提供するSkyWayを利用するための情報等を追記し公開しています。ドキュメント原本に関する個別問い合わせには応じることができませんので、予めご了承ください。</p>
 
-          <p>Data sent between the two peers do not touch any other servers, so the connection speed is limited only by the upload and download rates of the two peers. This also means you don't have the additional latency of an intermediary server.</p>
-          <p>The latency to establish a connection can be split into two
-          components:
-          the brokering of data and the identification of clients. PeerJS has been
-          designed to minimize the time you spend in these two areas. For
-          brokering, data is sent through an XHR streaming request before a WebSocket
-          connection is established, then through WebSockets. For client
-          identification, we provide you the ability to pass in your own peer
-          IDs, thus eliminating the RTT for retrieving an ID from the server.</p>
-
-        <h3>More questions?</h3>
-          <p><a
-            href="https://groups.google.com/forum/?fromgroups#!forum/peerjs">Discuss
-            PeerJS on our Google Group.</a><br><br></p>
   </section>
 
   <header class="left">

@@ -1,4 +1,4 @@
-/*! peerjs build:0.3.13, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+/*! peerjs build:0.3.14, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> 2015 NTT Communications Corporation */(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 module.exports.RTCSessionDescription = window.RTCSessionDescription ||
 	window.mozRTCSessionDescription;
 module.exports.RTCPeerConnection = window.RTCPeerConnection ||
@@ -730,10 +730,17 @@ function Peer(id, options) {
     config: util.defaultConfig
   }, options);
   this.options = options;
+
+  // SkyWay Original Code
+  if(options.turn === undefined){
+      options.turn = true;
+  }
+
   // Detect relative URL host.
   if (options.host === '/') {
     options.host = window.location.hostname;
   }
+
   // Set path correctly.
   if (options.path[0] !== '/') {
     options.path = '/' + options.path;
@@ -742,9 +749,17 @@ function Peer(id, options) {
     options.path += '/';
   }
 
-  // Set whether we use SSL to same as current host
-  if (options.secure === undefined && options.host !== util.CLOUD_HOST) {
+  // Set whether we use SSL to same as current host unless hosted on skyway
+  if (options.host === util.CLOUD_HOST) {
+    options.secure = true;
+  } else if (options.secure === undefined) {
     options.secure = util.isSecure();
+  }
+  // Set whether the server supports WS keepalives
+  if (options.host === util.CLOUD_HOST) {
+      util.supportsKeepAlive = true;
+  } else if (options.keepalive) {
+      util.supportsKeepAlive = options.keepalive;
   }
   // Set a custom log function if present
   if (options.logFunction) {
@@ -789,9 +804,10 @@ function Peer(id, options) {
   //
 
   // Start the server connection
+  // SkyWay Original Code
   this._initializeServerConnection();
   if (id) {
-    this._initialize(id);
+    this._retrieveId(id);
   } else {
     this._retrieveId();
   }
@@ -827,13 +843,19 @@ Peer.prototype._initializeServerConnection = function() {
 };
 
 /** Get a unique ID from the server via XHR. */
-Peer.prototype._retrieveId = function(cb) {
+// SkyWay Original Code
+Peer.prototype._retrieveId = function(id) {
   var self = this;
   var http = new XMLHttpRequest();
   var protocol = this.options.secure ? 'https://' : 'http://';
   var url = protocol + this.options.host + ':' + this.options.port +
     this.options.path + this.options.key + '/id';
-  var queryString = '?ts=' + new Date().getTime() + '' + Math.random();
+  if(id !== undefined){
+    var queryString = '?ts=' + new Date().getTime() + '' + Math.random() + '&id=' + id;
+  }else{
+    var queryString = '?ts=' + new Date().getTime() + '' + Math.random();
+  }
+
   url += queryString;
 
   // If there's no ID we need to wait for one before trying to init socket.
@@ -856,14 +878,57 @@ Peer.prototype._retrieveId = function(cb) {
       http.onerror();
       return;
     }
-    self._initialize(http.responseText);
+    self._initialize(http.responseText,id);
   };
   http.send(null);
 };
 
 /** Initialize a connection with the server. */
-Peer.prototype._initialize = function(id) {
-  this.id = id;
+Peer.prototype._initialize = function(serverid,myid) {
+  // SkyWay Original Code
+  try {
+    _response = JSON.parse(serverid);
+    if(typeof _response === 'object'){
+        this.id = _response.id;
+        this.credential = _response.credential;
+    }else{
+        if(myid){
+            this.id = myid;
+        }else {
+            this.id = serverid;
+        }
+    }
+  } catch (e){
+    if(myid){
+      this.id = myid;
+    }else {
+      this.id = serverid;
+    }
+  }
+
+  // SkyWay Original Code
+  if(this.options.turn === true){
+    if(this.credential){
+      this.options.config.iceServers.push({
+        url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT,
+        username: this.options.key + '$' + this.id,
+        credential: this.credential
+      });
+      this.options.config.iceServers.push({
+        url: 'turns:' + util.TURN_HOST + ':' + util.TURNS_PORT,
+        username: this.options.key + '$' + this.id,
+        credential: this.credential
+      });
+      this.options.config.iceTransports = 'all';
+    }
+  }
+
+  if(this.credential && this.options.turn == true){
+    util.log('SkyWay TURN Server is available');
+  }else{
+    util.log('SkyWay TURN Server is unavailable');
+  }
+
   this.socket.start(this.id, this.options.token);
 };
 
@@ -888,8 +953,9 @@ Peer.prototype._handleMessage = function(message) {
     case 'INVALID-KEY': // The given API key cannot be found.
       this._abort('invalid-key', 'API KEY "' + this.options.key + '" is invalid');
       break;
-
-    //
+    case 'PING':
+      this.socket.sendPong();
+      break;
     case 'LEAVE': // Another peer has closed its connection to this peer.
       util.log('Received leave message from', peer);
       this._cleanupPeer(peer);
@@ -1157,10 +1223,9 @@ Peer.prototype.listAllPeers = function(cb) {
   var self = this;
   var http = new XMLHttpRequest();
   var protocol = this.options.secure ? 'https://' : 'http://';
-  var url = protocol + this.options.host + ':' + this.options.port +
-    this.options.path + this.options.key + '/peers';
-  var queryString = '?ts=' + new Date().getTime() + '' + Math.random();
-  url += queryString;
+
+  var url = protocol + this.options.host + ':' + this.options.port
+    + this.options.path + 'active/list/' + this.options.key;
 
   // If there's no ID we need to wait for one before trying to init socket.
   http.open('get', url, true);
@@ -1268,9 +1333,22 @@ Socket.prototype._startWebSocket = function(id) {
         self._http = null;
       }, 5000);
     }
+    if (util.supportsKeepAlive) {
+      self._setWSTimeout();
+    }
     self._sendQueuedMessages();
     util.log('Socket open');
   };
+
+  this._socket.onerror = function(err) {
+    util.error('WS error code '+err.code);
+  }
+
+  // Fall back to XHR if WS closes
+  this._socket.onclose = function(msg) {
+      util.error("WS closed with code "+msg.code);
+      self._startXhrStream();
+  }
 }
 
 /** Start XHR streaming. */
@@ -1359,6 +1437,16 @@ Socket.prototype._setHTTPTimeout = function() {
   }, 25000);
 }
 
+Socket.prototype._setWSTimeout = function(){
+    var self = this;
+    this._wsTimeout = setTimeout(function(){
+        if(self._wsOpen()){
+            self._socket.close();
+            util.error('WS timed out');
+        }
+    }, 45000)
+}
+
 /** Is the websocket currently open? */
 Socket.prototype._wsOpen = function() {
   return this._socket && this._socket.readyState == 1;
@@ -1392,12 +1480,22 @@ Socket.prototype.send = function(data) {
   var message = JSON.stringify(data);
   if (this._wsOpen()) {
     this._socket.send(message);
-  } else {
+  } else if(data.type !== 'PONG') {
     var http = new XMLHttpRequest();
     var url = this._httpUrl + '/' + data.type.toLowerCase();
     http.open('post', url, true);
     http.setRequestHeader('Content-Type', 'application/json');
     http.send(message);
+  }
+}
+
+Socket.prototype.sendPong = function() {
+  if (this._wsOpen()) {
+    this.send({type:'PONG'});
+    if (this._wsTimeout) {
+      clearTimeout(this._wsTimeout);
+    }
+    this._setWSTimeout();
   }
 }
 
@@ -1411,7 +1509,7 @@ Socket.prototype.close = function() {
 module.exports = Socket;
 
 },{"./util":8,"eventemitter3":9}],8:[function(require,module,exports){
-var defaultConfig = {'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }]};
+var defaultConfig = {'iceServers': [{ 'url': 'stun:stun.skyway.io:3478' }]};
 var dataCount = 1;
 
 var BinaryPack = require('js-binarypack');
@@ -1420,8 +1518,11 @@ var RTCPeerConnection = require('./adapter').RTCPeerConnection;
 var util = {
   noop: function() {},
 
-  CLOUD_HOST: '0.peerjs.com',
-  CLOUD_PORT: 9000,
+  CLOUD_HOST: 'skyway.io',
+  CLOUD_PORT: 443,
+  TURN_HOST: 'turn.skyway.io',
+  TURN_PORT: 3478,
+  TURNS_PORT: 443,
 
   // Browsers that need chunking:
   chunkedBrowsers: {'Chrome': 1},
@@ -1721,7 +1822,8 @@ var util = {
 
   isSecure: function() {
     return location.protocol === 'https:';
-  }
+  },
+  supportsKeepAlive: false
 };
 
 module.exports = util;
