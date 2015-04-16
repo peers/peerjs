@@ -888,8 +888,16 @@ Peer.prototype._initialize = function(serverid,myid) {
   // SkyWay Original Code
   try {
     _response = JSON.parse(serverid);
-    this.id = _response.id;
-    this.credential = _response.credential;
+    if(typeof _response === 'object'){
+        this.id = _response.id;
+        this.credential = _response.credential;
+    }else{
+        if(myid){
+            this.id = myid;
+        }else {
+            this.id = serverid;
+        }
+    }
   } catch (e){
     if(myid){
       this.id = myid;
