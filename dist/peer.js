@@ -1309,12 +1309,6 @@ Socket.prototype._startWebSocket = function(id) {
     self.emit('message', data);
   };
 
-  this._socket.onclose = function(event) {
-    util.log('Socket closed.');
-    self.disconnected = true;
-    self.emit('disconnected');
-  };
-
   // Take care of the queue of connections if necessary and make sure Peer knows
   // socket is open.
   this._socket.onopen = function() {
@@ -1339,7 +1333,9 @@ Socket.prototype._startWebSocket = function(id) {
   // Fall back to XHR if WS closes
   this._socket.onclose = function(msg) {
       util.error("WS closed with code "+msg.code);
-      self._startXhrStream();
+      if(!self.disconnected) {
+        self._startXhrStream();
+      }
   }
 }
 
@@ -1492,9 +1488,13 @@ Socket.prototype.sendPong = function() {
 }
 
 Socket.prototype.close = function() {
-  if (!this.disconnected && this._wsOpen()) {
-    this._socket.close();
+  if (!this.disconnected) {
     this.disconnected = true;
+    if(this._wsOpen()) {
+      this._socket.close();
+    }
+    clearTimeout(this._timeout);
+    this._http.abort();
   }
 }
 
