@@ -902,16 +902,17 @@ Peer.prototype._initialize = function(serverid) {
   if(this.options.turn === true){
     if(this.credential){
       this.options.config.iceServers.push({
-        url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT,
+        urls: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=tcp',
+        url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=tcp',
         username: this.options.key + '$' + this.id,
         credential: this.credential
       });
       this.options.config.iceServers.push({
-        url: 'turns:' + util.TURN_HOST + ':' + util.TURNS_PORT,
+        urls: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=udp',
+        url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=udp',
         username: this.options.key + '$' + this.id,
         credential: this.credential
       });
-      this.options.config.iceTransports = 'all';
     }
   }
 
@@ -1503,7 +1504,7 @@ Socket.prototype.close = function() {
 module.exports = Socket;
 
 },{"./util":8,"eventemitter3":9}],8:[function(require,module,exports){
-var defaultConfig = {'iceServers': [{ 'url': 'stun:stun.skyway.io:3478' }]};
+var defaultConfig = {'iceServers': [{ 'urls': 'stun:stun.skyway.io:3478' , 'url': 'stun:stun.skyway.io:3478'}]};
 var dataCount = 1;
 
 var BinaryPack = require('js-binarypack');
@@ -1515,8 +1516,7 @@ var util = {
   CLOUD_HOST: 'skyway.io',
   CLOUD_PORT: 443,
   TURN_HOST: 'turn.skyway.io',
-  TURN_PORT: 3478,
-  TURNS_PORT: 443,
+  TURN_PORT: 443,
 
   // Browsers that need chunking:
   chunkedBrowsers: {'Chrome': 1},
