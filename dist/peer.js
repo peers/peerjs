@@ -49,6 +49,7 @@ function DataConnection(peer, provider, options) {
     this._peerBrowser = this.options._payload.browser;
   }
 
+  util.log("startConnection from DataConnection");
   Negotiator.startConnection(
     this,
     this.options._payload || {
@@ -309,6 +310,7 @@ function MediaConnection(peer, provider, options) {
   this.localStream = this.options._stream;
 
   this.id = this.options.connectionId || MediaConnection._idPrefix + util.randomToken();
+  util.log("startConnection from MediaConnection");
   if (this.localStream) {
     Negotiator.startConnection(
       this,
@@ -355,6 +357,7 @@ MediaConnection.prototype.answer = function(stream) {
 
   this.options._payload._stream = stream;
 
+  util.log("startConnection from answer step");
   this.localStream = stream;
   Negotiator.startConnection(
     this,
@@ -435,7 +438,9 @@ Negotiator.startConnection = function(connection, options) {
     }
 
     if (!util.supports.onnegotiationneeded) {
-      Negotiator._makeOffer(connection);
+      setTimeout(function(){
+        Negotiator._makeOffer(connection);
+      }, 0);
     }
   } else {
     Negotiator.handleSDP('OFFER', connection, options.sdp);
@@ -599,6 +604,19 @@ Negotiator.cleanup = function(connection) {
 
 Negotiator._makeOffer = function(connection) {
   var pc = connection.pc;
+
+  if(!!pc.remoteDescription && !!pc.remoteDescription.type) return;
+
+  var SDP_CONSTRAINTS = {
+    'mandatory': {
+      'OfferToReceiveAudio': true,
+      'OfferToReceiveVideo': true
+    },
+    'optional': [{
+      'VoiceActivityDetection': false
+    }]
+  };
+
   pc.createOffer(function(offer) {
     util.log('Created offer.');
 
@@ -629,7 +647,7 @@ Negotiator._makeOffer = function(connection) {
   }, function(err) {
     connection.provider.emitError('webrtc', err);
     util.log('Failed to createOffer, ', err);
-  }, connection.options.constraints);
+  }, SDP_CONSTRAINTS);
 }
 
 Negotiator._makeAnswer = function(connection) {
@@ -686,6 +704,12 @@ Negotiator.handleSDP = function(type, connection, sdp) {
 Negotiator.handleCandidate = function(connection, ice) {
   var candidate = ice.candidate;
   var sdpMLineIndex = ice.sdpMLineIndex;
+
+  if( candidate.match(/::|(?:[0-9a-fA-F]{1,4}:){1,7}:|:(?::[0-9a-fA-F]{1,4}){1,7}|(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}/) ){
+    util.log('candidate includes ipv6. unset this candidate');
+    return;
+  }
+
   connection.pc.addIceCandidate(new RTCIceCandidate({
     sdpMLineIndex: sdpMLineIndex,
     candidate: candidate
@@ -840,6 +864,12 @@ Peer.prototype._initializeServerConnection = function() {
       self._abort('socket-closed', 'Underlying socket is already closed.');
     }
   });
+   // Close sockets before unloading window
+   // Necessary as sometimes the brower doesn't close ws/xhr property
+   // especially for FF
+   window.onbeforeunload = function(ev) {
+     self.destroy();
+   }
 };
 
 /** Get a unique ID from the server via XHR. */
@@ -973,6 +1003,7 @@ Peer.prototype._handleMessage = function(message) {
             _payload: payload,
             metadata: payload.metadata
           });
+          util.log("MediaConnection created in OFFER");
           this._addConnection(peer, connection);
           this.emit('call', connection);
         } else if (payload.type === 'data') {
@@ -1075,6 +1106,7 @@ Peer.prototype.call = function(peer, stream, options) {
   options = options || {};
   options._stream = stream;
   var call = new MediaConnection(peer, this, options);
+  util.log("MediaConnection created in call method");
   this._addConnection(peer, call);
   return call;
 };
