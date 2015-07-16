@@ -1,0 +1,192 @@
+<!doctype html>
+<html class="showing-dial-page">
+<head>
+    <meta charset="utf-8" />
+    <title>Caption Phone</title>
+    <meta name="viewport" content="initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css" />
+    <meta name="description" content="caption phoneとは、WebRTCによる音声チャットをweb speech APIにより音声を自動字幕化したコミュニケーションサービスです">
+</head>
+<body>
+<div id="pages">
+    <section id="chatPage" class="page">
+        <section id="chatContainer">
+            <div id="articles"></div>
+        </section>
+        <section class="button-wrapper">
+            <button id="disconnectButton"><span class="glyphicon glyphicon-remove-circle"></span>&nbsp;Disconnect</button>
+        </section>
+        <footer class="tab-bar">
+            <button class="back-button" disabled="disabled"><span class="glyphicon glyphicon-list-alt"></span><br/><span class="icon-label">History</span></button>
+            <button class="dial-button"><span class="glyphicon glyphicon-th"></span><br/><span class="icon-label">Dial</span></button>
+        </footer>
+        <audio id="remote"></audio>
+        <audio id="ring" loop>
+            <source src="./sounds/ring.mp3">
+            <source src="./sounds/ring.wav">
+        </audio>
+        <audio id="rbt" loop>
+            <source src="./sounds/rbt.mp3">
+            <source src="./sounds/rbt.wav">
+        </audio>
+    </section>
+    <section id="dialPage" class="page">
+        <section id="anotherIdWrapper">
+            <input type="text" id="anotherId" placeholder="Input peer ID" maxlength="14"/>
+         </section>
+        <section id="dialPad">
+            <div id="dialPadInner">
+                <table>
+                    <tbody>
+                    <tr>
+                        <td>
+                            <button class="number-button">1</button>
+                        </td>
+                        <td>
+                            <button class="number-button">2</button>
+                        </td>
+                        <td>
+                            <button class="number-button">3</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <button class="number-button">4</button>
+                        </td>
+                        <td>
+                            <button class="number-button">5</button>
+                        </td>
+                        <td>
+                            <button class="number-button">6</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <button class="number-button">7</button>
+                        </td>
+                        <td>
+                            <button class="number-button">8</button>
+                        </td>
+                        <td>
+                            <button class="number-button">9</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <button class="number-button" id="clearButton"><span class="glyphicon glyphicon-remove"></span></button>
+                        </td>
+                        <td>
+                            <button class="number-button">0</button>
+                        </td>
+                        <td>
+                            <button class="number-button" id="backSpaceButton"><span class="glyphicon glyphicon-arrow-left"></span></button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        <section id="yourIdWrapper">
+            Your ID is <input type="text" id="yourId" readonly="readonly" />.
+        </section>
+        <section class="button-wrapper">
+            <button id="callButton"><span class="glyphicon glyphicon-earphone"></span>&nbsp;Call</button>
+        </section>
+        <footer class="tab-bar">
+            <button class="back-button"><span class="glyphicon glyphicon-list-alt"></span><br/><span class="button-label">History</span></button>
+            <button class="dial-button" disabled="disabled"><span class="glyphicon glyphicon-th"></span><br/><span class="button-label">Dial</span></button>
+        </footer>
+    </section>
+</div>
+<section id="incomingModal" class="modal">
+    <div class="dialog-wrapper">
+        <section class="dialog">
+            <h1>Incoming Call</h1>
+            <p id='incomingID'></p>
+            <button id="rejectButton"><span class="glyphicon glyphicon-ban-circle"></span>&nbsp;拒否</button>
+            <button id="acceptButton"><span class="glyphicon glyphicon-earphone"></span>&nbsp;応答</button>
+        </section>
+    </div>
+</section>
+<section id="errorModal" class="modal">
+    <div class="dialog-wrapper">
+        <section class="dialog">
+            <h1 id="errorTitle">Error</h1>
+            <p id="errorMessage"></p>
+            <button id="closeButton">Close</button>
+        </section>
+    </div>
+</section>
+<div class="github-fork-ribbon-wrapper right">
+    <div class="github-fork-ribbon">
+        <a href="https://github.com/nttcom/peerjs/tree/master/skyway_examples/caption-phone">Fork me on GitHub</a>
+    </div>
+</div>
+<style>
+    /* Left will inherit from right (so we don't need to duplicate code */
+    .github-fork-ribbon {
+        position: absolute;
+        padding: 2px 0;
+        background-color: #a00;
+        background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(0, 0, 0, 0.00)), to(rgba(0, 0, 0, 0.15)));
+        background-image: -webkit-linear-gradient(top, rgba(0, 0, 0, 0.00), rgba(0, 0, 0, 0.15));
+        background-image: linear-gradient(top, rgba(0, 0, 0, 0.00), rgba(0, 0, 0, 0.15));
+        -webkit-box-shadow: 0px 2px 3px 0px rgba(0, 0, 0, 0.5);
+        box-shadow: 0px 2px 3px 0px rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        pointer-events: auto;
+    }
+
+    .github-fork-ribbon a,
+    .github-fork-ribbon a:hover {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        color: white;
+        text-decoration: none;
+        text-shadow: 0 -1px rgba(0,0,0,0.5);
+        text-align: center;
+        width: 200px;
+        line-height: 20px;
+        display: inline-block;
+        padding: 2px 0;
+        border-width: 1px 0;
+        border-style: dashed;
+        border-color: rgba(255,255,255,0.7);
+    }
+
+    .github-fork-ribbon-wrapper {
+        width: 150px;
+        height: 150px;
+        position: absolute;
+        overflow: hidden;
+        top: 0;
+        z-index: 9999;
+        pointer-events: none;
+    }
+
+    .github-fork-ribbon-wrapper.right {
+        right: 0;
+    }
+
+    .github-fork-ribbon-wrapper.right .github-fork-ribbon {
+        top: 42px;
+        right: -43px;
+        -webkit-transform: rotate(45deg);
+        -moz-transform: rotate(45deg);
+        -o-transform: rotate(45deg);
+        transform: rotate(45deg);
+    }
+</style>
+<script src="//code.jquery.com/jquery-2.0.3.min.js"></script>
+<script src="//rawgithub.com/EightMedia/hammer.js/v1.0.5/dist/jquery.hammer.min.js"></script>
+
+<script src="https://skyway.io/dist/0.3/peer.js"></script>
+<script src="./js/ui.js"></script>
+
+<script src="./js/webspeechapi.js"></script>
+<script src="./js/storagewrapper.js"></script>
+<script src="./js/cphone.js"></script>
+</body>
+</html>
