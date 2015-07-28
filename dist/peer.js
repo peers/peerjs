@@ -1192,9 +1192,9 @@ Peer.prototype.emitError = function(type, err) {
  */
 Peer.prototype.destroy = function() {
   if (!this.destroyed) {
+    this.destroyed = true;
     this._cleanup();
     this.disconnect();
-    this.destroyed = true;
   }
 };
 
