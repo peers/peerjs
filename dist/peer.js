@@ -217,7 +217,15 @@ DataConnection.prototype._bufferedSend = function(msg) {
 // Returns true if the send succeeds.
 DataConnection.prototype._trySend = function(msg) {
   try {
-    this._dc.send(msg);
+    var data;
+
+    if ((window.webrtcDetectedBrowser === 'IE' || window.webrtcDetectedBrowser === 'safari') && msg instanceof ArrayBuffer) {
+      data = String.fromCharCode.apply(null, new Uint8Array(msg));
+    } else {     
+      data = msg;
+    }
+
+    this._dc.send(data);
   } catch (e) {
     this._buffering = true;
 
@@ -232,7 +240,6 @@ DataConnection.prototype._trySend = function(msg) {
   return true;
 }
 
-// Try to send the first message in the buffer.
 DataConnection.prototype._tryBuffer = function() {
   if (this._buffer.length === 0) {
     return;
@@ -438,6 +445,8 @@ Negotiator.startConnection = function(connection, options) {
     }
 
     if (!util.supports.onnegotiationneeded) {
+      //Negotiator._makeOffer(connection);
+      // firefox
       setTimeout(function(){
         Negotiator._makeOffer(connection);
       }, 0);
@@ -522,12 +531,20 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
   // ICE CANDIDATES.
   util.log('Listening for ICE candidates.');
   pc.onicecandidate = function(evt) {
-    if (evt.candidate) {
-      util.log('Received ICE candidates for:', connection.peer);
+    var candidate = evt.candidate || evt;
+
+    if (!candidate || candidate.candidate === null) {
+      util.log('ICE candidates gathering complete for:', connection.peer);
+    } else {
+      util.log('Generated ICE candidate for:', connection.peer, candidate);
       provider.socket.send({
         type: 'CANDIDATE',
         payload: {
-          candidate: evt.candidate,
+          candidate: {
+            sdpMid: candidate.sdpMid,
+            sdpMLineIndex: candidate.sdpMLineIndex,
+            candidate: candidate.candidate
+          },
           type: connection.type,
           connectionId: connection.id
         },
@@ -553,15 +570,17 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
   pc.onicechange = pc.oniceconnectionstatechange;
 
   // ONNEGOTIATIONNEEDED (Chrome)
-  util.log('Listening for `negotiationneeded`');
-  pc.onnegotiationneeded = function() {
-    util.log('`negotiationneeded` triggered');
-    if (pc.signalingState == 'stable') {
-      Negotiator._makeOffer(connection);
-    } else {
-      util.log('onnegotiationneeded triggered when not stable. Is another connection being established?');
-    }
-  };
+  if (util.supports.onnegotiationneeded) {
+    util.log('Listening for `negotiationneeded`');
+    pc.onnegotiationneeded = function() {
+      util.log('`negotiationneeded` triggered');
+      if (pc.signalingState == 'stable') {
+        Negotiator._makeOffer(connection);
+      } else {
+        util.log('onnegotiationneeded triggered when not stable. Is another connection being established?');
+      }
+    };
+  }
 
   // DATACONNECTION.
   util.log('Listening for data channel');
@@ -569,7 +588,7 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
   // in the options hash.
   pc.ondatachannel = function(evt) {
     util.log('Received data channel');
-    var dc = evt.channel;
+    var dc = evt.channel || evt;
     var connection = provider.getConnection(peerId, connectionId);
     connection.initialize(dc);
   };
@@ -578,7 +597,7 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
   util.log('Listening for remote stream');
   pc.onaddstream = function(evt) {
     util.log('Received remote stream');
-    var stream = evt.stream;
+    var stream = evt.stream || evt;
     var connection = provider.getConnection(peerId, connectionId);
     // 10/10/2014: looks like in Chrome 38, onaddstream is triggered after
     // setting the remote description. Our connection object in these cases
@@ -619,7 +638,10 @@ Negotiator._makeOffer = function(connection) {
       connection.provider.socket.send({
         type: 'OFFER',
         payload: {
-          sdp: offer,
+          sdp: {
+            type: offer.type,
+            sdp: offer.sdp
+          },
           type: connection.type,
           label: connection.label,
           connectionId: connection.id,
@@ -655,7 +677,10 @@ Negotiator._makeAnswer = function(connection) {
       connection.provider.socket.send({
         type: 'ANSWER',
         payload: {
-          sdp: answer,
+          sdp: {
+            type: answer.type,
+            sdp: answer.sdp
+          },
           type: connection.type,
           connectionId: connection.id,
           browser: util.browser
@@ -673,8 +698,11 @@ Negotiator._makeAnswer = function(connection) {
 }
 
 /** Handle an SDP. */
-Negotiator.handleSDP = function(type, connection, sdp) {
-  sdp = new RTCSessionDescription(sdp);
+Negotiator.handleSDP = function(type, connection, receivedSdp) {
+  var sdp = new RTCSessionDescription({
+    type: receivedSdp.type,
+    sdp: receivedSdp.sdp
+  });
   var pc = connection.pc;
 
   util.log('Setting remote description', sdp);
@@ -692,9 +720,15 @@ Negotiator.handleSDP = function(type, connection, sdp) {
 
 /** Handle a candidate. */
 Negotiator.handleCandidate = function(connection, ice) {
+/*change log*/
+  // if ice is empty, ignore
+  if (!ice) {
+    return;
+  }
+
   var candidate = ice.candidate;
   var sdpMLineIndex = ice.sdpMLineIndex;
-
+  //var sdpMid = ice.sdpMid;
   connection.pc.addIceCandidate(new RTCIceCandidate({
     sdpMLineIndex: sdpMLineIndex,
     candidate: candidate
@@ -1612,6 +1646,20 @@ var util = {
   supports: (function() {
     if (typeof RTCPeerConnection === 'undefined') {
       return {};
+    }
+
+/*change log*/
+    if (typeof window.AdapterJS !== 'undefined' && (window.webrtcDetectedBrowser === 'IE' ||
+      window.webrtcDetectedBrowser === 'safari')) {
+      return {
+        audioVideo: true,
+        data: true,
+        binaryBlob: false,
+        binary: false, // deprecated; sctp implies binary support.
+        reliable: true, // deprecated; sctp implies reliable data.
+        sctp: true,
+        onnegotiationneeded: false
+      };
     }
 
     var data = true;
