@@ -34,12 +34,23 @@ module.exports = function(grunt) {
         src: 'dist/peer.min.js',
         dest: 'dist/peer.min.js',
       }
+    },
+    watch: {
+      scripts: {
+        files: ['lib/*.js'],
+        tasks: ['browserify', 'uglify', 'concat'],
+        options: {
+          spawn: true,
+        },
+      },
     }
   });
 
   grunt.loadNpmTasks('grunt-browserify');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-concat');
+  grunt.loadNpmTasks('grunt-contrib-watch');
 
-  grunt.registerTask('default', ['browserify', 'uglify', 'concat']);
+  // grunt.registerTask('default', ['browserify', 'uglify', 'concat']);
+  grunt.registerTask('default', ['watch']);
 }
