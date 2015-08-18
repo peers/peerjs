@@ -51,6 +51,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-watch');
 
-  // grunt.registerTask('default', ['browserify', 'uglify', 'concat']);
-  grunt.registerTask('default', ['watch']);
+  grunt.registerTask('auto-run', ['watch']);
+  grunt.registerTask('default', ['browserify', 'uglify', 'concat']);
 }
