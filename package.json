@@ -7,7 +7,7 @@
     "type": "git",
     "url": "git://github.com/peers/peerjs.git"
   },
-  "author": "Michelle Bu, Eric Zhang",
+  "author": "Michelle Bu, Eric Zhang, NTT Communications",
   "license": "MIT",
   "scripts": {
     "prepublish": "./node_modules/.bin/grunt"
@@ -18,11 +18,12 @@
     "grunt-browserify": "^3.0.1",
     "grunt-cli": "^0.1.13",
     "grunt-contrib-concat": "^0.5.0",
-    "grunt-contrib-uglify": "^0.5.1",
+    "grunt-contrib-uglify": "^0.9.1",
+    "grunt-contrib-watch": "^0.6.1",
     "mocha": "*"
   },
   "dependencies": {
-    "eventemitter3": "^0.1.5",
+    "eventemitter3": "0.1.5",
     "js-binarypack": "0.0.9",
     "reliable": "git+https://github.com/michelle/reliable.git"
   }

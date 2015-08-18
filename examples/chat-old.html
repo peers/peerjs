@@ -5,13 +5,13 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
 <meta http-equiv="Content-Language" content="en-us"> 
 
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script> 
-<script type="text/javascript" src="http://cdn.peerjs.com/0/peer.js"></script>
+<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+<script type="text/javascript" src="https://skyway.io/dist/0.3/peer.js"></script>
 <script>
   
   var conn;
   // Connect to PeerJS, have server assign an ID instead of providing one
-  var peer = new Peer({key: 'lwjd5qra8257b9', debug: true});
+  var peer = new Peer({key: '6165842a-5c0d-11e3-b514-75d3313b9d05', debug: true});
   peer.on('open', function(id){
     $('#pid').text(id);
   });  

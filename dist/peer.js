@@ -1,4 +1,4 @@
-/*! peerjs build:0.3.13, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+/*! peerjs build:0.3.14, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> 2015 NTT Communications Corporation */(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 module.exports.RTCSessionDescription = window.RTCSessionDescription ||
 	window.mozRTCSessionDescription;
 module.exports.RTCPeerConnection = window.RTCPeerConnection ||
@@ -49,6 +49,7 @@ function DataConnection(peer, provider, options) {
     this._peerBrowser = this.options._payload.browser;
   }
 
+  util.log("startConnection from DataConnection");
   Negotiator.startConnection(
     this,
     this.options._payload || {
@@ -216,7 +217,15 @@ DataConnection.prototype._bufferedSend = function(msg) {
 // Returns true if the send succeeds.
 DataConnection.prototype._trySend = function(msg) {
   try {
-    this._dc.send(msg);
+    var data;
+
+    if ((window.webrtcDetectedBrowser === 'IE' || window.webrtcDetectedBrowser === 'safari') && msg instanceof ArrayBuffer) {
+      data = String.fromCharCode.apply(null, new Uint8Array(msg));
+    } else {     
+      data = msg;
+    }
+
+    this._dc.send(data);
   } catch (e) {
     this._buffering = true;
 
@@ -231,7 +240,6 @@ DataConnection.prototype._trySend = function(msg) {
   return true;
 }
 
-// Try to send the first message in the buffer.
 DataConnection.prototype._tryBuffer = function() {
   if (this._buffer.length === 0) {
     return;
@@ -309,6 +317,7 @@ function MediaConnection(peer, provider, options) {
   this.localStream = this.options._stream;
 
   this.id = this.options.connectionId || MediaConnection._idPrefix + util.randomToken();
+  util.log("startConnection from MediaConnection");
   if (this.localStream) {
     Negotiator.startConnection(
       this,
@@ -355,6 +364,7 @@ MediaConnection.prototype.answer = function(stream) {
 
   this.options._payload._stream = stream;
 
+  util.log("startConnection from answer step");
   this.localStream = stream;
   Negotiator.startConnection(
     this,
@@ -408,13 +418,14 @@ Negotiator._idPrefix = 'pc_';
 Negotiator.startConnection = function(connection, options) {
   var pc = Negotiator._getPeerConnection(connection, options);
 
+  // Set the connection's PC.
+  connection.pc = connection.peerConnection = pc;
+
   if (connection.type === 'media' && options._stream) {
     // Add the stream.
     pc.addStream(options._stream);
   }
 
-  // Set the connection's PC.
-  connection.pc = connection.peerConnection = pc;
   // What do we need to do now?
   if (options.originator) {
     if (connection.type === 'data') {
@@ -435,7 +446,11 @@ Negotiator.startConnection = function(connection, options) {
     }
 
     if (!util.supports.onnegotiationneeded) {
-      Negotiator._makeOffer(connection);
+      //Negotiator._makeOffer(connection);
+      // firefox
+      setTimeout(function(){
+        Negotiator._makeOffer(connection);
+      }, 0);
     }
   } else {
     Negotiator.handleSDP('OFFER', connection, options.sdp);
@@ -517,12 +532,20 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
   // ICE CANDIDATES.
   util.log('Listening for ICE candidates.');
   pc.onicecandidate = function(evt) {
-    if (evt.candidate) {
-      util.log('Received ICE candidates for:', connection.peer);
+    var candidate = evt.candidate || evt;
+
+    if (!candidate || candidate.candidate === null) {
+      util.log('ICE candidates gathering complete for:', connection.peer);
+    } else {
+      util.log('Generated ICE candidate for:', connection.peer, candidate);
       provider.socket.send({
         type: 'CANDIDATE',
         payload: {
-          candidate: evt.candidate,
+          candidate: {
+            sdpMid: candidate.sdpMid,
+            sdpMLineIndex: candidate.sdpMLineIndex,
+            candidate: candidate.candidate
+          },
           type: connection.type,
           connectionId: connection.id
         },
@@ -548,15 +571,21 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
   pc.onicechange = pc.oniceconnectionstatechange;
 
   // ONNEGOTIATIONNEEDED (Chrome)
-  util.log('Listening for `negotiationneeded`');
-  pc.onnegotiationneeded = function() {
-    util.log('`negotiationneeded` triggered');
-    if (pc.signalingState == 'stable') {
-      Negotiator._makeOffer(connection);
-    } else {
-      util.log('onnegotiationneeded triggered when not stable. Is another connection being established?');
-    }
-  };
+  if (util.supports.onnegotiationneeded) {
+    util.log('Listening for `negotiationneeded`');
+    pc.onnegotiationneeded = function() {
+      util.log('`negotiationneeded` triggered');
+      if (pc.signalingState == 'stable') {
+        setTimeout(function(ev){
+          // prevent error for FF40. When callee, before handling remoteDescription, calling _makeOffer makes error
+          // cause localDescription set. Delaying calls make it fix above mismatch.
+          Negotiator._makeOffer(connection);
+        }, 1);
+      } else {
+        util.log('onnegotiationneeded triggered when not stable. Is another connection being established?');
+      }
+    };
+  }
 
   // DATACONNECTION.
   util.log('Listening for data channel');
@@ -564,7 +593,7 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
   // in the options hash.
   pc.ondatachannel = function(evt) {
     util.log('Received data channel');
-    var dc = evt.channel;
+    var dc = evt.channel || evt;
     var connection = provider.getConnection(peerId, connectionId);
     connection.initialize(dc);
   };
@@ -573,7 +602,7 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
   util.log('Listening for remote stream');
   pc.onaddstream = function(evt) {
     util.log('Received remote stream');
-    var stream = evt.stream;
+    var stream = evt.stream || evt;
     var connection = provider.getConnection(peerId, connectionId);
     // 10/10/2014: looks like in Chrome 38, onaddstream is triggered after
     // setting the remote description. Our connection object in these cases
@@ -599,6 +628,9 @@ Negotiator.cleanup = function(connection) {
 
 Negotiator._makeOffer = function(connection) {
   var pc = connection.pc;
+
+  if(!!pc.remoteDescription && !!pc.remoteDescription.type) return;
+
   pc.createOffer(function(offer) {
     util.log('Created offer.');
 
@@ -611,7 +643,10 @@ Negotiator._makeOffer = function(connection) {
       connection.provider.socket.send({
         type: 'OFFER',
         payload: {
-          sdp: offer,
+          sdp: {
+            type: offer.type,
+            sdp: offer.sdp
+          },
           type: connection.type,
           label: connection.label,
           connectionId: connection.id,
@@ -647,7 +682,10 @@ Negotiator._makeAnswer = function(connection) {
       connection.provider.socket.send({
         type: 'ANSWER',
         payload: {
-          sdp: answer,
+          sdp: {
+            type: answer.type,
+            sdp: answer.sdp
+          },
           type: connection.type,
           connectionId: connection.id,
           browser: util.browser
@@ -665,8 +703,11 @@ Negotiator._makeAnswer = function(connection) {
 }
 
 /** Handle an SDP. */
-Negotiator.handleSDP = function(type, connection, sdp) {
-  sdp = new RTCSessionDescription(sdp);
+Negotiator.handleSDP = function(type, connection, receivedSdp) {
+  var sdp = new RTCSessionDescription({
+    type: receivedSdp.type,
+    sdp: receivedSdp.sdp
+  });
   var pc = connection.pc;
 
   util.log('Setting remote description', sdp);
@@ -684,8 +725,15 @@ Negotiator.handleSDP = function(type, connection, sdp) {
 
 /** Handle a candidate. */
 Negotiator.handleCandidate = function(connection, ice) {
+/*change log*/
+  // if ice is empty, ignore
+  if (!ice) {
+    return;
+  }
+
   var candidate = ice.candidate;
   var sdpMLineIndex = ice.sdpMLineIndex;
+  //var sdpMid = ice.sdpMid;
   connection.pc.addIceCandidate(new RTCIceCandidate({
     sdpMLineIndex: sdpMLineIndex,
     candidate: candidate
@@ -730,10 +778,17 @@ function Peer(id, options) {
     config: util.defaultConfig
   }, options);
   this.options = options;
+
+  // SkyWay Original Code
+  if(options.turn === undefined){
+      options.turn = true;
+  }
+
   // Detect relative URL host.
   if (options.host === '/') {
     options.host = window.location.hostname;
   }
+
   // Set path correctly.
   if (options.path[0] !== '/') {
     options.path = '/' + options.path;
@@ -742,9 +797,17 @@ function Peer(id, options) {
     options.path += '/';
   }
 
-  // Set whether we use SSL to same as current host
-  if (options.secure === undefined && options.host !== util.CLOUD_HOST) {
+  // Set whether we use SSL to same as current host unless hosted on skyway
+  if (options.host === util.CLOUD_HOST) {
+    options.secure = true;
+  } else if (options.secure === undefined) {
     options.secure = util.isSecure();
+  }
+  // Set whether the server supports WS keepalives
+  if (options.host === util.CLOUD_HOST) {
+      util.supportsKeepAlive = true;
+  } else if (options.keepalive) {
+      util.supportsKeepAlive = options.keepalive;
   }
   // Set a custom log function if present
   if (options.logFunction) {
@@ -789,9 +852,10 @@ function Peer(id, options) {
   //
 
   // Start the server connection
+  // SkyWay Original Code
   this._initializeServerConnection();
   if (id) {
-    this._initialize(id);
+    this._retrieveId(id);
   } else {
     this._retrieveId();
   }
@@ -824,16 +888,28 @@ Peer.prototype._initializeServerConnection = function() {
       self._abort('socket-closed', 'Underlying socket is already closed.');
     }
   });
+   // Close sockets before unloading window
+   // Necessary as sometimes the brower doesn't close ws/xhr property
+   // especially for FF
+   window.onbeforeunload = function(ev) {
+     self.destroy();
+   }
 };
 
 /** Get a unique ID from the server via XHR. */
-Peer.prototype._retrieveId = function(cb) {
+// SkyWay Original Code
+Peer.prototype._retrieveId = function(id) {
   var self = this;
   var http = new XMLHttpRequest();
   var protocol = this.options.secure ? 'https://' : 'http://';
   var url = protocol + this.options.host + ':' + this.options.port +
     this.options.path + this.options.key + '/id';
-  var queryString = '?ts=' + new Date().getTime() + '' + Math.random();
+  if(id !== undefined){
+    var queryString = '?ts=' + new Date().getTime() + '' + Math.random() + '&id=' + id;
+  }else{
+    var queryString = '?ts=' + new Date().getTime() + '' + Math.random();
+  }
+
   url += queryString;
 
   // If there's no ID we need to wait for one before trying to init socket.
@@ -862,8 +938,45 @@ Peer.prototype._retrieveId = function(cb) {
 };
 
 /** Initialize a connection with the server. */
-Peer.prototype._initialize = function(id) {
-  this.id = id;
+Peer.prototype._initialize = function(serverid) {
+  // SkyWay Original Code
+  try {
+    _response = JSON.parse(serverid);
+    if(typeof _response === 'object'){
+        this.id = _response.id;
+        this.credential = _response.credential;
+    }else{
+        this.id = serverid;
+    }
+  } catch (e){
+    this.id = serverid;
+  }
+
+  // SkyWay Original Code
+  if(this.options.turn === true){
+    if(this.credential){
+      this.options.config.iceServers.push({
+        urls: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=tcp',
+        url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=tcp',
+        username: this.options.key + '$' + this.id,
+        credential: this.credential
+      });
+      this.options.config.iceServers.push({
+        urls: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=udp',
+        url: 'turn:' + util.TURN_HOST + ':' + util.TURN_PORT + '?transport=udp',
+        username: this.options.key + '$' + this.id,
+        credential: this.credential
+      });
+      this.options.config.iceTransports = 'all';
+    }
+  }
+
+  if(this.credential && this.options.turn == true){
+    util.log('SkyWay TURN Server is available');
+  }else{
+    util.log('SkyWay TURN Server is unavailable');
+  }
+
   this.socket.start(this.id, this.options.token);
 };
 
@@ -888,8 +1001,9 @@ Peer.prototype._handleMessage = function(message) {
     case 'INVALID-KEY': // The given API key cannot be found.
       this._abort('invalid-key', 'API KEY "' + this.options.key + '" is invalid');
       break;
-
-    //
+    case 'PING':
+      this.socket.sendPong();
+      break;
     case 'LEAVE': // Another peer has closed its connection to this peer.
       util.log('Received leave message from', peer);
       this._cleanupPeer(peer);
@@ -913,6 +1027,7 @@ Peer.prototype._handleMessage = function(message) {
             _payload: payload,
             metadata: payload.metadata
           });
+          util.log("MediaConnection created in OFFER");
           this._addConnection(peer, connection);
           this.emit('call', connection);
         } else if (payload.type === 'data') {
@@ -1015,6 +1130,7 @@ Peer.prototype.call = function(peer, stream, options) {
   options = options || {};
   options._stream = stream;
   var call = new MediaConnection(peer, this, options);
+  util.log("MediaConnection created in call method");
   this._addConnection(peer, call);
   return call;
 };
@@ -1081,9 +1197,9 @@ Peer.prototype.emitError = function(type, err) {
  */
 Peer.prototype.destroy = function() {
   if (!this.destroyed) {
+    this.destroyed = true;
     this._cleanup();
     this.disconnect();
-    this.destroyed = true;
   }
 };
 
@@ -1157,10 +1273,9 @@ Peer.prototype.listAllPeers = function(cb) {
   var self = this;
   var http = new XMLHttpRequest();
   var protocol = this.options.secure ? 'https://' : 'http://';
-  var url = protocol + this.options.host + ':' + this.options.port +
-    this.options.path + this.options.key + '/peers';
-  var queryString = '?ts=' + new Date().getTime() + '' + Math.random();
-  url += queryString;
+
+  var url = protocol + this.options.host + ':' + this.options.port
+    + this.options.path + 'active/list/' + this.options.key;
 
   // If there's no ID we need to wait for one before trying to init socket.
   http.open('get', url, true);
@@ -1252,12 +1367,6 @@ Socket.prototype._startWebSocket = function(id) {
     self.emit('message', data);
   };
 
-  this._socket.onclose = function(event) {
-    util.log('Socket closed.');
-    self.disconnected = true;
-    self.emit('disconnected');
-  };
-
   // Take care of the queue of connections if necessary and make sure Peer knows
   // socket is open.
   this._socket.onopen = function() {
@@ -1268,9 +1377,24 @@ Socket.prototype._startWebSocket = function(id) {
         self._http = null;
       }, 5000);
     }
+    if (util.supportsKeepAlive) {
+      self._setWSTimeout();
+    }
     self._sendQueuedMessages();
     util.log('Socket open');
   };
+
+  this._socket.onerror = function(err) {
+    util.error('WS error code '+err.code);
+  }
+
+  // Fall back to XHR if WS closes
+  this._socket.onclose = function(msg) {
+      util.error("WS closed with code "+msg.code);
+      if(!self.disconnected) {
+        self._startXhrStream();
+      }
+  }
 }
 
 /** Start XHR streaming. */
@@ -1359,6 +1483,16 @@ Socket.prototype._setHTTPTimeout = function() {
   }, 25000);
 }
 
+Socket.prototype._setWSTimeout = function(){
+    var self = this;
+    this._wsTimeout = setTimeout(function(){
+        if(self._wsOpen()){
+            self._socket.close();
+            util.error('WS timed out');
+        }
+    }, 45000)
+}
+
 /** Is the websocket currently open? */
 Socket.prototype._wsOpen = function() {
   return this._socket && this._socket.readyState == 1;
@@ -1392,7 +1526,7 @@ Socket.prototype.send = function(data) {
   var message = JSON.stringify(data);
   if (this._wsOpen()) {
     this._socket.send(message);
-  } else {
+  } else if(data.type !== 'PONG') {
     var http = new XMLHttpRequest();
     var url = this._httpUrl + '/' + data.type.toLowerCase();
     http.open('post', url, true);
@@ -1401,17 +1535,33 @@ Socket.prototype.send = function(data) {
   }
 }
 
+Socket.prototype.sendPong = function() {
+  if (this._wsOpen()) {
+    this.send({type:'PONG'});
+    if (this._wsTimeout) {
+      clearTimeout(this._wsTimeout);
+    }
+    this._setWSTimeout();
+  }
+}
+
 Socket.prototype.close = function() {
-  if (!this.disconnected && this._wsOpen()) {
-    this._socket.close();
+  if (!this.disconnected) {
     this.disconnected = true;
+    if(this._wsOpen()) {
+      this._socket.close();
+    }
+    if(this._http) {
+        this._http.abort();
+    }
+    clearTimeout(this._timeout);
   }
 }
 
 module.exports = Socket;
 
 },{"./util":8,"eventemitter3":9}],8:[function(require,module,exports){
-var defaultConfig = {'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }]};
+var defaultConfig = {'iceServers': [{ 'urls': 'stun:stun.skyway.io:3478' , 'url': 'stun:stun.skyway.io:3478'}]};
 var dataCount = 1;
 
 var BinaryPack = require('js-binarypack');
@@ -1420,8 +1570,10 @@ var RTCPeerConnection = require('./adapter').RTCPeerConnection;
 var util = {
   noop: function() {},
 
-  CLOUD_HOST: '0.peerjs.com',
-  CLOUD_PORT: 9000,
+  CLOUD_HOST: 'skyway.io',
+  CLOUD_PORT: 443,
+  TURN_HOST: 'turn.skyway.io',
+  TURN_PORT: 443,
 
   // Browsers that need chunking:
   chunkedBrowsers: {'Chrome': 1},
@@ -1499,6 +1651,20 @@ var util = {
   supports: (function() {
     if (typeof RTCPeerConnection === 'undefined') {
       return {};
+    }
+
+/*change log*/
+    if (typeof window.AdapterJS !== 'undefined' && (window.webrtcDetectedBrowser === 'IE' ||
+      window.webrtcDetectedBrowser === 'safari')) {
+      return {
+        audioVideo: true,
+        data: true,
+        binaryBlob: false,
+        binary: false, // deprecated; sctp implies binary support.
+        reliable: true, // deprecated; sctp implies reliable data.
+        sctp: true,
+        onnegotiationneeded: false
+      };
     }
 
     var data = true;
@@ -1721,7 +1887,8 @@ var util = {
 
   isSecure: function() {
     return location.protocol === 'https:';
-  }
+  },
+  supportsKeepAlive: false
 };
 
 module.exports = util;

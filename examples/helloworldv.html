@@ -15,18 +15,18 @@
   };
 </script>
 
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
-<script type="text/javascript" src="../dist/peer.js"></script>
+<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+<script type="text/javascript" src="https://skyway.io/dist/0.3/peer.js"></script>
 <script>
   // This is a very simple code example. See chat.html for a more involved
   // example.
 
-  $(document).ready(function() {
+  $(window).on('load',function() {
     navigator.webkitGetUserMedia({audio: true, video: true}, function(s){
       window.ls = s;
       // Create a new Peer with our demo API key, with debug set to true so we can
       // see what's going on.
-      peer1 = new Peer(window.location.hash.substr(1), { key: 'lwjd5qra8257b9', debug: 3});
+      peer1 = new Peer(window.location.hash.substr(1), { key: '6165842a-5c0d-11e3-b514-75d3313b9d05', debug: 3});
       peer1.on('error', console.log);
       peer1.on('close', function(){
         console.log('peer closed')

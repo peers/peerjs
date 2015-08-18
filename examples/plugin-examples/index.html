@@ -2,12 +2,14 @@
 <head>
   <title>PeerJS - Video chat example</title>
   <link rel="stylesheet" href="style.css">
+  <script type="text/javascript" src="//cdn.temasys.com.sg/adapterjs/0.11.x/adapter.min.js"></script>
   <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
   <script type="text/javascript" src="https://skyway.io/dist/0.3/peer.js"></script>
   <script>
 
     // Compatibility shim
-    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    AdapterJS.webRTCReady(function(isUsingPlugin) {
+      navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 
     // PeerJS object
     var peer = new Peer({ key: '6165842a-5c0d-11e3-b514-75d3313b9d05', debug: 3});
@@ -56,7 +58,7 @@
       // Get audio/video stream
       navigator.getUserMedia({audio: true, video: true}, function(stream){
         // Set your video displays
-        $('#my-video').prop('src', URL.createObjectURL(stream));
+        attachMediaStream( $('#my-video')[0], stream );
 
         window.localStream = stream;
         step2();
@@ -76,7 +78,7 @@
 
       // Wait for stream on the call, then set peer video display
       call.on('stream', function(stream){
-        $('#their-video').prop('src', URL.createObjectURL(stream));
+        attachMediaStream( $('#their-video')[0], stream );
       });
 
       // UI stuff
@@ -87,6 +89,7 @@
       $('#step3').show();
     }
 
+    });
   </script>
 
 
