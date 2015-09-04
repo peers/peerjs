@@ -1,5 +1,8 @@
 # PeerJS Changelog
 
+## Version 0.3.15
+* Patch for #299, which started as of firefox 40.
+
 ## Version 0.3.14
 * Patch for #246, which started as of Chrome 38.
 
