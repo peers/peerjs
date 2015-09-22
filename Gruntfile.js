@@ -11,7 +11,7 @@ module.exports = function(grunt) {
 
     uglify: {
       prod: {
-        options: { mangle: true, compress: true },
+        options: { mangle: true },
         src: 'dist/peer.js',
         dest: 'dist/peer.min.js'
       }
