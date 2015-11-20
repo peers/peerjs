@@ -1,0 +1,187 @@
+<head>
+  <title>PeerJS Documentation</title>
+  <meta name="viewport" content="width=device-width, maximum-scale=1">
+  <link href='http://fonts.googleapis.com/css?family=Lato:300,400,700,900' rel='stylesheet' type='text/css'>
+  <link href="./style.css" rel="stylesheet" type="text/css">
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+  <script type="text/javascript" src="./index.js"></script>
+</head>
+
+<body>
+  <section class="start">
+    <h1><a href="/">PeerJS</a> <span class="title">docs</span></h1>
+    <p><br>PeerJS simplifies peer-to-peer data, video, and audio calls.</p>
+      <p>This guide will show you the basic concepts of the PeerJS API. If
+      you learn better from seeing a working app, <a href="/examples">see the examples</a> page.</P>
+      <h2>Setup</h2>
+      <h3>1. Include the Javascript client</h3>
+      <p>Add the PeerJS client library to your webpage.</p>
+      <pre>&lt;script src="http://cdn.peerjs.com/0.3/peer.min.js"&gt;&lt;/script&gt;</pre>
+      <p>If you prefer, you can host it yourself: <a download
+        href="http://cdn.peerjs.com/0.3/peer.js">peer.js</a>, <a download
+      href="http://cdn.peerjs.com/0.3/peer.min.js">peer.min.js</a>, or <a
+      href="https://github.com/peers/peerjs">fork us on Github</a>.</p>
+      <h3>2. Create the Peer object</h3>
+      <p>The Peer object is where we create and receive connections.</p>
+      <pre>var peer = new Peer({key: 'lwjd5qra8257b9'});</pre>
+      <p>The 'key' we're passing in to the Peer constructor is a PeerServer
+      cloud API key. You can use ours for now, but you should <a
+      href="http://peerjs.com/peerserver">sign up for your own free key</a>.
+    PeerJS uses PeerServer for session metadata and candidate signaling. You can
+    also <a href="http://github.com/peers/peerjs-server">run your own PeerServer</a> if you don't like the cloud.</p>
+      <p>We're now ready to start making connections!</p>
+
+      <h2>Usage</h2>
+      <p>Every Peer object is assigned a random, unique ID when it's created.</p>
+      <pre>peer.on('open', function(id) {
+  console.log('My peer ID is: ' + id);
+});</pre>
+      <p>When we want to connect to another peer, we'll need to know their peer
+      id. You're in charge of communicating the peer IDs between users of your
+      site. Optionally, you can pass in your own IDs to the <a href="#peer"><code>Peer</code>
+        constructor</a>.</p>
+
+      <p>Read the <a href="#peer">Peer API reference</a> for complete
+      information on its <a href="#peer-options">options</a>, methods, <a href="#peeron">events</a>, and <a
+        href="#peeron-error">error handling</a>.</p>
+
+      <h3>Data connections</h3>
+      <p>Start a data connection by calling <code>peer.connect</code> with the peer ID of the
+      destination peer. Anytime another peer attempts to connect to your peer
+      ID, you'll receive a <code>connection</code> event. </p>
+      <div class="two-col">
+        <div class="col col-header">Start connection</div>
+        <div class="col col-header">Receive connection</div>
+        <div class="col"><pre>var conn = peer.connect('dest-peer-id');</pre></div>
+        <div class="col"><pre>peer.on('connection', function(conn) { ... });</pre></div>
+        <div class="clear"></div>
+      </div>
+      <p><code>peer.connect</code> and the callback of the
+      <code>connection</code> event will both provide a
+      <code>DataConnection</code> object. This object will allow you to send and receive data:</p>
+      <pre>conn.on('open', function() {
+  // Receive messages
+  conn.on('data', function(data) {
+    console.log('Received', data);
+  });
+
+  // Send messages
+  conn.send('Hello!');
+});</pre>
+      <p>Read the <a href="#dataconnection">DataConnection API reference</a> for complete details on its methods and events.</p>
+      <h3>Video/audio calls</h3>
+      <p>Call another peer by calling <code>peer.call</code> with the peer ID of the destination
+      peer. When a peer calls you, the <code>call</code> event is emitted.</p>
+      <p>Unlike data connections, when receiving a <code>call</code> event, the call must be answered or no connection is established.</p>
+      <div class="two-col">
+        <div class="col col-header">Start call</div>
+        <div class="col col-header">Answer call</div>
+        <div class="col"><pre>// Call a peer, providing our mediaStream
+var call = peer.call('dest-peer-id',
+  mediaStream);
+
+</pre></div>
+        <div class="col"><pre>peer.on('call', function(call) {
+  // Answer the call, providing our mediaStream
+  call.answer(mediaStream);
+});</pre></div>
+        <div class="clear"></div>
+      </div>
+      <p>When calling or answering a call, a MediaStream should be provided. The
+      MediaStream represents the local video (webcam) or audio stream and can be
+      obtained with some (browser-specific) version of <a
+        href="https://developer.mozilla.org/en-US/docs/Web/API/Navigator.getUserMedia"><code>navigator.getUserMedia</code></a>. When answering a
+      call, the MediaStream is optional and if none is provided then a one-way
+      call is established. Once the call is established, its <code>open</code> property is
+      set to true.</p>
+      <p><code>peer.call</code> and the callback of the <code>call</code> event
+      provide a MediaConnection object. The MediaConnection object itself emits
+      a <code>stream</code> event whose callback includes the video/audio stream of the other peer.</p>
+      <pre>call.on('stream', function(stream) {
+  // `stream` is the MediaStream of the remote peer.
+  // Here you'd add it to an HTML video/canvas element.
+});</pre>
+      <p>Read the <a href="#mediaconnection">MediaConnection API reference</a> for complete details on its methods and events.</p>
+
+      <h2>Common questions</h2>
+
+        <h3>What kind of data can I send?</h3>
+
+        <p>PeerJS has the <a
+          href="https://github.com/binaryjs/js-binarypack">BinaryPack</a>
+        serialization format built-in. This means you can send any JSON type as
+        well as binary Blobs and ArrayBuffers. Simply send arbitrary data and
+        you'll get it out the
+        other side:</p>
+          <pre>
+conn.send({
+  strings: 'hi!',
+  numbers: 150,
+  arrays: [1,2,3],
+  evenBinary: new Blob([1,2,3]),
+  andMore: {bool: true}
+});</pre>
+
+        <h3>Are there any caveats?</h3>
+
+          <p>A small percentage of users are behind symmetric NATs. When two
+          symmetric NAT users try to connect to each other, NAT traversal is
+        impossible and no connection can be made. A workaround is to proxy
+      through the connection through a TURN server. The PeerServer cloud service does
+    not provide a TURN server. You'll have to find your own. You can pass a TURN
+  server into the <code>Peer</code> object options. This will allow your PeerJS app to work seamlessly for this situation</p>
+        <h3>How do I use a TURN server?</h3>
+        <p>When creating your Peer object, pass in the ICE servers as the config key of the options hash.</p>
+<pre>
+var peer = new Peer({
+  config: {'iceServers': [
+    { url: 'stun:stun.l.google.com:19302' },
+    { url: 'turn:homeo@turn.bistri.com:80', credential: 'homeo' }
+  ]} /* Sample servers, please use appropriate ones */
+});
+</pre>
+        <h3>What is the current state of browser compatibility?</h3>
+
+          <p>We keep an frequently-updated catalogue of WebRTC compatibility
+          information and caveats <a href="/status">here</a>.</p>
+
+        <h3>What if my peer has not yet connected to the server when I attempt
+          to connect to it?</h3>
+
+          <p>When you try to connect to a peer, PeerServer will hold a
+          connection offer for up to 5 seconds before rejecting it. This is useful if you want to reconnect to a peer as it disconnects and reconnects rapidly between web pages.</p>
+
+        <h3>Why am I unable to connect?</h3>
+          <p>You could be behind a symmetric NAT, in which case you'll need to set up a TURN server.</p>
+          <p>Another possible issue is your network blocking port 9000, which the PeerServer cloud runs on. In this you must use your own PeerServer running on an appropriate port instead of the cloud service.</p>
+
+        <h3>What about latency/bandwidth?</h3>
+
+          <p>Data sent between the two peers do not touch any other servers, so the connection speed is limited only by the upload and download rates of the two peers. This also means you don't have the additional latency of an intermediary server.</p>
+          <p>The latency to establish a connection can be split into two
+          components:
+          the brokering of data and the identification of clients. PeerJS has been
+          designed to minimize the time you spend in these two areas. For
+          brokering, data is sent through an XHR streaming request before a WebSocket
+          connection is established, then through WebSockets. For client
+          identification, we provide you the ability to pass in your own peer
+          IDs, thus eliminating the RTT for retrieving an ID from the server.</p>
+
+        <h3>More questions?</h3>
+          <p><a
+            href="https://groups.google.com/forum/?fromgroups#!forum/peerjs">Discuss
+            PeerJS on our Google Group.</a><br><br></p>
+  </section>
+
+  <header class="left">
+    <h2>API Reference<a class="hide icon">&laquo;</a><a class="show icon">&raquo;</a></h2>
+  </header>
+  <header class="right">
+    <h2>Getting Started</h2>
+  </header>
+
+  <section class="api">
+    {{{html}}}
+  </section>
+
+</body>

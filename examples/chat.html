@@ -7,12 +7,26 @@
 
 <link href="fancy.css" rel="stylesheet" type="text/css">
 
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script> 
-<script type="text/javascript" src="http://cdn.peerjs.com/0/peer.js"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+<script type="text/javascript" src="../dist/peer.js"></script>
 <script>
 // Connect to PeerJS, have server assign an ID instead of providing one
-var connections = {};
-var peer = new Peer({key: 'lwjd5qra8257b9', debug: true});
+// Showing off some of the configs available with PeerJS :).
+var peer = new Peer({
+  // Set API key for cloud server (you don't need this if you're running your
+  // own.
+  key: 'x7fwx2kavpy6tj4i',
+
+  // Set highest debug level (log everything!).
+  debug: 3,
+
+  // Set a logging function:
+  logFunction: function() {
+    var copy = Array.prototype.slice.call(arguments).join(' ');
+    $('.log').append(copy + '<br>');
+  }
+});
+var connectedPeers = {};
 
 // Show this peer's ID.
 peer.on('open', function(id){
@@ -22,16 +36,20 @@ peer.on('open', function(id){
 // Await connections from others
 peer.on('connection', connect);
 
+peer.on('error', function(err) {
+  console.log(err);
+})
+
 // Handle a connection object.
 function connect(c) {
   // Handle a chat connection.
   if (c.label === 'chat') {
     var chatbox = $('<div></div>').addClass('connection').addClass('active').attr('id', c.peer);
-    var header = $('<h1></h1>').html(c.peer);
-    var messages = $('<div></div>').addClass('messages');
+    var header = $('<h1></h1>').html('Chat with <strong>' + c.peer + '</strong>');
+    var messages = $('<div><em>Peer connected.</em></div>').addClass('messages');
     chatbox.append(header);
     chatbox.append(messages);
-
+ 
     // Select connection handler.
     chatbox.on('click', function() {
       if ($(this).attr('class').indexOf('active') === -1) {
@@ -44,7 +62,6 @@ function connect(c) {
     $('#connections').append(chatbox);
 
     c.on('data', function(data) {
-      //chatbox.addClass('active');
       messages.append('<div><span class="peer">' + c.peer + '</span>: ' + data +
         '</div>');
         });
@@ -54,19 +71,21 @@ function connect(c) {
           if ($('.connection').length === 0) {
             $('.filler').show();
           }
+          delete connectedPeers[c.peer];
         });
   } else if (c.label === 'file') {
     c.on('data', function(data) {
-      $('#' + c.peer).find('.messages').append('<div><span class="file">' +
-          c.peer + ' has sent you a file.</span></div>');
+      // If we're getting a file, create a URL for it.
+      if (data.constructor === ArrayBuffer) {
+        var dataView = new Uint8Array(data);
+        var dataBlob = new Blob([dataView]);
+        var url = window.URL.createObjectURL(dataBlob);
+        $('#' + c.peer).find('.messages').append('<div><span class="file">' +
+            c.peer + ' has sent you a <a target="_blank" href="' + url + '">file</a>.</span></div>');
+      }
     });
   }
-
-  // Save connection object appropriately.
-  if (!connections[c.peer]) {
-    connections[c.peer] = {};
-  }
-  connections[c.peer][c.label] = c;
+  connectedPeers[c.peer] = 1;
 }
 
 $(document).ready(function() {
@@ -91,17 +110,25 @@ $(document).ready(function() {
 
   // Connect to a peer
   $('#connect').click(function() {
-    // Create 2 connections, one labelled chat and another labelled file.
-    var c = peer.connect($('#rid').val(), { label: 'chat' });
-    c.on('open', function() {
-      connect(c);
-    });
-    c.on('error', function(err) { alert(err); });
-    var f = peer.connect($('#rid').val(), { reliable: true, label: 'file' });
-    f.on('open', function() {
-      connect(f);
-    });
-    f.on('error', function(err) { alert(err); });
+    var requestedPeer = $('#rid').val();
+    if (!connectedPeers[requestedPeer]) {
+      // Create 2 connections, one labelled chat and another labelled file.
+      var c = peer.connect(requestedPeer, {
+        label: 'chat',
+        serialization: 'none',
+        metadata: {message: 'hi i want to chat with you!'}
+      });
+      c.on('open', function() {
+        connect(c);
+      });
+      c.on('error', function(err) { alert(err); });
+      var f = peer.connect(requestedPeer, { label: 'file', reliable: true });
+      f.on('open', function() {
+        connect(f);
+      });
+      f.on('error', function(err) { alert(err); });
+    }
+    connectedPeers[requestedPeer] = 1;
   });
 
   // Close a connection.
@@ -130,14 +157,19 @@ $(document).ready(function() {
   // Goes through each active peer and calls FN on its connections.
   function eachActiveConnection(fn) {
     var actives = $('.active');
+    var checkedIds = {};
     actives.each(function() {
       var peerId = $(this).attr('id');
-      var conns = connections[peerId];
-      var labels = Object.keys(conns);
-      for (var i = 0, ii = labels.length; i < ii; i += 1) {
-        var conn = conns[labels[i]];
-        fn(conn, $(this));
+
+      if (!checkedIds[peerId]) {
+        var conns = peer.connections[peerId];
+        for (var i = 0, ii = conns.length; i < ii; i += 1) {
+          var conn = conns[i];
+          fn(conn, $(this));
+        }
       }
+
+      checkedIds[peerId] = 1;
     });
   }
 
@@ -145,10 +177,21 @@ $(document).ready(function() {
   $('#browsers').text(navigator.userAgent);
 });
 
+// Make sure things clean up properly.
+
+window.onunload = window.onbeforeunload = function(e) {
+  if (!!peer && !peer.destroyed) {
+    peer.destroy();
+  }
+};
+
 </script>
 </head> 
  
 <body> 
+  <a href="https://github.com/peers/peerjs"><img style="position: absolute; top: 0; right: 0; border: 0;"
+    src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png"
+    alt="Fork me on GitHub"></a>
 
   <div id="actions">
     Your PeerJS ID is <span id="pid"></span><br>
@@ -169,12 +212,15 @@ $(document).ready(function() {
   </div>
   
   
-  <div class="warning browser"><div class="important">Your browser version: <span id="browsers"></span><br>
-  Currently <strong>Google Chrome 26.0.1403.0 or above</strong> is required (Dev
-  or Canary channels)</strong></div>For more up to date compatibility
+  <div class="warning browser">
+    <div class="important">Your browser version: <span id="browsers"></span><br>
+  Currently <strong>Firefox 22+ and Google Chrome 26.0.1403.0 or above</strong> is required.</strong></div>For more up to date compatibility
 information see <a href="http://peerjs.com/status">PeerJS WebRTC
   Status</a><br>Note that this demo may also fail if you are behind
 stringent firewalls or both you and the remote peer and behind symmetric
-NATs.</div>
+NATs.
+
+<div class="log" style="color:#FF7500;text-shadow:none;padding:15px;background:#eee"><strong>Connection status</strong>:<br></div>
+</div>
 </body> 
 </html> 

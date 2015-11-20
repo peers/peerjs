@@ -6,27 +6,14 @@
 </head>
 <body>
   <div id="mocha"></div>
-  <script>
-    var exports = this;
-  </script>
-  <script src="../deps/js-binarypack/lib/bufferbuilder.js"></script>
-  <script src="../deps/js-binarypack/lib/binarypack.js"></script>
-  <script src="../deps/EventEmitter/EventEmitter.js"></script>
-  <script src="../lib/util.js"></script>
-  <script src="../lib/adapter.js"></script>
-  <script src="../lib/connection.js"></script>
-  <script src="../lib/peer.js"></script>
-  <script src="../lib/socket.js"></script>
+  <script src="../dist/peer.js"></script>
 
-  <script src="../node_modules/expect.js/expect.js"></script>
+  <script src="../node_modules/expect.js/index.js"></script>
   <script src="../node_modules/mocha/mocha.js"></script>
   <script>mocha.setup('bdd')</script>
 
-  <script src="adapter.js"></script>
   <script src="util.js"></script>
-  <script src="connection.js"></script>
-  <script src="peer.js"></script>
-  <script src="socket.js"></script>
+  <script src="adapter.js"></script>
 
   <script>
     mocha.run();

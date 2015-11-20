@@ -1,0 +1,393 @@
+html{color:#000;background:#FFF;}body,div,dl,dt,dd,ul,ol,li,pre,code,form,fieldset,legend,input,button,textarea,p,blockquote,th,td{margin:0;padding:0;}table{border-collapse:collapse;border-spacing:0;}fieldset,img{border:0;}address,caption,cite,code,dfn,em,th,var,optgroup{font-style:inherit;font-weight:inherit;}del,ins{text-decoration:none;}li{list-style:none;}caption,th{text-align:left;}q:before,q:after{content:'';}abbr,acronym{border:0;font-variant:normal;}sup{vertical-align:baseline;}sub{vertical-align:baseline;}legend{color:#000;}input,button,textarea,select,optgroup,option{font-family:inherit;font-size:inherit;font-style:inherit;font-weight:inherit;}input,button,textarea,select{font-size:100%;}
+a {outline: none;} /* Gets rid of Firefox's dotted borders */
+a img {border: none;} /* Gets rid of IE's blue borders */
+
+
+body, html {
+  font-size: 14px;
+  line-height: 24px;
+  font-family: "Lato", Helvetica, sans-serif;
+  color: #454545;
+}
+
+header.right, header.left {
+  cursor: pointer;
+  z-index: 100;
+  position: fixed;
+  top: 0;
+  height: 35px;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+}
+
+header.left {
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  border-right: 4px solid rgba(0,0,0,0.1);
+  background-color: #50484e;
+  text-align: right;
+  left: 0;
+  width: 47%;
+}
+header.right {
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  border-left: 4px solid rgba(0,0,0,0.1);
+  background-color: #eee;
+  text-align: left;
+  right: 0;
+  width: 53%;
+}
+
+.left h2, .right h2 {
+  color: #E2A62E;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 14px;
+  margin: 0;
+  padding: 6px 10px;
+  text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
+}
+
+.right h2 {
+  color: #5a5157;
+  text-shadow: 0 -1px 0 #fff;
+}
+
+.left .icon {
+  color: #E2A62E;
+  cursor: pointer;
+  font-family: monospace;
+  font-size: 20px;
+  display: inline-block;
+  margin-left: 5px;
+}
+
+.icon.show {
+  display: none;
+}
+
+
+.api, .start {
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  transition: left 300ms;
+}
+
+.api.fullscreen {
+  width: 100%;
+}
+
+.start.full {
+  left: 30px;
+  width: auto;
+}
+
+/** hiding */
+.api.hidden {
+  left: -370px;
+  width: 400px;
+  overflow: hidden;
+}
+
+.api.hidden > div {
+  opacity: 0.6;
+}
+
+.start {
+  background-color: #fcfcfc;
+  width: 53%;
+  right: 0px;
+  top: 35px;
+  text-shadow: 0px -1px 0 #fff;
+  border-top: 1px solid #fff;
+  z-index: 99;
+  color: #645b61;
+}
+
+.start h1 {
+  margin: 0;
+  background-color: #fff;
+  font-size: 40px;
+  line-height: 40px;
+  padding: 30px 20px;
+  border-bottom: 1px solid #eee;
+  color: #5a5157;
+  border-left: 4px solid #ddd;
+}
+
+/** Code stylings */
+section.start pre {
+  font-family: Consolas, Inconsolata, 'Bitstream Vera Sans Mono', Menlo, Monaco, 'Andale Mono', 'Courier New', monospace;
+  font-size: 12px;
+  background-color: #474045;
+  border-left: 4px solid #40393e;
+  padding: 15px 30px 15px 40px;
+  color: #e7e0e5;
+  text-shadow: 0 -1px 0 rgba(0,0,0,0.1);
+  max-width: 100%;
+  overflow: auto;
+}
+/** /code */
+
+h1 a {
+  color: #5a5157;
+  text-decoration: none;
+  transition: color 300ms;
+}
+
+h1 a:hover {
+  color: #745e6d;
+}
+
+h1 .title {
+  color: #fff;
+  display: inline-block;
+  font-size: 15px;
+  text-transform: uppercase;
+  font-variant: small-caps;
+  background-color: #E2A62E;
+  padding: 2px 4px;
+  line-height: 15px;
+  border-radius: 2px;
+  border: 2px solid rgba(0,0,0,0.2);
+  text-shadow: 0 -1px 0 rgba(0,0,0,0.2);
+}
+
+.start > p, .start > div {
+  padding: 5px 30px 5px 40px;
+  border-left: 4px solid #ddd;
+}
+
+.start p.red {
+  color: #8F4537;
+}
+
+.start h2, .start h3, .start h4 {
+  color: #5a5157;
+  padding: 12px 25px 5px 25px;
+  margin: 0;
+  font-size: 20px;
+  border-left: 4px solid #ccc;
+}
+
+.start h3 {
+  font-size: 15px;
+  padding: 12px 25px 5px 25px;
+  border-bottom: 1px solid #eee;
+}
+
+a {
+  font-weight: 600;
+  color: #1295D8;
+  text-decoration: none;
+  transition: color 200ms;
+}
+a:hover {
+  color: #33a2dc;
+}
+
+
+.api {
+  color: #f5eff3;
+  font-weight: 300;
+  top: 35px;
+  left: 0px;
+  width: 47%;
+  border-right: 4px solid #474046;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  background-color: #5a5157;
+  text-shadow: 0px -1px 0 #474045;
+  z-index: 100;
+}
+
+.child {
+  padding: 10px 0 10px 15px;
+}
+
+.bracket {
+  font-weight: 800;
+  display: inline-block;
+  margin: 0 2px;
+  color: rgba(255,255,255,0.2);
+}
+
+.toplevel {
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  padding: 30px 35px;
+}
+
+.api:not(:first-child) {
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.toplevel > .children > .child {
+  padding-right: 5px;
+}
+
+.children {
+  border-left: 1px solid rgba(0,0,0,0.1);
+}
+
+.beta_030 .children {
+  border-left: 1px solid rgba(233, 97, 81, 0.5);
+}
+
+.api div p {
+  margin: 0 0 5px 0;
+}
+
+.child:hover {
+  background-color: #635960;
+}
+
+/** Label stylings */
+.tag {
+  display: inline-block;
+  background-color: #454545;
+  border-radius: 2px;
+  color: rgba(255,255,255,0.8);
+  line-height: 11px;
+  padding: 1px 2px;
+  margin-left: 5px;
+  font-size: 9px;
+  letter-spacing: 1px;
+  font-weight: 600;
+  font-family: "Lato", Helvetica, sans-serif;
+  text-transform: uppercase;
+  border: 1px solid rgba(0,0,0,0.4);
+  text-shadow: 0px -1px 0px rgba(0,0,0,0.2);
+}
+
+.tag.type {
+  background-color: #757E2B;
+}
+
+.tag.beta_030 {
+  background-color: #E96151;
+}
+
+.tag.method, .tag.function {
+  background-color: #E2A62E;
+}
+
+.tag.class, .tag.constructor, .tag.utility {
+  background-color: #468F81;
+}
+
+.tag.error {
+  background-color: #8F4537;
+}
+
+.tag.event {
+  background-color: #1295D8;
+}
+
+.toplevel > .name {
+  font-size: 20px;
+}
+
+/** /Label stylings */
+
+.api .snippet {
+  color: #a2949d;
+  border-left: 1px solid #40393e;
+  border-top: 1px solid #40393e;
+  border-right: 1px solid #6b666a;
+  border-bottom: 1px solid #6b666a;
+  text-shadow: 0 -1px 0 #393438;
+  font-size: 12px;
+  font-family: Consolas, Inconsolata, 'Bitstream Vera Sans Mono', Menlo, Monaco, 'Andale Mono', 'Courier New', monospace;
+  font-weight: 400;
+  display: inline-block;
+  background-color: #474045;
+  padding: 3px 8px;
+  margin: 5px 0 0 10px;
+}
+
+/* We want to be able to use the names as an anchor. */
+.api .name {
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 5px;
+}
+
+.name a {
+  cursor: pointer;
+  color: #fff;
+  text-decoration: none;
+  transition: color 300ms;
+}
+
+.name a:hover {
+  color: #e7e0e5;
+}
+/* /name */
+
+.tip, .warn {
+  opacity: 0.9;
+  display: block;
+  background-color: #d1c7be;
+  font-size: 13px;
+  line-height: 18px;
+  border-radius: 2px;
+  padding: 5px 8px;
+  border: 2px solid rgba(0,0,0,0.2);
+  margin: 8px 8px 0 0;
+}
+
+.warn {
+  background-color: #8F4537;
+}
+.tip {
+  color: #544e4a;
+  text-shadow: 0px -1px 0px rgba(255,255,255,0.2);
+  font-weight: 600;
+}
+
+#peer-options-debug .child {
+  padding: 0 15px;
+}
+
+#peer-options-debug .child .description {
+  display: inline-block;
+  margin-left: 10px;
+}
+
+.start code, .api code {
+  font-family: Consolas, Inconsolata, 'Bitstream Vera Sans Mono', Menlo, Monaco, 'Andale Mono', 'Courier New', monospace;
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
+  font-size: 12px;
+  padding: 2px;
+}
+
+.start code {
+  background-color: #f6eee8;
+  border: 1px solid #d1c7be;
+}
+
+.start > .two-col {
+  padding-left: 0;
+  padding-right: 0;
+}
+.two-col .col{
+  float: left;
+  width: 50%;
+}
+
+.two-col .col.col-header {
+  font-weight: 600;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.clear {
+  clear: both;
+}
