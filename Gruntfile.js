@@ -21,7 +21,7 @@ module.exports = function(grunt) {
       dev: {
         options: {
           banner: '/*! <%= pkg.name %> build:<%= pkg.version %>, development. '+
-            'Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> 2015 NTT Communications Corporation */'
+            'Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> 2013-2016 NTT Communications Corporation */'
         },
         src: 'dist/peer.js',
         dest: 'dist/peer.js',
@@ -29,7 +29,7 @@ module.exports = function(grunt) {
       prod: {
         options: {
           banner: '/*! <%= pkg.name %> build:<%= pkg.version %>, production. '+
-            'Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> 2015 NTT Communications Corporation */'
+            'Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> 2013-2016 NTT Communications Corporation */'
         },
         src: 'dist/peer.min.js',
         dest: 'dist/peer.min.js',
