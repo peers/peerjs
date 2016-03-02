@@ -570,17 +570,20 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
   // Fallback for older Chrome impls.
   pc.onicechange = pc.oniceconnectionstatechange;
 
-  // ONNEGOTIATIONNEEDED (Chrome)
+  // ONNEGOTIATIONNEEDED
   if (util.supports.onnegotiationneeded) {
     util.log('Listening for `negotiationneeded`');
     pc.onnegotiationneeded = function() {
       util.log('`negotiationneeded` triggered');
-      if (pc.signalingState == 'stable') {
-        setTimeout(function(ev){
+      // prevent error for FF42+
+      // Took measures Because the ignition timing of onnegotiationneeded has changed.
+      if (pc.signalingState == 'stable' && !connection.options.connectionId) {
+        //setTimeout(function(ev){
           // prevent error for FF40. When callee, before handling remoteDescription, calling _makeOffer makes error
           // cause localDescription set. Delaying calls make it fix above mismatch.
-          Negotiator._makeOffer(connection);
-        }, 1);
+        //  Negotiator._makeOffer(connection);
+        //}, 1);
+        Negotiator._makeOffer(connection);
       } else {
         util.log('onnegotiationneeded triggered when not stable. Is another connection being established?');
       }
