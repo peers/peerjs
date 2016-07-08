@@ -601,6 +601,37 @@ Negotiator.cleanup = function(connection) {
   }
 }
 
+Negotiator._change_vp9_priority = function(sdp) { 
+  var vp9_codec = null;
+  var res = sdp.split("\r\n");
+  res.forEach(function(line) {
+    if (!vp9_codec) {
+      m = line.match(/^a=rtpmap:([\d]+) VP9/);
+      if (m) {
+        vp9_codec = m[1];
+      }
+    }
+  });
+  util.log("VP9 Codec:", vp9_codec);
+  if (vp9_codec) {
+    res = res.map(function(line) {
+      m = line.match(/^m=video ([\S]+) ([\S]+) (.*)/);
+      if (m) {
+        codec_list = m[3].split(" ");
+        codec_list = codec_list.filter(function(codec) {
+          return codec != vp9_codec;
+        });
+        codec_list.unshift(vp9_codec);
+        util.log("Changed codec priority:", "m=video " + m[1] + " " + m[2] + " " + codec_list.join(" "));
+        return "m=video " + m[1] + " " + m[2] + " " + codec_list.join(" ");
+      } else {
+        return line;
+      }
+    });
+  }
+  return res.join("\r\n");
+};
+
 Negotiator._makeOffer = function(connection) {
   var pc = connection.pc;
   pc.createOffer(function(offer) {
@@ -609,6 +640,9 @@ Negotiator._makeOffer = function(connection) {
     if (!util.supports.sctp && connection.type === 'data' && connection.reliable) {
       offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
     }
+    
+   offer.sdp = Negotiator._change_vp9_priority(offer.sdp); 
+   
 
     pc.setLocalDescription(offer, function() {
       util.log('Set localDescription: offer', 'for:', connection.peer);
@@ -645,6 +679,8 @@ Negotiator._makeAnswer = function(connection) {
     if (!util.supports.sctp && connection.type === 'data' && connection.reliable) {
       answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
     }
+      
+      answer.sdp = Negotiator._change_vp9_priority(answer.sdp);
 
     pc.setLocalDescription(answer, function() {
       util.log('Set localDescription: answer', 'for:', connection.peer);
