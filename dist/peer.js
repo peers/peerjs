@@ -556,7 +556,6 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
 
   pc.oniceconnectionstatechange = function() {
     switch (pc.iceConnectionState) {
-      case 'disconnected':
       case 'failed':
         util.log('iceConnectionState is disconnected, closing connections to ' + peerId);
         connection.close();
