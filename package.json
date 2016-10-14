@@ -1,5 +1,5 @@
 {
-  "name": "peerjs",
+  "name": "peerjs-client",
   "version": "0.3.14",
   "description": "PeerJS client",
   "main": "./lib/peer.js",
