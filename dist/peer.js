@@ -1,4 +1,4 @@
-/*! peerjs build:0.3.14, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+/*! peerjs-client build:0.3.15, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 module.exports.RTCSessionDescription = window.RTCSessionDescription ||
 	window.mozRTCSessionDescription;
 module.exports.RTCPeerConnection = window.RTCPeerConnection ||
@@ -1271,7 +1271,7 @@ Socket.prototype.start = function (id, token) {
     this._httpUrl += '/' + id + '/' + token;
     this._wsUrl += '&id=' + id + '&token=' + token;
 
-    this._startXhrStream();
+    // this._startXhrStream();
     this._startWebSocket();
 }
 
@@ -1321,7 +1321,7 @@ Socket.prototype._startWebSocket = function (id) {
     this._socket.onclose = function (msg) {
         util.error("WS closed with code " + msg.code);
         if (!self.disconnected) {
-            self._startXhrStream();
+            // self._startXhrStream();
         }
     }
 }
@@ -1360,6 +1360,8 @@ Socket.prototype._startXhrStream = function (n) {
 Socket.prototype._handleStream = function (http) {
     // 3 and 4 are loading/done state. All others are not relevant.
     var messages = http.responseText.split('\n');
+
+    console.log(messages);
 
     // Check to see if anything needs to be processed on buffer.
     if (http._buffer) {
@@ -1404,7 +1406,7 @@ Socket.prototype._setHTTPTimeout = function () {
     this._timeout = setTimeout(function () {
         var old = self._http;
         if (!self._wsOpen()) {
-            self._startXhrStream(old._streamIndex + 1);
+            // self._startXhrStream(old._streamIndex + 1);
             self._http.old = old;
         } else {
             old.abort();
