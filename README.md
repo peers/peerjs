@@ -78,6 +78,7 @@ peer.on('call', function(call) {
 
 ### [Changelog](https://github.com/peers/peerjs/blob/master/changelog.md)
 
-##License
+## License
+
 PeerJS is licensed under the [MIT License](https://tldrlegal.com/l/mit).
 
