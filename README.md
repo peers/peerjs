@@ -13,10 +13,12 @@ PeerJS provides a complete, configurable, and easy-to-use peer-to-peer API built
 ```html
 <script src="http://cdn.peerjs.com/0.3/peer.js"></script>
 ```
-  or from the npm:
-```js
-import Peer from 'peerjs';
-```
+  with modules:
+`npm install peerjs` or `yarn add peerjs`
+    and the usage:
+  ```js
+  import Peer from 'peerjs';
+  ```
 
 
 **Create a Peer**  
