@@ -9,9 +9,17 @@ PeerJS provides a complete, configurable, and easy-to-use peer-to-peer API built
 
 **Include the library**
 
+  from the cdn:
 ```html
 <script src="http://cdn.peerjs.com/0.3/peer.js"></script>
 ```
+  with modules:
+`npm install peerjs` or `yarn add peerjs`
+    and the usage:
+  ```js
+  import Peer from 'peerjs';
+  ```
+
 
 **Create a Peer**  
 Get a [free API key](http://peerjs.com/peerserver). Your id only needs to be unique to the namespace of your API key.
