@@ -22,6 +22,7 @@
     "mocha": "*"
   },
   "dependencies": {
+    "@types/webrtc": "0.0.21",
     "eventemitter3": "^0.1.5",
     "js-binarypack": "0.0.9",
     "reliable": "git+https://github.com/michelle/reliable.git"
