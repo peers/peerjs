@@ -11,7 +11,7 @@ PeerJS provides a complete, configurable, and easy-to-use peer-to-peer API built
 
   from the cdn:
 ```html
-<script src="http://cdn.peerjs.com/0.3/peer.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/0.3.14/peer.js"></script>
 ```
   with modules:
 `npm install peerjs` or `yarn add peerjs`
