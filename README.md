@@ -1,5 +1,3 @@
-# @kidandcat: I will be maintaining with the help of this awesome community. Please give me a few days until I review all the PRs and put the website online again. Of course any help is welcome.
-
 # PeerJS: Simple peer-to-peer with WebRTC #
 
 PeerJS provides a complete, configurable, and easy-to-use peer-to-peer API built on top of WebRTC, supporting both data channels and media streams.
