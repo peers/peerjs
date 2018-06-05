@@ -61,6 +61,9 @@ function connect(c) {
     $('.filler').hide();
     $('#connections').append(chatbox);
 
+    // Just to fix the connection receiver to successfully send a message to the connection requester
+    c.open = true;
+    
     c.on('data', function(data) {
       messages.append('<div><span class="peer">' + c.peer + '</span>: ' + data +
         '</div>');
