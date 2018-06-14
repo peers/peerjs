@@ -408,13 +408,14 @@ Negotiator._idPrefix = 'pc_';
 Negotiator.startConnection = function(connection, options) {
   var pc = Negotiator._getPeerConnection(connection, options);
 
+  // Set the connection's PC.
+  connection.pc = connection.peerConnection = pc;
+
   if (connection.type === 'media' && options._stream) {
     // Add the stream.
     pc.addStream(options._stream);
   }
 
-  // Set the connection's PC.
-  connection.pc = connection.peerConnection = pc;
   // What do we need to do now?
   if (options.originator) {
     if (connection.type === 'data') {
@@ -595,7 +596,7 @@ Negotiator.cleanup = function(connection) {
 
   var pc = connection.pc;
 
-  if (!!pc && (pc.readyState !== 'closed' || pc.signalingState !== 'closed')) {
+  if (!!pc && ((pc.readyState && pc.readyState !== 'closed') || pc.signalingState !== 'closed')) {
     pc.close();
     connection.pc = null;
   }
@@ -700,11 +701,11 @@ Negotiator.handleCandidate = function(connection, ice) {
 module.exports = Negotiator;
 
 },{"./adapter":1,"./util":8}],6:[function(require,module,exports){
-var util = require('./util');
-var EventEmitter = require('eventemitter3');
-var Socket = require('./socket');
-var MediaConnection = require('./mediaconnection');
-var DataConnection = require('./dataconnection');
+var util = require("./util");
+var EventEmitter = require("eventemitter3");
+var Socket = require("./socket");
+var MediaConnection = require("./mediaconnection");
+var DataConnection = require("./dataconnection");
 
 /**
  * A peer who can initiate connections with other peers.
@@ -724,26 +725,29 @@ function Peer(id, options) {
   //
 
   // Configurize options
-  options = util.extend({
-    debug: 0, // 1: Errors, 2: Warnings, 3: All logs
-    host: util.CLOUD_HOST,
-    port: util.CLOUD_PORT,
-    key: 'peerjs',
-    path: '/',
-    token: util.randomToken(),
-    config: util.defaultConfig
-  }, options);
+  options = util.extend(
+    {
+      debug: 0, // 1: Errors, 2: Warnings, 3: All logs
+      host: util.CLOUD_HOST,
+      port: util.CLOUD_PORT,
+      key: "peerjs",
+      path: "/",
+      token: util.randomToken(),
+      config: util.defaultConfig
+    },
+    options
+  );
   this.options = options;
   // Detect relative URL host.
-  if (options.host === '/') {
+  if (options.host === "/") {
     options.host = window.location.hostname;
   }
   // Set path correctly.
-  if (options.path[0] !== '/') {
-    options.path = '/' + options.path;
+  if (options.path[0] !== "/") {
+    options.path = "/" + options.path;
   }
-  if (options.path[options.path.length - 1] !== '/') {
-    options.path += '/';
+  if (options.path[options.path.length - 1] !== "/") {
+    options.path += "/";
   }
 
   // Set whether we use SSL to same as current host
@@ -759,24 +763,32 @@ function Peer(id, options) {
 
   // Sanity checks
   // Ensure WebRTC supported
-  if (!util.supports.audioVideo && !util.supports.data ) {
-    this._delayedAbort('browser-incompatible', 'The current browser does not support WebRTC');
+  if (!util.supports.audioVideo && !util.supports.data) {
+    this._delayedAbort(
+      "browser-incompatible",
+      "The current browser does not support WebRTC"
+    );
     return;
   }
   // Ensure alphanumeric id
   if (!util.validateId(id)) {
-    this._delayedAbort('invalid-id', 'ID "' + id + '" is invalid');
+    this._delayedAbort("invalid-id", 'ID "' + id + '" is invalid');
     return;
   }
   // Ensure valid key
   if (!util.validateKey(options.key)) {
-    this._delayedAbort('invalid-key', 'API KEY "' + options.key + '" is invalid');
+    this._delayedAbort(
+      "invalid-key",
+      'API KEY "' + options.key + '" is invalid'
+    );
     return;
   }
   // Ensure not using unsecure cloud server on SSL page
-  if (options.secure && options.host === '0.peerjs.com') {
-    this._delayedAbort('ssl-unavailable',
-      'The cloud server currently does not support HTTPS. Please run your own PeerServer to use HTTPS.');
+  if (options.secure && options.host === "0.peerjs.com") {
+    this._delayedAbort(
+      "ssl-unavailable",
+      "The cloud server currently does not support HTTPS. Please run your own PeerServer to use HTTPS."
+    );
     return;
   }
   //
@@ -808,24 +820,31 @@ util.inherits(Peer, EventEmitter);
 // websockets.)
 Peer.prototype._initializeServerConnection = function() {
   var self = this;
-  this.socket = new Socket(this.options.secure, this.options.host, this.options.port, this.options.path, this.options.key);
-  this.socket.on('message', function(data) {
+  this.socket = new Socket(
+    this.options.secure,
+    this.options.host,
+    this.options.port,
+    this.options.path,
+    this.options.key,
+    this.options.wsport
+  );
+  this.socket.on("message", function(data) {
     self._handleMessage(data);
   });
-  this.socket.on('error', function(error) {
-    self._abort('socket-error', error);
+  this.socket.on("error", function(error) {
+    self._abort("socket-error", error);
   });
-  this.socket.on('disconnected', function() {
+  this.socket.on("disconnected", function() {
     // If we haven't explicitly disconnected, emit error and disconnect.
     if (!self.disconnected) {
-      self.emitError('network', 'Lost connection to server.');
+      self.emitError("network", "Lost connection to server.");
       self.disconnect();
     }
   });
-  this.socket.on('close', function() {
+  this.socket.on("close", function() {
     // If we haven't explicitly disconnected, emit error.
     if (!self.disconnected) {
-      self._abort('socket-closed', 'Underlying socket is already closed.');
+      self._abort("socket-closed", "Underlying socket is already closed.");
     }
   });
 };
@@ -834,23 +853,33 @@ Peer.prototype._initializeServerConnection = function() {
 Peer.prototype._retrieveId = function(cb) {
   var self = this;
   var http = new XMLHttpRequest();
-  var protocol = this.options.secure ? 'https://' : 'http://';
-  var url = protocol + this.options.host + ':' + this.options.port +
-    this.options.path + this.options.key + '/id';
-  var queryString = '?ts=' + new Date().getTime() + '' + Math.random();
+  var protocol = this.options.secure ? "https://" : "http://";
+  var url =
+    protocol +
+    this.options.host +
+    ":" +
+    this.options.port +
+    this.options.path +
+    this.options.key +
+    "/id";
+  var queryString = "?ts=" + new Date().getTime() + "" + Math.random();
   url += queryString;
 
   // If there's no ID we need to wait for one before trying to init socket.
-  http.open('get', url, true);
+  http.open("get", url, true);
   http.onerror = function(e) {
-    util.error('Error retrieving ID', e);
-    var pathError = '';
-    if (self.options.path === '/' && self.options.host !== util.CLOUD_HOST) {
-      pathError = ' If you passed in a `path` to your self-hosted PeerServer, ' +
-        'you\'ll also need to pass in that same path when creating a new ' +
-        'Peer.';
+    util.error("Error retrieving ID", e);
+    var pathError = "";
+    if (self.options.path === "/" && self.options.host !== util.CLOUD_HOST) {
+      pathError =
+        " If you passed in a `path` to your self-hosted PeerServer, " +
+        "you'll also need to pass in that same path when creating a new " +
+        "Peer.";
     }
-    self._abort('server-error', 'Could not get an ID from the server.' + pathError);
+    self._abort(
+      "server-error",
+      "Could not get an ID from the server." + pathError
+    );
   };
   http.onreadystatechange = function() {
     if (http.readyState !== 4) {
@@ -879,71 +908,78 @@ Peer.prototype._handleMessage = function(message) {
   var connection;
 
   switch (type) {
-    case 'OPEN': // The connection to the server is open.
-      this.emit('open', this.id);
+    case "OPEN": // The connection to the server is open.
+      this.emit("open", this.id);
       this.open = true;
       break;
-    case 'ERROR': // Server error.
-      this._abort('server-error', payload.msg);
+    case "ERROR": // Server error.
+      this._abort("server-error", payload.msg);
       break;
-    case 'ID-TAKEN': // The selected ID is taken.
-      this._abort('unavailable-id', 'ID `' + this.id + '` is taken');
+    case "ID-TAKEN": // The selected ID is taken.
+      this._abort("unavailable-id", "ID `" + this.id + "` is taken");
       break;
-    case 'INVALID-KEY': // The given API key cannot be found.
-      this._abort('invalid-key', 'API KEY "' + this.options.key + '" is invalid');
+    case "INVALID-KEY": // The given API key cannot be found.
+      this._abort(
+        "invalid-key",
+        'API KEY "' + this.options.key + '" is invalid'
+      );
       break;
 
     //
-    case 'LEAVE': // Another peer has closed its connection to this peer.
-      util.log('Received leave message from', peer);
+    case "LEAVE": // Another peer has closed its connection to this peer.
+      util.log("Received leave message from", peer);
       this._cleanupPeer(peer);
       break;
 
-    case 'EXPIRE': // The offer sent to a peer has expired without response.
-      this.emitError('peer-unavailable', 'Could not connect to peer ' + peer);
+    case "EXPIRE": // The offer sent to a peer has expired without response.
+      this.emitError("peer-unavailable", "Could not connect to peer " + peer);
       break;
-    case 'OFFER': // we should consider switching this to CALL/CONNECT, but this is the least breaking option.
+    case "OFFER": // we should consider switching this to CALL/CONNECT, but this is the least breaking option.
       var connectionId = payload.connectionId;
       connection = this.getConnection(peer, connectionId);
 
       if (connection) {
-        util.warn('Offer received for existing Connection ID:', connectionId);
+        connection.close();
+        util.warn("Offer received for existing Connection ID:", connectionId);
         //connection.handleMessage(message);
-      } else {
-        // Create a new connection.
-        if (payload.type === 'media') {
-          connection = new MediaConnection(peer, this, {
-            connectionId: connectionId,
-            _payload: payload,
-            metadata: payload.metadata
-          });
-          this._addConnection(peer, connection);
-          this.emit('call', connection);
-        } else if (payload.type === 'data') {
-          connection = new DataConnection(peer, this, {
-            connectionId: connectionId,
-            _payload: payload,
-            metadata: payload.metadata,
-            label: payload.label,
-            serialization: payload.serialization,
-            reliable: payload.reliable
-          });
-          this._addConnection(peer, connection);
-          this.emit('connection', connection);
-        } else {
-          util.warn('Received malformed connection type:', payload.type);
-          return;
-        }
-        // Find messages.
-        var messages = this._getMessages(connectionId);
-        for (var i = 0, ii = messages.length; i < ii; i += 1) {
-          connection.handleMessage(messages[i]);
-        }
       }
+
+      // Create a new connection.
+      if (payload.type === "media") {
+        connection = new MediaConnection(peer, this, {
+          connectionId: connectionId,
+          _payload: payload,
+          metadata: payload.metadata
+        });
+        this._addConnection(peer, connection);
+        this.emit("call", connection);
+      } else if (payload.type === "data") {
+        connection = new DataConnection(peer, this, {
+          connectionId: connectionId,
+          _payload: payload,
+          metadata: payload.metadata,
+          label: payload.label,
+          serialization: payload.serialization,
+          reliable: payload.reliable
+        });
+        this._addConnection(peer, connection);
+        this.emit("connection", connection);
+      } else {
+        util.warn("Received malformed connection type:", payload.type);
+        return;
+      }
+      // Find messages.
+      var messages = this._getMessages(connectionId);
+      for (var i = 0, ii = messages.length; i < ii; i += 1) {
+        connection.handleMessage(messages[i]);
+      }
+
       break;
     default:
       if (!payload) {
-        util.warn('You received a malformed message from ' + peer + ' of type ' + type);
+        util.warn(
+          "You received a malformed message from " + peer + " of type " + type
+        );
         return;
       }
 
@@ -957,7 +993,7 @@ Peer.prototype._handleMessage = function(message) {
         // Store for possible later use
         this._storeMessage(id, message);
       } else {
-        util.warn('You received an unrecognized message:', message);
+        util.warn("You received an unrecognized message:", message);
       }
       break;
   }
@@ -988,11 +1024,16 @@ Peer.prototype._getMessages = function(connectionId) {
  */
 Peer.prototype.connect = function(peer, options) {
   if (this.disconnected) {
-    util.warn('You cannot connect to a new Peer because you called ' +
-      '.disconnect() on this Peer and ended your connection with the ' +
-      'server. You can create a new Peer to reconnect, or call reconnect ' +
-      'on this peer if you believe its ID to still be available.');
-    this.emitError('disconnected', 'Cannot connect to new Peer after disconnecting from server.');
+    util.warn(
+      "You cannot connect to a new Peer because you called " +
+        ".disconnect() on this Peer and ended your connection with the " +
+        "server. You can create a new Peer to reconnect, or call reconnect " +
+        "on this peer if you believe its ID to still be available."
+    );
+    this.emitError(
+      "disconnected",
+      "Cannot connect to new Peer after disconnecting from server."
+    );
     return;
   }
   var connection = new DataConnection(peer, this, options);
@@ -1006,14 +1047,21 @@ Peer.prototype.connect = function(peer, options) {
  */
 Peer.prototype.call = function(peer, stream, options) {
   if (this.disconnected) {
-    util.warn('You cannot connect to a new Peer because you called ' +
-      '.disconnect() on this Peer and ended your connection with the ' +
-      'server. You can create a new Peer to reconnect.');
-    this.emitError('disconnected', 'Cannot connect to new Peer after disconnecting from server.');
+    util.warn(
+      "You cannot connect to a new Peer because you called " +
+        ".disconnect() on this Peer and ended your connection with the " +
+        "server. You can create a new Peer to reconnect."
+    );
+    this.emitError(
+      "disconnected",
+      "Cannot connect to new Peer after disconnecting from server."
+    );
     return;
   }
   if (!stream) {
-    util.error('To call a peer, you must provide a stream from your browser\'s `getUserMedia`.');
+    util.error(
+      "To call a peer, you must provide a stream from your browser's `getUserMedia`."
+    );
     return;
   }
   options = options || {};
@@ -1047,7 +1095,7 @@ Peer.prototype.getConnection = function(peer, id) {
 
 Peer.prototype._delayedAbort = function(type, message) {
   var self = this;
-  util.setZeroTimeout(function(){
+  util.setZeroTimeout(function() {
     self._abort(type, message);
   });
 };
@@ -1058,7 +1106,7 @@ Peer.prototype._delayedAbort = function(type, message) {
  * it retains its disconnected state and its existing connections.
  */
 Peer.prototype._abort = function(type, message) {
-  util.error('Aborting!');
+  util.error("Aborting!");
   if (!this._lastServerId) {
     this.destroy();
   } else {
@@ -1069,12 +1117,12 @@ Peer.prototype._abort = function(type, message) {
 
 /** Emits a typed error message. */
 Peer.prototype.emitError = function(type, err) {
-  util.error('Error:', err);
-  if (typeof err === 'string') {
+  util.error("Error:", err);
+  if (typeof err === "string") {
     err = new Error(err);
   }
   err.type = type;
-  this.emit('error', err);
+  this.emit("error", err);
 };
 
 /**
@@ -1091,7 +1139,6 @@ Peer.prototype.destroy = function() {
   }
 };
 
-
 /** Disconnects every connection on this peer. */
 Peer.prototype._cleanup = function() {
   if (this.connections) {
@@ -1100,7 +1147,7 @@ Peer.prototype._cleanup = function() {
       this._cleanupPeer(peers[i]);
     }
   }
-  this.emit('close');
+  this.emit("close");
 };
 
 /** Closes all connections to this peer. */
@@ -1119,14 +1166,14 @@ Peer.prototype._cleanupPeer = function(peer) {
  */
 Peer.prototype.disconnect = function() {
   var self = this;
-  util.setZeroTimeout(function(){
+  util.setZeroTimeout(function() {
     if (!self.disconnected) {
       self.disconnected = true;
       self.open = false;
       if (self.socket) {
         self.socket.close();
       }
-      self.emit('disconnected', self.id);
+      self.emit("disconnected", self.id);
       self._lastServerId = self.id;
       self.id = null;
     }
@@ -1136,17 +1183,25 @@ Peer.prototype.disconnect = function() {
 /** Attempts to reconnect with the same ID. */
 Peer.prototype.reconnect = function() {
   if (this.disconnected && !this.destroyed) {
-    util.log('Attempting reconnection to server with ID ' + this._lastServerId);
+    util.log("Attempting reconnection to server with ID " + this._lastServerId);
     this.disconnected = false;
     this._initializeServerConnection();
     this._initialize(this._lastServerId);
   } else if (this.destroyed) {
-    throw new Error('This peer cannot reconnect to the server. It has already been destroyed.');
+    throw new Error(
+      "This peer cannot reconnect to the server. It has already been destroyed."
+    );
   } else if (!this.disconnected && !this.open) {
     // Do nothing. We're still connecting the first time.
-    util.error('In a hurry? We\'re still trying to make the initial connection!');
+    util.error(
+      "In a hurry? We're still trying to make the initial connection!"
+    );
   } else {
-    throw new Error('Peer ' + this.id + ' cannot reconnect because it is not disconnected from the server!');
+    throw new Error(
+      "Peer " +
+        this.id +
+        " cannot reconnect because it is not disconnected from the server!"
+    );
   }
 };
 
@@ -1160,16 +1215,22 @@ Peer.prototype.listAllPeers = function(cb) {
   cb = cb || function() {};
   var self = this;
   var http = new XMLHttpRequest();
-  var protocol = this.options.secure ? 'https://' : 'http://';
-  var url = protocol + this.options.host + ':' + this.options.port +
-    this.options.path + this.options.key + '/peers';
-  var queryString = '?ts=' + new Date().getTime() + '' + Math.random();
+  var protocol = this.options.secure ? "https://" : "http://";
+  var url =
+    protocol +
+    this.options.host +
+    ":" +
+    this.options.port +
+    this.options.path +
+    this.options.key +
+    "/peers";
+  var queryString = "?ts=" + new Date().getTime() + "" + Math.random();
   url += queryString;
 
   // If there's no ID we need to wait for one before trying to init socket.
-  http.open('get', url, true);
+  http.open("get", url, true);
   http.onerror = function(e) {
-    self._abort('server-error', 'Could not get peers from the server.');
+    self._abort("server-error", "Could not get peers from the server.");
     cb([]);
   };
   http.onreadystatechange = function() {
@@ -1177,16 +1238,21 @@ Peer.prototype.listAllPeers = function(cb) {
       return;
     }
     if (http.status === 401) {
-      var helpfulError = '';
+      var helpfulError = "";
       if (self.options.host !== util.CLOUD_HOST) {
-        helpfulError = 'It looks like you\'re using the cloud server. You can email ' +
-          'team@peerjs.com to enable peer listing for your API key.';
+        helpfulError =
+          "It looks like you're using the cloud server. You can email " +
+          "team@peerjs.com to enable peer listing for your API key.";
       } else {
-        helpfulError = 'You need to enable `allow_discovery` on your self-hosted ' +
-          'PeerServer to use this feature.';
+        helpfulError =
+          "You need to enable `allow_discovery` on your self-hosted " +
+          "PeerServer to use this feature.";
       }
       cb([]);
-      throw new Error('It doesn\'t look like you have permission to list peers IDs. ' + helpfulError);
+      throw new Error(
+        "It doesn't look like you have permission to list peers IDs. " +
+          helpfulError
+      );
     } else if (http.status !== 200) {
       cb([]);
     } else {
@@ -1206,8 +1272,10 @@ var EventEmitter = require('eventemitter3');
  * An abstraction on top of WebSockets and XHR streaming to provide fastest
  * possible connection for peers.
  */
-function Socket(secure, host, port, path, key) {
-  if (!(this instanceof Socket)) return new Socket(secure, host, port, path, key);
+function Socket(secure, host, port, path, key, wsport) {
+  if (!(this instanceof Socket)) return new Socket(secure, host, port, path, key, wsport);
+
+  wsport = wsport || port;
 
   EventEmitter.call(this);
 
@@ -1218,7 +1286,7 @@ function Socket(secure, host, port, path, key) {
   var httpProtocol = secure ? 'https://' : 'http://';
   var wsProtocol = secure ? 'wss://' : 'ws://';
   this._httpUrl = httpProtocol + host + ':' + port + path + key;
-  this._wsUrl = wsProtocol + host + ':' + port + path + 'peerjs?key=' + key;
+  this._wsUrl = wsProtocol + host + ':' + wsport + path + 'peerjs?key=' + key;
 }
 
 util.inherits(Socket, EventEmitter);
@@ -1415,20 +1483,20 @@ Socket.prototype.close = function() {
 module.exports = Socket;
 
 },{"./util":8,"eventemitter3":9}],8:[function(require,module,exports){
-var defaultConfig = {'iceServers': [{ 'url': 'stun:stun.l.google.com:19302' }]};
+var defaultConfig = { iceServers: [{ url: "stun:stun.l.google.com:19302" }] };
 var dataCount = 1;
 
-var BinaryPack = require('js-binarypack');
-var RTCPeerConnection = require('./adapter').RTCPeerConnection;
+var BinaryPack = require("js-binarypack");
+var RTCPeerConnection = require("./adapter").RTCPeerConnection;
 
 var util = {
   noop: function() {},
 
-  CLOUD_HOST: '0.peerjs.com',
+  CLOUD_HOST: "0.peerjs.com",
   CLOUD_PORT: 9000,
 
   // Browsers that need chunking:
-  chunkedBrowsers: {'Chrome': 1},
+  chunkedBrowsers: { Chrome: 1 },
   chunkedMTU: 16300, // The original 60000 bytes setting does not work when sending data from Firefox to Chrome, which is "cut off" after 16384 bytes and delivered individually.
 
   // Logging logic
@@ -1443,10 +1511,10 @@ var util = {
     }
     util.log = util.warn = util.error = util.noop;
     if (util.logLevel > 0) {
-      util.error = util._printWith('ERROR');
+      util.error = util._printWith("ERROR");
     }
     if (util.logLevel > 1) {
-      util.warn = util._printWith('WARNING');
+      util.warn = util._printWith("WARNING");
     }
     if (util.logLevel > 2) {
       util.log = util._print;
@@ -1454,7 +1522,9 @@ var util = {
   },
   setLogFunction: function(fn) {
     if (fn.constructor !== Function) {
-      util.warn('The log function you passed in is not a function. Defaulting to regular logs.');
+      util.warn(
+        "The log function you passed in is not a function. Defaulting to regular logs."
+      );
     } else {
       util._print = fn;
     }
@@ -1467,13 +1537,13 @@ var util = {
       util._print.apply(util, copy);
     };
   },
-  _print: function () {
+  _print: function() {
     var err = false;
     var copy = Array.prototype.slice.call(arguments);
-    copy.unshift('PeerJS: ');
-    for (var i = 0, l = copy.length; i < l; i++){
+    copy.unshift("PeerJS: ");
+    for (var i = 0, l = copy.length; i < l; i++) {
       if (copy[i] instanceof Error) {
-        copy[i] = '(' + copy[i].name + ') ' + copy[i].message;
+        copy[i] = "(" + copy[i].name + ") " + copy[i].message;
         err = true;
       }
     }
@@ -1488,20 +1558,20 @@ var util = {
   // Returns the current browser.
   browser: (function() {
     if (window.mozRTCPeerConnection) {
-      return 'Firefox';
+      return "Firefox";
     } else if (window.webkitRTCPeerConnection) {
-      return 'Chrome';
+      return "Chrome";
     } else if (window.RTCPeerConnection) {
-      return 'Supported';
+      return "Supported";
     } else {
-      return 'Unsupported';
+      return "Unsupported";
     }
   })(),
   //
 
   // Lists which features are supported
   supports: (function() {
-    if (typeof RTCPeerConnection === 'undefined') {
+    if (typeof RTCPeerConnection === "undefined") {
       return {};
     }
 
@@ -1514,7 +1584,9 @@ var util = {
 
     var pc, dc;
     try {
-      pc = new RTCPeerConnection(defaultConfig, {optional: [{RtpDataChannels: true}]});
+      pc = new RTCPeerConnection(defaultConfig, {
+        optional: [{ RtpDataChannels: true }]
+      });
     } catch (e) {
       data = false;
       audioVideo = false;
@@ -1522,7 +1594,7 @@ var util = {
 
     if (data) {
       try {
-        dc = pc.createDataChannel('_PEERJSTEST');
+        dc = pc.createDataChannel("_PEERJSTEST");
       } catch (e) {
         data = false;
       }
@@ -1531,20 +1603,21 @@ var util = {
     if (data) {
       // Binary test
       try {
-        dc.binaryType = 'blob';
+        dc.binaryType = "blob";
         binaryBlob = true;
-      } catch (e) {
-      }
+      } catch (e) {}
 
       // Reliable test.
       // Unfortunately Chrome is a bit unreliable about whether or not they
       // support reliable.
       var reliablePC = new RTCPeerConnection(defaultConfig, {});
       try {
-        var reliableDC = reliablePC.createDataChannel('_PEERJSRELIABLETEST', {});
+        var reliableDC = reliablePC.createDataChannel(
+          "_PEERJSRELIABLETEST",
+          {}
+        );
         sctp = reliableDC.reliable;
-      } catch (e) {
-      }
+      } catch (e) {}
       reliablePC.close();
     }
 
@@ -1555,6 +1628,7 @@ var util = {
 
     // FIXME: this is not great because in theory it doesn't work for
     // av-only browsers (?).
+    /*
     if (!onnegotiationneeded && data) {
       // sync default check.
       var negotiationPC = new RTCPeerConnection(defaultConfig, {optional: [{RtpDataChannels: true}]});
@@ -1571,6 +1645,7 @@ var util = {
         negotiationPC.close();
       }, 1000);
     }
+    */
 
     if (pc) {
       pc.close();
@@ -1585,7 +1660,7 @@ var util = {
       sctp: sctp,
       onnegotiationneeded: onnegotiationneeded
     };
-  }()),
+  })(),
   //
 
   // Ensure alphanumeric ids
@@ -1598,7 +1673,6 @@ var util = {
     // Allow empty keys
     return !key || /^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(key);
   },
-
 
   debug: false,
 
@@ -1614,8 +1688,8 @@ var util = {
     });
   },
   extend: function(dest, source) {
-    for(var key in source) {
-      if(source.hasOwnProperty(key)) {
+    for (var key in source) {
+      if (source.hasOwnProperty(key)) {
         dest[key] = source[key];
       }
     }
@@ -1624,31 +1698,33 @@ var util = {
   pack: BinaryPack.pack,
   unpack: BinaryPack.unpack,
 
-  log: function () {
+  log: function() {
     if (util.debug) {
       var err = false;
       var copy = Array.prototype.slice.call(arguments);
-      copy.unshift('PeerJS: ');
-      for (var i = 0, l = copy.length; i < l; i++){
+      copy.unshift("PeerJS: ");
+      for (var i = 0, l = copy.length; i < l; i++) {
         if (copy[i] instanceof Error) {
-          copy[i] = '(' + copy[i].name + ') ' + copy[i].message;
+          copy[i] = "(" + copy[i].name + ") " + copy[i].message;
           err = true;
         }
       }
-      err ? console.error.apply(console, copy) : console.log.apply(console, copy);
+      err
+        ? console.error.apply(console, copy)
+        : console.log.apply(console, copy);
     }
   },
 
   setZeroTimeout: (function(global) {
     var timeouts = [];
-    var messageName = 'zero-timeout-message';
+    var messageName = "zero-timeout-message";
 
     // Like setTimeout, but only takes a function argument.	 There's
     // no time argument (always zero) and no arguments (you have to
     // use a closure).
     function setZeroTimeoutPostMessage(fn) {
       timeouts.push(fn);
-      global.postMessage(messageName, '*');
+      global.postMessage(messageName, "*");
     }
 
     function handleMessage(event) {
@@ -1662,12 +1738,12 @@ var util = {
       }
     }
     if (global.addEventListener) {
-      global.addEventListener('message', handleMessage, true);
+      global.addEventListener("message", handleMessage, true);
     } else if (global.attachEvent) {
-      global.attachEvent('onmessage', handleMessage);
+      global.attachEvent("onmessage", handleMessage);
     }
     return setZeroTimeoutPostMessage;
-  }(window)),
+  })(window),
 
   // Binary stuff
 
@@ -1675,7 +1751,7 @@ var util = {
   chunk: function(bl) {
     var chunks = [];
     var size = bl.size;
-    var start = index = 0;
+    var start = (index = 0);
     var total = Math.ceil(size / util.chunkedMTU);
     while (start < size) {
       var end = Math.min(size, start + util.chunkedMTU);
@@ -1697,14 +1773,14 @@ var util = {
     return chunks;
   },
 
-  blobToArrayBuffer: function(blob, cb){
+  blobToArrayBuffer: function(blob, cb) {
     var fr = new FileReader();
     fr.onload = function(evt) {
       cb(evt.target.result);
     };
     fr.readAsArrayBuffer(blob);
   },
-  blobToBinaryString: function(blob, cb){
+  blobToBinaryString: function(blob, cb) {
     var fr = new FileReader();
     fr.onload = function(evt) {
       cb(evt.target.result);
@@ -1718,13 +1794,15 @@ var util = {
     }
     return byteArray.buffer;
   },
-  randomToken: function () {
-    return Math.random().toString(36).substr(2);
+  randomToken: function() {
+    return Math.random()
+      .toString(36)
+      .substr(2);
   },
   //
 
   isSecure: function() {
-    return location.protocol === 'https:';
+    return location.protocol === "https:";
   }
 };
 
