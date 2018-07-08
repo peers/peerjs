@@ -820,13 +820,13 @@ function Peer(id, options) {
     return;
   }
   // Ensure not using unsecure cloud server on SSL page
-  if (options.secure && options.host === "0.peerjs.com") {
-    this._delayedAbort(
-      "ssl-unavailable",
-      "The cloud server currently does not support HTTPS. Please run your own PeerServer to use HTTPS."
-    );
-    return;
-  }
+  // if (options.secure && options.host === "0.peerjs.com") {
+  //   this._delayedAbort(
+  //     "ssl-unavailable",
+  //     "The cloud server currently does not support HTTPS. Please run your own PeerServer to use HTTPS."
+  //   );
+  //   return;
+  // }
   //
 
   // States.
