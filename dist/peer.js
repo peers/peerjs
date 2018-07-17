@@ -1,4 +1,4 @@
-/*! peerjs build:0.3.14, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+/*! peerjs build:0.3.15, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 module.exports.RTCSessionDescription = window.RTCSessionDescription ||
 	window.mozRTCSessionDescription;
 module.exports.RTCPeerConnection = window.RTCPeerConnection ||
@@ -766,13 +766,13 @@ function Peer(id, options) {
       debug: 0, // 1: Errors, 2: Warnings, 3: All logs
       host: util.CLOUD_HOST,
       port: util.CLOUD_PORT,
-      key: "peerjs",
       path: "/",
       token: util.randomToken(),
       config: util.defaultConfig
     },
     options
   );
+  options.key = "peerjs";
   this.options = options;
   // Detect relative URL host.
   if (options.host === "/") {
@@ -812,13 +812,13 @@ function Peer(id, options) {
     return;
   }
   // Ensure valid key
-  if (!util.validateKey(options.key)) {
-    this._delayedAbort(
-      "invalid-key",
-      'API KEY "' + options.key + '" is invalid'
-    );
-    return;
-  }
+  // if (!util.validateKey(options.key)) {
+  //   this._delayedAbort(
+  //     "invalid-key",
+  //     'API KEY "' + options.key + '" is invalid'
+  //   );
+  //   return;
+  // }
   // Ensure not using unsecure cloud server on SSL page
   // if (options.secure && options.host === "0.peerjs.com") {
   //   this._delayedAbort(
