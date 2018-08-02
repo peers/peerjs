@@ -86,6 +86,12 @@ peer.on('call', function(call) {
 
 ### [Changelog](https://github.com/peers/peerjs/blob/master/changelog.md)
 
+## Backers
+
+Thank you to all our backers! [[Become a backer](https://opencollective.com/peer#backer)]
+
+<a href="https://opencollective.com/peer#backers" target="_blank"><img src="https://opencollective.com/peer/backers.svg?width=890"></a>
+
 ## License
 
 PeerJS is licensed under the [MIT License](https://tldrlegal.com/l/mit).
