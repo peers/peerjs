@@ -12,12 +12,8 @@ PeerJS provides a complete, configurable, and easy-to-use peer-to-peer API built
 
 **Include the library**
 
-  from the cdn:
-```html
-<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/0.3.14/peer.js"></script>
-```
   with modules:
-`npm install peerjs` or `yarn add peerjs`
+`npm install https://github.com/capripio/peerjs/tarball/master`
     and the usage:
   ```js
   import Peer from 'peerjs';
