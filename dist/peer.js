@@ -105,7 +105,6 @@ DataConnection.prototype._handleDataMessage = function(e) {
   var self = this;
   var data = e.data;
   var datatype = data.constructor;
-  util.log(e.data);
   if (this.serialization === 'binary' || this.serialization === 'binary-utf8') {
     if (datatype === Blob) {
       // Datatype should never be blob
