@@ -13,7 +13,7 @@ PeerJS provides a complete, configurable, and easy-to-use peer-to-peer API built
 **Include the library**
 
   with modules:
-`npm install https://github.com/capripio/peerjs/tarball/master`
+        `npm install peerjs` or `yarn add peerjs`
     and the usage:
   ```js
   import Peer from 'peerjs';
