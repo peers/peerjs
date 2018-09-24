@@ -2,8 +2,6 @@
 // Original definitions by Toshiya Nakakura <https://github.com/nakakura>
 // at https://github.com/DefinitelyTyped/DefinitelyTyped
 
-/// <reference types="webrtc" />
-
 export = Peer;
 
 declare class Peer {
@@ -135,7 +133,7 @@ declare namespace Peer {
         port?: number;
         path?: string;
         secure?: boolean;
-        config?: RTCPeerConnectionConfig;
+        config?: RTCConfiguration;
         debug?: number;
     }
 
