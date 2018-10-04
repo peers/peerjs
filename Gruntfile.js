@@ -1,4 +1,4 @@
-module.exports = function(grunt) {
+module.exports = function (grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
 
@@ -17,20 +17,23 @@ module.exports = function(grunt) {
       }
     },
 
+    copy: {
+      dev: {
+        files: [
+          {
+            src: 'dist/peer.min.js',
+            dest: 'test/public/peer.min.js'
+          }
+        ]
+      }
+    },
+
     concat: {
       dev: {
-        options: {
-          banner: '/*! <%= pkg.name %> build:<%= pkg.version %>, development. '+
-            'Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */'
-        },
         src: 'dist/peer.js',
         dest: 'dist/peer.js',
       },
       prod: {
-        options: {
-          banner: '/*! <%= pkg.name %> build:<%= pkg.version %>, production. '+
-            'Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */'
-        },
         src: 'dist/peer.min.js',
         dest: 'dist/peer.min.js',
       }
@@ -40,6 +43,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-browserify');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-concat');
+  grunt.loadNpmTasks('grunt-contrib-copy');
 
-  grunt.registerTask('default', ['browserify', 'uglify', 'concat']);
+  grunt.registerTask('default', ['browserify', 'uglify', 'concat', 'copy']);
 }

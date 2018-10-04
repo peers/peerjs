@@ -1,4 +1,4 @@
-/*! peerjs build:0.3.16, development. Copyright(c) 2013 Michelle Bu <michelle@michellebu.com> */(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 require('webrtc-adapter');
 
 module.exports.RTCSessionDescription = window.RTCSessionDescription ||
@@ -575,15 +575,10 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
 
   // MEDIACONNECTION.
   util.log("Listening for remote stream");
-  pc.onaddstream = function(evt) {
+  pc.ontrack = function(evt) {
     util.log("Received remote stream");
-    var stream = evt.stream;
+    var stream = evt.streams[0];
     var connection = provider.getConnection(peerId, connectionId);
-    // 10/10/2014: looks like in Chrome 38, onaddstream is triggered after
-    // setting the remote description. Our connection object in these cases
-    // is actually a DATA connection, so addStream fails.
-    // TODO: This is hopefully just a temporary fix. We should try to
-    // understand why this is happening.
     if (connection.type === "media") {
       connection.addStream(stream);
     }
@@ -1520,7 +1515,7 @@ Socket.prototype.close = function() {
 module.exports = Socket;
 
 },{"./util":8,"eventemitter3":9}],8:[function(require,module,exports){
-var defaultConfig = { iceServers: [{ url: "stun:stun.l.google.com:19302" }] };
+var defaultConfig = {'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }]};
 var dataCount = 1;
 
 var BinaryPack = require("js-binarypack");
@@ -4222,6 +4217,19 @@ module.exports = function(window, edgeVersion) {
           }
         }
 
+        // If the offer contained RTX but the answer did not,
+        // remove RTX from sendEncodingParameters.
+        var commonCapabilities = getCommonCapabilities(
+          transceiver.localCapabilities,
+          transceiver.remoteCapabilities);
+
+        var hasRtx = commonCapabilities.codecs.filter(function(c) {
+          return c.name.toLowerCase() === 'rtx';
+        }).length;
+        if (!hasRtx && transceiver.sendEncodingParameters[0].rtx) {
+          delete transceiver.sendEncodingParameters[0].rtx;
+        }
+
         pc._transceive(transceiver,
             direction === 'sendrecv' || direction === 'recvonly',
             direction === 'sendrecv' || direction === 'sendonly');
@@ -4637,6 +4645,8 @@ module.exports = function(window, edgeVersion) {
         return t.mid;
       }).join(' ') + '\r\n';
     }
+    sdp += 'a=ice-options:trickle\r\n';
+
     var mediaSectionsInOffer = SDPUtils.getMediaSections(
         pc._remoteDescription.sdp).length;
     pc.transceivers.forEach(function(transceiver, sdpMLineIndex) {
@@ -4987,6 +4997,7 @@ SDPUtils.parseCandidate = function(line) {
     protocol: parts[2].toLowerCase(),
     priority: parseInt(parts[3], 10),
     ip: parts[4],
+    address: parts[4], // address is an alias for ip.
     port: parseInt(parts[5], 10),
     // skip parts[6] == 'typ'
     type: parts[7]
@@ -5022,7 +5033,7 @@ SDPUtils.writeCandidate = function(candidate) {
   sdp.push(candidate.component);
   sdp.push(candidate.protocol.toUpperCase());
   sdp.push(candidate.priority);
-  sdp.push(candidate.ip);
+  sdp.push(candidate.address || candidate.ip);
   sdp.push(candidate.port);
 
   var type = candidate.type;
@@ -5386,7 +5397,7 @@ SDPUtils.parseRtpEncodingParameters = function(mediaSection) {
       if (hasRed) {
         encParam = JSON.parse(JSON.stringify(encParam));
         encParam.fec = {
-          ssrc: secondarySsrc,
+          ssrc: primarySsrc,
           mechanism: hasUlpfec ? 'red+ulpfec' : 'red'
         };
         encodingParameters.push(encParam);
@@ -5484,7 +5495,8 @@ SDPUtils.generateSessionId = function() {
 // sessId argument is optional - if not supplied it will
 // be generated randomly
 // sessVersion is optional and defaults to 2
-SDPUtils.writeSessionBoilerplate = function(sessId, sessVer) {
+// sessUser is optional and defaults to 'thisisadapterortc'
+SDPUtils.writeSessionBoilerplate = function(sessId, sessVer, sessUser) {
   var sessionId;
   var version = sessVer !== undefined ? sessVer : 2;
   if (sessId) {
@@ -5492,9 +5504,10 @@ SDPUtils.writeSessionBoilerplate = function(sessId, sessVer) {
   } else {
     sessionId = SDPUtils.generateSessionId();
   }
+  var user = sessUser || 'thisisadapterortc';
   // FIXME: sess-id should be an NTP timestamp.
   return 'v=0\r\n' +
-      'o=thisisadapterortc ' + sessionId + ' ' + version +
+      'o=' + user + ' ' + sessionId + ' ' + version +
         ' IN IP4 127.0.0.1\r\n' +
       's=-\r\n' +
       't=0 0\r\n';
@@ -5925,10 +5938,14 @@ module.exports = {
         }
         return origSetRemoteDescription.apply(pc, arguments);
       };
-    } else if (!('RTCRtpTransceiver' in window)) {
+    } else {
+      // even if RTCRtpTransceiver is in window, it is only used and
+      // emitted in unified-plan. Unfortunately this means we need
+      // to unconditionally wrap the event.
       utils.wrapPeerConnectionEvent(window, 'track', function(e) {
         if (!e.transceiver) {
-          e.transceiver = {receiver: e.receiver};
+          Object.defineProperty(e, 'transceiver',
+            {value: {receiver: e.receiver}});
         }
         return e;
       });
@@ -6540,35 +6557,6 @@ module.exports = {
           }
         });
       }
-    } else {
-      // migrate from non-spec RTCIceServer.url to RTCIceServer.urls
-      var OrigPeerConnection = window.RTCPeerConnection;
-      window.RTCPeerConnection = function(pcConfig, pcConstraints) {
-        if (pcConfig && pcConfig.iceServers) {
-          var newIceServers = [];
-          for (var i = 0; i < pcConfig.iceServers.length; i++) {
-            var server = pcConfig.iceServers[i];
-            if (!server.hasOwnProperty('urls') &&
-                server.hasOwnProperty('url')) {
-              utils.deprecated('RTCIceServer.url', 'RTCIceServer.urls');
-              server = JSON.parse(JSON.stringify(server));
-              server.urls = server.url;
-              newIceServers.push(server);
-            } else {
-              newIceServers.push(pcConfig.iceServers[i]);
-            }
-          }
-          pcConfig.iceServers = newIceServers;
-        }
-        return new OrigPeerConnection(pcConfig, pcConstraints);
-      };
-      window.RTCPeerConnection.prototype = OrigPeerConnection.prototype;
-      // wrap static methods. Currently just generateCertificate.
-      Object.defineProperty(window.RTCPeerConnection, 'generateCertificate', {
-        get: function() {
-          return OrigPeerConnection.generateCertificate;
-        }
-      });
     }
 
     var origGetStats = window.RTCPeerConnection.prototype.getStats;
