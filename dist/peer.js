@@ -786,6 +786,8 @@ function Peer(id, options) {
   // Set whether we use SSL to same as current host
   if (options.secure === undefined && options.host !== util.CLOUD_HOST) {
     options.secure = util.isSecure();
+  } else if(options.host == util.CLOUD_HOST){
+    options.secure = true;
   }
   // Set a custom log function if present
   if (options.logFunction) {
@@ -1525,7 +1527,7 @@ var util = {
   noop: function() {},
 
   CLOUD_HOST: "0.peerjs.com",
-  CLOUD_PORT: 9000,
+  CLOUD_PORT: 443,
 
   // Browsers that need chunking:
   chunkedBrowsers: { Chrome: 1 },
@@ -6719,13 +6721,23 @@ module.exports = {
     navigator.getDisplayMedia = function(constraints) {
       return getSourceId(constraints)
         .then(function(sourceId) {
+          var widthSpecified = constraints.video && constraints.video.width;
+          var heightSpecified = constraints.video && constraints.video.height;
+          var frameRateSpecified = constraints.video &&
+            constraints.video.frameRate;
           constraints.video = {
             mandatory: {
               chromeMediaSource: 'desktop',
               chromeMediaSourceId: sourceId,
-              maxFrameRate: constraints.video.frameRate || 3
+              maxFrameRate: frameRateSpecified || 3
             }
           };
+          if (widthSpecified) {
+            constraints.video.mandatory.maxWidth = widthSpecified;
+          }
+          if (heightSpecified) {
+            constraints.video.mandatory.maxHeight = heightSpecified;
+          }
           return navigator.mediaDevices.getUserMedia(constraints);
         });
     };
