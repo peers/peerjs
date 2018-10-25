@@ -7,7 +7,7 @@
     "type": "git",
     "url": "git://github.com/peers/peerjs.git"
   },
-  "author": "Michelle Bu, Eric Zhang",
+  "author": "Michelle Bu, Eric Zhang, Jairo Caro-Accino, Carlos Caballero",
   "license": "MIT",
   "scripts": {
     "prepublish": "./node_modules/.bin/grunt",
