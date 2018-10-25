@@ -11,19 +11,22 @@
   "license": "MIT",
   "scripts": {
     "prepublish": "./node_modules/.bin/grunt",
-    "postinstall": "opencollective-postinstall",
+    "selenium:install": "selenium-standalone install",
+    "selenium:start:bg": "selenium-standalone start &",
+    "postinstall": "npm run selenium:install && opencollective-postinstall",
     "test": "cd test && codeceptjs run"
   },
   "devDependencies": {
     "codeceptjs": "^1.4.2",
     "expect.js": "*",
-    "grunt": "^0.4.5",
-    "grunt-browserify": "^3.0.1",
-    "grunt-cli": "^0.1.13",
+    "grunt": "^1.0.3",
+    "grunt-browserify": "^5.3.0",
+    "grunt-cli": "^1.3.1",
     "grunt-contrib-concat": "^0.5.0",
     "grunt-contrib-copy": "^1.0.0",
-    "grunt-contrib-uglify": "^0.5.1",
-    "mocha": "*"
+    "grunt-contrib-uglify": "^4.0.0",
+    "mocha": "*",
+    "selenium-standalone": "^6.15.3"
   },
   "dependencies": {
     "eventemitter3": "^0.1.5",
