@@ -61,7 +61,7 @@ declare class Helper {
   /** Hook executed after all tests are executed */
   _finishTest(suite: () => void): void
   /**Access another configured helper: this.helpers['AnotherHelper'] */
-  get helpers(): any
+  helpers(): any
   /** Print debug message to console (outputs only in debug mode) */
   debug(msg: string): void
 
