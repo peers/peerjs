@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "sourceMap": true,
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "target": "es5",
+    "lib": ["dom", "es6"],
+    "outDir": "dist"
+  },
+  "include": ["src"],
+  "compileOnSave": false
+}
