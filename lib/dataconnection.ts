@@ -1,27 +1,32 @@
-var util = require('./util');
-var EventEmitter = require('eventemitter3');
-var Negotiator = require('./negotiator');
-var Reliable = require('reliable');
+import { util } from "./util";
+import { EventEmitter } from "eventemitter3";
+import { Negotiator } from "./negotiator";
+import { Reliable } from "reliable";
 
 /**
  * Wraps a DataChannel between two Peers.
  */
-function DataConnection(peer, provider, options) {
-  if (!(this instanceof DataConnection)) return new DataConnection(peer, provider, options);
+export function DataConnection(peer, provider, options) {
+  if (!(this instanceof DataConnection))
+    return new DataConnection(peer, provider, options);
   EventEmitter.call(this);
 
-  this.options = util.extend({
-    serialization: 'binary',
-    reliable: false
-  }, options);
+  this.options = util.extend(
+    {
+      serialization: "binary",
+      reliable: false
+    },
+    options
+  );
 
   // Connection is not open yet.
   this.open = false;
-  this.type = 'data';
+  this.type = "data";
   this.peer = peer;
   this.provider = provider;
 
-  this.id = this.options.connectionId || DataConnection._idPrefix + util.randomToken();
+  this.id =
+    this.options.connectionId || DataConnection._idPrefix + util.randomToken();
 
   this.label = this.options.label || this.id;
   this.metadata = this.options.metadata;
@@ -50,24 +55,24 @@ function DataConnection(peer, provider, options) {
 
 util.inherits(DataConnection, EventEmitter);
 
-DataConnection._idPrefix = 'dc_';
+DataConnection._idPrefix = "dc_";
 
 /** Called by the Negotiator when the DataChannel is ready. */
 DataConnection.prototype.initialize = function(dc) {
   this._dc = this.dataChannel = dc;
   this._configureDataChannel();
-}
+};
 
 DataConnection.prototype._configureDataChannel = function() {
   var self = this;
   if (util.supports.sctp) {
-    this._dc.binaryType = 'arraybuffer';
+    this._dc.binaryType = "arraybuffer";
   }
   this._dc.onopen = function() {
-    util.log('Data channel connection success');
+    util.log("Data channel connection success");
     self.open = true;
-    self.emit('open');
-  }
+    self.emit("open");
+  };
 
   // Use the Reliable shim for non Firefox browsers
   if (!util.supports.sctp && this.reliable) {
@@ -76,7 +81,7 @@ DataConnection.prototype._configureDataChannel = function() {
 
   if (this._reliable) {
     this._reliable.onmessage = function(msg) {
-      self.emit('data', msg);
+      self.emit("data", msg);
     };
   } else {
     this._dc.onmessage = function(e) {
@@ -84,22 +89,22 @@ DataConnection.prototype._configureDataChannel = function() {
     };
   }
   this._dc.onclose = function(e) {
-    util.log('DataChannel closed for:', self.peer);
+    util.log("DataChannel closed for:", self.peer);
     self.close();
   };
-}
+};
 
 // Handles a DataChannel message.
 DataConnection.prototype._handleDataMessage = function(e) {
   var self = this;
   var data = e.data;
   var datatype = data.constructor;
-  if (this.serialization === 'binary' || this.serialization === 'binary-utf8') {
+  if (this.serialization === "binary" || this.serialization === "binary-utf8") {
     if (datatype === Blob) {
       // Datatype should never be blob
       util.blobToArrayBuffer(data, function(ab) {
         data = util.unpack(ab);
-        self.emit('data', data);
+        self.emit("data", data);
       });
       return;
     } else if (datatype === ArrayBuffer) {
@@ -109,7 +114,7 @@ DataConnection.prototype._handleDataMessage = function(e) {
       var ab = util.binaryStringToArrayBuffer(data);
       data = util.unpack(ab);
     }
-  } else if (this.serialization === 'json') {
+  } else if (this.serialization === "json") {
     data = JSON.parse(data);
   }
 
@@ -117,7 +122,11 @@ DataConnection.prototype._handleDataMessage = function(e) {
   // We're guaranteed that this isn't 0.
   if (data.__peerData) {
     var id = data.__peerData;
-    var chunkInfo = this._chunkedData[id] || {data: [], count: 0, total: data.total};
+    var chunkInfo = this._chunkedData[id] || {
+      data: [],
+      count: 0,
+      total: data.total
+    };
 
     chunkInfo.data[data.n] = data.data;
     chunkInfo.count += 1;
@@ -128,15 +137,15 @@ DataConnection.prototype._handleDataMessage = function(e) {
 
       // We've received all the chunks--time to construct the complete data.
       data = new Blob(chunkInfo.data);
-      this._handleDataMessage({data: data});
+      this._handleDataMessage({ data: data });
     }
 
     this._chunkedData[id] = chunkInfo;
     return;
   }
 
-  this.emit('data', data);
-}
+  this.emit("data", data);
+};
 
 /**
  * Exposed functionality for users.
@@ -149,13 +158,18 @@ DataConnection.prototype.close = function() {
   }
   this.open = false;
   Negotiator.cleanup(this);
-  this.emit('close');
-}
+  this.emit("close");
+};
 
 /** Allows user to send data. */
 DataConnection.prototype.send = function(data, chunked) {
   if (!this.open) {
-    this.emit('error', new Error('Connection is not open. You should listen for the `open` event before sending messages.'));
+    this.emit(
+      "error",
+      new Error(
+        "Connection is not open. You should listen for the `open` event before sending messages."
+      )
+    );
     return;
   }
   if (this._reliable) {
@@ -165,14 +179,19 @@ DataConnection.prototype.send = function(data, chunked) {
     return;
   }
   var self = this;
-  if (this.serialization === 'json') {
+  if (this.serialization === "json") {
     this._bufferedSend(JSON.stringify(data));
-  } else if (this.serialization === 'binary' || this.serialization === 'binary-utf8') {
+  } else if (
+    this.serialization === "binary" ||
+    this.serialization === "binary-utf8"
+  ) {
     var blob = util.pack(data);
 
     // For Chrome-Firefox interoperability, we need to make Firefox "chunk"
     // the data it sends out.
-    var needsChunking = util.chunkedBrowsers[this._peerBrowser] || util.chunkedBrowsers[util.browser];
+    var needsChunking =
+      util.chunkedBrowsers[this._peerBrowser] ||
+      util.chunkedBrowsers[util.browser];
     if (needsChunking && !chunked && blob.size > util.chunkedMTU) {
       this._sendChunks(blob);
       return;
@@ -195,14 +214,14 @@ DataConnection.prototype.send = function(data, chunked) {
   } else {
     this._bufferedSend(data);
   }
-}
+};
 
 DataConnection.prototype._bufferedSend = function(msg) {
   if (this._buffering || !this._trySend(msg)) {
     this._buffer.push(msg);
     this.bufferSize = this._buffer.length;
   }
-}
+};
 
 // Returns true if the send succeeds.
 DataConnection.prototype._trySend = function(msg) {
@@ -220,7 +239,7 @@ DataConnection.prototype._trySend = function(msg) {
     return false;
   }
   return true;
-}
+};
 
 // Try to send the first message in the buffer.
 DataConnection.prototype._tryBuffer = function() {
@@ -235,7 +254,7 @@ DataConnection.prototype._tryBuffer = function() {
     this.bufferSize = this._buffer.length;
     this._tryBuffer();
   }
-}
+};
 
 DataConnection.prototype._sendChunks = function(blob) {
   var blobs = util.chunk(blob);
@@ -243,25 +262,28 @@ DataConnection.prototype._sendChunks = function(blob) {
     var blob = blobs[i];
     this.send(blob, true);
   }
-}
+};
 
 DataConnection.prototype.handleMessage = function(message) {
   var payload = message.payload;
 
   switch (message.type) {
-    case 'ANSWER':
+    case "ANSWER":
       this._peerBrowser = payload.browser;
 
       // Forward to negotiator
       Negotiator.handleSDP(message.type, this, payload.sdp);
       break;
-    case 'CANDIDATE':
+    case "CANDIDATE":
       Negotiator.handleCandidate(this, payload.candidate);
       break;
     default:
-      util.warn('Unrecognized message type:', message.type, 'from peer:', this.peer);
+      util.warn(
+        "Unrecognized message type:",
+        message.type,
+        "from peer:",
+        this.peer
+      );
       break;
   }
-}
-
-module.exports = DataConnection;
+};
