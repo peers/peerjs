@@ -1,10 +1,10 @@
-var defaultConfig = {'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }]};
+var defaultConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 var dataCount = 1;
 
-var BinaryPack = require("js-binarypack");
-var RTCPeerConnection = require("./adapter").RTCPeerConnection;
+import BinaryPack from "js-binarypack";
+import { RTCPeerConnection } from "./adapter";
 
-var util = {
+export const util = {
   noop: function() {},
 
   CLOUD_HOST: "0.peerjs.com",
@@ -320,5 +320,3 @@ var util = {
     return location.protocol === "https:";
   }
 };
-
-module.exports = util;

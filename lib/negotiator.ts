@@ -1,12 +1,14 @@
-var util = require("./util");
-var RTCPeerConnection = require("./adapter").RTCPeerConnection;
-var RTCSessionDescription = require("./adapter").RTCSessionDescription;
-var RTCIceCandidate = require("./adapter").RTCIceCandidate;
+import { util } from "./util";
+import {
+  RTCPeerConnection,
+  RTCSessionDescription,
+  RTCIceCandidate
+} from "./adapter";
 
 /**
  * Manages all negotiations between Peers.
  */
-var Negotiator = {
+export const Negotiator = {
   pcs: {
     data: {},
     media: {}
@@ -341,5 +343,3 @@ Negotiator.handleCandidate = function(connection, ice) {
   );
   util.log("Added ICE candidate for:", connection.peer);
 };
-
-module.exports = Negotiator;

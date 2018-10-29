@@ -1,8 +1,10 @@
-require('webrtc-adapter');
+import webrtc from "webrtc-adapter";
 
-module.exports.RTCSessionDescription = window.RTCSessionDescription ||
-	window.mozRTCSessionDescription;
-module.exports.RTCPeerConnection = window.RTCPeerConnection ||
-	window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
-module.exports.RTCIceCandidate = window.RTCIceCandidate ||
-	window.mozRTCIceCandidate;
+export const RTCSessionDescription =
+  window.RTCSessionDescription || window.mozRTCSessionDescription;
+export const RTCPeerConnection =
+  window.RTCPeerConnection ||
+  window.mozRTCPeerConnection ||
+  window.webkitRTCPeerConnection;
+export const RTCIceCandidate =
+  window.RTCIceCandidate || window.mozRTCIceCandidate;

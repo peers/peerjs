@@ -1,13 +1,13 @@
-var util = require("./util");
-var EventEmitter = require("eventemitter3");
-var Socket = require("./socket");
-var MediaConnection = require("./mediaconnection");
-var DataConnection = require("./dataconnection");
+import { util } from "./util";
+import { EventEmitter } from "eventemitter3";
+import { Socket } from "./socket";
+import { MediaConnection } from "./mediaconnection";
+import { DataConnection } from "./dataconnection";
 
 /**
  * A peer who can initiate connections with other peers.
  */
-function Peer(id, options) {
+export function Peer(id, options) {
   if (!(this instanceof Peer)) return new Peer(id, options);
   EventEmitter.call(this);
 
@@ -50,7 +50,7 @@ function Peer(id, options) {
   // Set whether we use SSL to same as current host
   if (options.secure === undefined && options.host !== util.CLOUD_HOST) {
     options.secure = util.isSecure();
-  } else if(options.host == util.CLOUD_HOST){
+  } else if (options.host == util.CLOUD_HOST) {
     options.secure = true;
   }
   // Set a custom log function if present
@@ -559,5 +559,3 @@ Peer.prototype.listAllPeers = function(cb) {
   };
   http.send(null);
 };
-
-module.exports = Peer;
