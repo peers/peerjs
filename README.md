@@ -63,7 +63,7 @@ navigator.getUserMedia({video: true, audio: true}, function(stream) {
 ```javascript
 navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 navigator.getUserMedia({video: true, audio: true}, function(stream) {
-	peer.HostSwarm("TestChannel",stream)
+	peer.HostSwarm("TestChannel",stream);
 });
 ```
 
