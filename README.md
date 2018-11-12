@@ -59,6 +59,15 @@ navigator.getUserMedia({video: true, audio: true}, function(stream) {
 });
 
 ```
+**Host Swarm Channel**
+```javascript
+navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+navigator.getUserMedia({video: true, audio: true}, function(stream) {
+	peer.HostSwarm("TestChannel",stream)
+});
+```
+
+```
 **Answer**
 ```javascript
 navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
