@@ -59,14 +59,14 @@ navigator.getUserMedia({video: true, audio: true}, function(stream) {
 });
 
 ```
-**Host Swarm Channel**
+**Host Swarm**
 ```javascript
 navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 navigator.getUserMedia({video: true, audio: true}, function(stream) {
 	peer.JoinSwarmChannel("TestChannel",stream);
 });
 ```
-**Join Swarm Channel**  
+**Call Swarm**  
 ```javascript
 var peerfinder = new PeerFinder(peer);
 peer.JoinSwarmChannel("TestChannel",null);
