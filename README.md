@@ -66,6 +66,18 @@ navigator.getUserMedia({video: true, audio: true}, function(stream) {
 	peer.JoinSwarmChannel("TestChannel",stream);
 });
 ```
+**Join Swarm Channel**  
+```javascript
+var peerfinder = new PeerFinder(peer);
+peer.JoinSwarmChannel("TestChannel",null);
+peerfinder.GetBestPeer(function(bestpeer){
+	peer.GetSwarmStream(bestpeer,function(stream){
+		var video = document.getElementById("remotevideo");
+		video.srcObject = stream;
+		video.play();
+	});
+});
+```
 **Answer**
 ```javascript
 navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
