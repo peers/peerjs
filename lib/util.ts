@@ -266,6 +266,7 @@ export const util = {
   chunk: function(bl) {
     var chunks = [];
     var size = bl.size;
+    var index;
     var start = (index = 0);
     var total = Math.ceil(size / util.chunkedMTU);
     while (start < size) {
