@@ -13,7 +13,7 @@
     "prepublish": "./node_modules/.bin/grunt",
     "selenium:install": "selenium-standalone install",
     "selenium:start:bg": "selenium-standalone start &",
-    "postinstall": "npm run selenium:install && opencollective-postinstall",
+    "postinstall": "opencollective-postinstall",
     "test": "cd test && codeceptjs run",
     "release": "standard-version"
   },
