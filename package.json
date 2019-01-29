@@ -2,7 +2,7 @@
   "name": "peerjs",
   "version": "0.3.19",
   "description": "PeerJS client",
-  "main": "./lib/peer.js",
+  "main": "./dist/peer.min.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/peers/peerjs.git"
@@ -19,7 +19,6 @@
   },
   "husky": {
     "hooks": {
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
     }
   },
   "release": {
