@@ -1,0 +1,12 @@
+{
+  "name": "examples",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "antd": "^3.13.2",
+    "peerjs": "^0.3.20",
+    "react": "^16.8.1",
+    "react-dom": "^16.8.1"
+  }
+}

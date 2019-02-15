@@ -21,3 +21,5 @@ window.RTCIceCandidate = RTCIceCandidate;
 window.Negotiator = Negotiator;
 window.util = util;
 window.BinaryPack = jsBinarypack;
+
+export default Peer

@@ -7,7 +7,7 @@ import { DataConnection } from "./dataconnection";
 /**
  * A peer who can initiate connections with other peers.
  */
-export function Peer(id, options) {
+export function Peer(id, options): void {
   if (!(this instanceof Peer)) return new Peer(id, options);
   EventEmitter.call(this);
 
