@@ -27,14 +27,7 @@ Negotiator.startConnection = function(connection, options) {
   connection.pc = connection.peerConnection = pc;
 
   if (connection.type === "media" && options._stream) {
-    // Add the stream.
-    if ('addStream' in pc) {
-      pc.addStream(options._stream);
-    } else if ('addTrack' in pc) {
-      options._stream.getTracks().forEach(track => {
-        pc.addTrack(track, options._stream);
-      });
-    }
+    addStreamToConnection(options._stream, pc);
   }
 
   // What do we need to do now?
@@ -198,7 +191,7 @@ Negotiator._setupListeners = function(connection, pc, pc_id) {
     var stream = evt.streams[0];
     var connection = provider.getConnection(peerId, connectionId);
     if (connection.type === "media") {
-      connection.addStream(stream);
+      addStreamToConnection(stream, connection);
     }
   };
 };
@@ -347,3 +340,13 @@ Negotiator.handleCandidate = function(connection, ice) {
   );
   util.log("Added ICE candidate for:", connection.peer);
 };
+
+function addStreamToConnection(stream: MediaStream, connection: RTCPeerConnection) {
+  if ('addTrack' in connection) {
+    stream.getTracks().forEach(track => {
+      connection.addTrack(track, stream);
+    });
+  } else if ('addStream' in connection) {
+    (<any>connection).addStream(stream);
+  }
+}
