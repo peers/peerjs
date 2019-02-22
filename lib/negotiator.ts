@@ -221,7 +221,6 @@ Negotiator.cleanup = function(connection) {
 Negotiator._makeOffer = function(connection) {
   var pc: RTCPeerConnection = connection.pc;
   const callback = function(offer) {
-    console.log('created offer', offer);
     util.log("Created offer.");
 
     if (
@@ -266,7 +265,6 @@ Negotiator._makeOffer = function(connection) {
     connection.provider.emitError("webrtc", err);
     util.log("Failed to createOffer, ", err);
   }
-  console.log(pc);
   pc.createOffer(connection.options.constraints)
     .then(offer => callback(offer))
     .catch(err => errorHandler(err));
