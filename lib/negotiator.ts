@@ -28,7 +28,13 @@ Negotiator.startConnection = function(connection, options) {
 
   if (connection.type === "media" && options._stream) {
     // Add the stream.
-    pc.addStream(options._stream);
+    if ('addStream' in pc) {
+      pc.addStream(options._stream);
+    } else if ('addTrack' in pc) {
+      options._stream.getTracks().forEach(track => {
+        pc.addTrack(track, options._stream);
+      });
+    }
   }
 
   // What do we need to do now?
@@ -213,117 +219,116 @@ Negotiator.cleanup = function(connection) {
 };
 
 Negotiator._makeOffer = function(connection) {
-  var pc = connection.pc;
-  pc.createOffer(
-    function(offer) {
-      util.log("Created offer.");
+  var pc: RTCPeerConnection = connection.pc;
+  const callback = function(offer) {
+    util.log("Created offer.");
 
-      if (
-        !util.supports.sctp &&
-        connection.type === "data" &&
-        connection.reliable
-      ) {
-        offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
-      }
-
-      pc.setLocalDescription(
-        offer,
-        function() {
-          util.log("Set localDescription: offer", "for:", connection.peer);
-          connection.provider.socket.send({
-            type: "OFFER",
-            payload: {
-              sdp: offer,
-              type: connection.type,
-              label: connection.label,
-              connectionId: connection.id,
-              reliable: connection.reliable,
-              serialization: connection.serialization,
-              metadata: connection.metadata,
-              browser: util.browser
-            },
-            dst: connection.peer
-          });
+    if (
+      !util.supports.sctp &&
+      connection.type === "data" &&
+      connection.reliable
+    ) {
+      offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
+    }
+    const descCallback = function() {
+      util.log("Set localDescription: offer", "for:", connection.peer);
+      connection.provider.socket.send({
+        type: "OFFER",
+        payload: {
+          sdp: offer,
+          type: connection.type,
+          label: connection.label,
+          connectionId: connection.id,
+          reliable: connection.reliable,
+          serialization: connection.serialization,
+          metadata: connection.metadata,
+          browser: util.browser
         },
-        function(err) {
-          // TODO: investigate why _makeOffer is being called from the answer
-          if (
-            err !=
-            "OperationError: Failed to set local offer sdp: Called in wrong state: kHaveRemoteOffer"
-          ) {
-            connection.provider.emitError("webrtc", err);
-            util.log("Failed to setLocalDescription, ", err);
-          }
-        }
-      );
-    },
-    function(err) {
-      connection.provider.emitError("webrtc", err);
-      util.log("Failed to createOffer, ", err);
-    },
-    connection.options.constraints
-  );
+        dst: connection.peer
+      });
+    }
+    const descError = function(err) {
+      // TODO: investigate why _makeOffer is being called from the answer
+      if (
+        err !=
+        "OperationError: Failed to set local offer sdp: Called in wrong state: kHaveRemoteOffer"
+      ) {
+        connection.provider.emitError("webrtc", err);
+        util.log("Failed to setLocalDescription, ", err);
+      }
+    }
+    pc.setLocalDescription(offer)
+    .then(() => descCallback())
+    .catch(err => descError(err));
+  }
+  const errorHandler = function(err) {
+    connection.provider.emitError("webrtc", err);
+    util.log("Failed to createOffer, ", err);
+  }
+  pc.createOffer(connection.options.constraints)
+    .then(offer => callback(offer))
+    .catch(err => errorHandler(err));
 };
 
 Negotiator._makeAnswer = function(connection) {
-  var pc = connection.pc;
+  var pc: RTCPeerConnection = connection.pc;
+  const callback = function(answer) {
+    util.log("Created answer.");
 
-  pc.createAnswer(
-    function(answer) {
-      util.log("Created answer.");
-
-      if (
-        !util.supports.sctp &&
-        connection.type === "data" &&
-        connection.reliable
-      ) {
-        answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
-      }
-
-      pc.setLocalDescription(
-        answer,
-        function() {
-          util.log("Set localDescription: answer", "for:", connection.peer);
-          connection.provider.socket.send({
-            type: "ANSWER",
-            payload: {
-              sdp: answer,
-              type: connection.type,
-              connectionId: connection.id,
-              browser: util.browser
-            },
-            dst: connection.peer
-          });
-        },
-        function(err) {
-          connection.provider.emitError("webrtc", err);
-          util.log("Failed to setLocalDescription, ", err);
-        }
-      );
-    },
-    function(err) {
-      connection.provider.emitError("webrtc", err);
-      util.log("Failed to create answer, ", err);
+    if (
+      !util.supports.sctp &&
+      connection.type === "data" &&
+      connection.reliable
+    ) {
+      answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
     }
-  );
+
+    const descCallback = function() {
+      util.log("Set localDescription: answer", "for:", connection.peer);
+      connection.provider.socket.send({
+        type: "ANSWER",
+        payload: {
+          sdp: answer,
+          type: connection.type,
+          connectionId: connection.id,
+          browser: util.browser
+        },
+        dst: connection.peer
+      });
+    }
+    pc.setLocalDescription(answer)
+    .then(() => descCallback())
+    .catch(err => {
+        connection.provider.emitError("webrtc", err);
+        util.log("Failed to setLocalDescription, ", err);
+      });
+  };
+  pc.createAnswer()
+  .then(answer => callback(answer))
+  .catch(err => {
+    connection.provider.emitError("webrtc", err);
+    util.log("Failed to create answer, ", err);
+  });
 };
 
 /** Handle an SDP. */
 Negotiator.handleSDP = function(type, connection, sdp) {
   sdp = new RTCSessionDescription(sdp);
-  var pc = connection.pc;
+  const pc: RTCPeerConnection = connection.pc;
 
   util.log("Setting remote description", sdp);
-  pc.setRemoteDescription(
-    sdp,
-    function() {
-      util.log("Set remoteDescription:", type, "for:", connection.peer);
 
-      if (type === "OFFER") {
-        Negotiator._makeAnswer(connection);
-      }
-    },
-    function(err) {
+  const callback = function() {
+    util.log("Set remoteDescription:", type, "for:", connection.peer);
+
+    if (type === "OFFER") {
+      Negotiator._makeAnswer(connection);
+    }
+  };
+
+  pc.setRemoteDescription(sdp)
+  .then(() => callback())
+  .catch(err => {
       connection.provider.emitError("webrtc", err);
       util.log("Failed to setRemoteDescription, ", err);
     }
