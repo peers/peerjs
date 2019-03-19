@@ -28,12 +28,12 @@ export function Peer(id, options): void {
       host: util.CLOUD_HOST,
       port: util.CLOUD_PORT,
       path: "/",
+      key: "peerjs",
       token: util.randomToken(),
       config: util.defaultConfig
     },
     options
   );
-  options.key = "peerjs";
   this.options = options;
   // Detect relative URL host.
   if (options.host === "/") {
