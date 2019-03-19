@@ -2,6 +2,8 @@
 
 I'm too busy to improve PeerJS, but I don't want it to fall in dust so if anyone wants to become a maintainer, anyone is welcome!! I'll give support with any problem when coding and will be reviewing PRs. I'll also be in charge of the server and sysadmin things.
 
+it is a good opportunity to gain experience too, if you think it's too big for you, don't worry! I'll be mentoring you (sometimes :) )
+
 If you want to become a maintainer, you can write me to kidandcat@gmail.com
 
 
