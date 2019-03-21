@@ -1,4 +1,4 @@
-import BinaryPack from "js-binarypack";
+import * as BinaryPack from "js-binarypack";
 import { RTCPeerConnection } from "./adapter";
 
 const DEFAULT_CONFIG = {
@@ -92,17 +92,22 @@ export class util {
   static readonly defaultConfig = DEFAULT_CONFIG;
 
   // Returns the current browser.
-  static readonly browser: string = (function() {
-    if (window.mozRTCPeerConnection) {
+  static readonly browser: string = (function(global) {
+    // @ts-ignore
+    if (global.mozRTCPeerConnection) {
       return "Firefox";
-    } else if (window.webkitRTCPeerConnection) {
-      return "Chrome";
-    } else if (window.RTCPeerConnection) {
-      return "Supported";
-    } else {
-      return "Unsupported";
     }
-  })();
+    // @ts-ignore
+    if (global.webkitRTCPeerConnection) {
+      return "Chrome";
+    }
+
+    if (global.RTCPeerConnection) {
+      return "Supported";
+    }
+
+    return "Unsupported";
+  })(window);
 
   // Lists which features are supported
   static readonly supports = (function() {
@@ -115,6 +120,7 @@ export class util {
 
     let binaryBlob = false;
     let sctp = false;
+    // @ts-ignore
     const onnegotiationneeded = !!window.webkitRTCPeerConnection;
 
     let pc, dc;
@@ -274,7 +280,10 @@ export class util {
 
     if (global.addEventListener) {
       global.addEventListener("message", handleMessage, true);
-    } else if (global.attachEvent) {
+    }
+    // @ts-ignore
+    else if (global.attachEvent) {
+      // @ts-ignore
       global.attachEvent("onmessage", handleMessage);
     }
 
@@ -320,6 +329,7 @@ export class util {
     const fr = new FileReader();
 
     fr.onload = function(evt) {
+      // @ts-ignore
       cb(evt.target.result);
     };
 
@@ -330,6 +340,7 @@ export class util {
     const fr = new FileReader();
 
     fr.onload = function(evt) {
+      // @ts-ignore
       cb(evt.target.result);
     };
 
