@@ -40,17 +40,15 @@
     "selenium-standalone": "^6.15.3",
     "standard": "^12.0.1",
     "standard-version": "^4.4.0",
-    "typescript": "^3.3.3"
+    "typescript": "^3.3.3",
+    "express": "^4.16.3"
   },
   "dependencies": {
     "@types/node": "^10.12.0",
     "eventemitter3": "^0.1.6",
-    "express": "^4.16.3",
     "js-binarypack": "0.0.9",
     "opencollective": "^1.0.3",
     "opencollective-postinstall": "^2.0.0",
-    "peerjs": "^0.3.20",
-    "react": "^16.8.1",
     "reliable": "git+https://github.com/michelle/reliable.git",
     "webrtc-adapter": "^6.3.2"
   },
