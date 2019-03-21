@@ -1,41 +1,60 @@
-var defaultConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
-var dataCount = 1;
-
-import BinaryPack from "js-binarypack";
+import * as BinaryPack from "js-binarypack";
 import { RTCPeerConnection } from "./adapter";
 
-export const util = {
-  noop: function() {},
+const DEFAULT_CONFIG = {
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+};
 
-  CLOUD_HOST: "0.peerjs.com",
-  CLOUD_PORT: 443,
+/*
+Prints log messages depending on the debug level passed in. Defaults to 0.
+0  Prints no logs.
+1  Prints only errors.
+2  Prints errors and warnings.
+3  Prints all logs.
+*/
+const enum DebugLevel {
+  Disabled,
+  Errors,
+  Warnings,
+  All
+}
+
+export class util {
+  static noop(): void {}
+
+  static readonly CLOUD_HOST = "0.peerjs.com";
+  static readonly CLOUD_PORT = 443;
 
   // Browsers that need chunking:
-  chunkedBrowsers: { Chrome: 1 },
-  chunkedMTU: 16300, // The original 60000 bytes setting does not work when sending data from Firefox to Chrome, which is "cut off" after 16384 bytes and delivered individually.
+  static readonly chunkedBrowsers = { Chrome: 1 };
+  static readonly chunkedMTU = 16300; // The original 60000 bytes setting does not work when sending data from Firefox to Chrome, which is "cut off" after 16384 bytes and delivered individually.
 
   // Logging logic
-  logLevel: 0,
-  setLogLevel: function(level) {
-    var debugLevel = parseInt(level, 10);
+  static readonly debug = false;
+  static logLevel = DebugLevel.Disabled;
+
+  static setLogLevel(level: string): void {
+    const debugLevel = parseInt(level, 10);
+
     if (!isNaN(parseInt(level, 10))) {
       util.logLevel = debugLevel;
     } else {
       // If they are using truthy/falsy values for debug
-      util.logLevel = level ? 3 : 0;
+      util.logLevel = level ? DebugLevel.All : DebugLevel.Disabled;
     }
     util.log = util.warn = util.error = util.noop;
-    if (util.logLevel > 0) {
+    if (util.logLevel > DebugLevel.Disabled) {
       util.error = util._printWith("ERROR");
     }
-    if (util.logLevel > 1) {
+    if (util.logLevel > DebugLevel.Errors) {
       util.warn = util._printWith("WARNING");
     }
-    if (util.logLevel > 2) {
+    if (util.logLevel > DebugLevel.Warnings) {
       util.log = util._print;
     }
-  },
-  setLogFunction: function(fn) {
+  }
+
+  static setLogFunction(fn): void {
     if (fn.constructor !== Function) {
       util.warn(
         "The log function you passed in is not a function. Defaulting to regular logs."
@@ -43,63 +62,71 @@ export const util = {
     } else {
       util._print = fn;
     }
-  },
+  }
 
-  _printWith: function(prefix) {
+  private static _printWith(prefix) {
     return function() {
-      var copy = Array.prototype.slice.call(arguments);
+      const copy = Array.prototype.slice.call(arguments);
       copy.unshift(prefix);
       util._print.apply(util, copy);
     };
-  },
-  _print: function() {
-    var err = false;
-    var copy = Array.prototype.slice.call(arguments);
+  }
+
+  private static _print(...rest): void {
+    let err = false;
+    const copy = [...rest];
+
     copy.unshift("PeerJS: ");
-    for (var i = 0, l = copy.length; i < l; i++) {
+
+    for (let i in copy) {
       if (copy[i] instanceof Error) {
         copy[i] = "(" + copy[i].name + ") " + copy[i].message;
         err = true;
       }
     }
+
     err ? console.error.apply(console, copy) : console.log.apply(console, copy);
-  },
-  //
+  }
 
   // Returns browser-agnostic default config
-  defaultConfig: defaultConfig,
-  //
+  static readonly defaultConfig = DEFAULT_CONFIG;
 
   // Returns the current browser.
-  browser: (function() {
-    if (window.mozRTCPeerConnection) {
+  static readonly browser: string = (function(global) {
+    // @ts-ignore
+    if (global.mozRTCPeerConnection) {
       return "Firefox";
-    } else if (window.webkitRTCPeerConnection) {
-      return "Chrome";
-    } else if (window.RTCPeerConnection) {
-      return "Supported";
-    } else {
-      return "Unsupported";
     }
-  })(),
-  //
+    // @ts-ignore
+    if (global.webkitRTCPeerConnection) {
+      return "Chrome";
+    }
+
+    if (global.RTCPeerConnection) {
+      return "Supported";
+    }
+
+    return "Unsupported";
+  })(window);
 
   // Lists which features are supported
-  supports: (function() {
+  static readonly supports = (function() {
     if (typeof RTCPeerConnection === "undefined") {
       return {};
     }
 
-    var data = true;
-    var audioVideo = true;
+    let data = true;
+    let audioVideo = true;
 
-    var binaryBlob = false;
-    var sctp = false;
-    var onnegotiationneeded = !!window.webkitRTCPeerConnection;
+    let binaryBlob = false;
+    let sctp = false;
+    // @ts-ignore
+    const onnegotiationneeded = !!window.webkitRTCPeerConnection;
 
-    var pc, dc;
+    let pc, dc;
+
     try {
-      pc = new RTCPeerConnection(defaultConfig, {
+      pc = new RTCPeerConnection(DEFAULT_CONFIG, {
         optional: [{ RtpDataChannels: true }]
       });
     } catch (e) {
@@ -125,9 +152,9 @@ export const util = {
       // Reliable test.
       // Unfortunately Chrome is a bit unreliable about whether or not they
       // support reliable.
-      var reliablePC = new RTCPeerConnection(defaultConfig, {});
+      const reliablePC = new RTCPeerConnection(DEFAULT_CONFIG, {});
       try {
-        var reliableDC = reliablePC.createDataChannel(
+        const reliableDC = reliablePC.createDataChannel(
           "_PEERJSRELIABLETEST",
           {}
         );
@@ -175,23 +202,15 @@ export const util = {
       sctp: sctp,
       onnegotiationneeded: onnegotiationneeded
     };
-  })(),
-  //
+  })();
 
   // Ensure alphanumeric ids
-  validateId: function(id) {
+  static validateId(id: string): boolean {
     // Allow empty ids
-    return !id || /^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(id);
-  },
+    return !id || /^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.test(id);
+  }
 
-  validateKey: function(key) {
-    // Allow empty keys
-    return !key || /^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.exec(key);
-  },
-
-  debug: false,
-
-  inherits: function(ctor, superCtor) {
+  static inherits(ctor, superCtor): void {
     ctor.super_ = superCtor;
     ctor.prototype = Object.create(superCtor.prototype, {
       constructor: {
@@ -201,38 +220,44 @@ export const util = {
         configurable: true
       }
     });
-  },
-  extend: function(dest, source) {
-    for (var key in source) {
+  }
+
+  static extend(dest, source): any {
+    for (let key in source) {
       if (source.hasOwnProperty(key)) {
         dest[key] = source[key];
       }
     }
     return dest;
-  },
-  pack: BinaryPack.pack,
-  unpack: BinaryPack.unpack,
+  }
 
-  log: function() {
-    if (util.debug) {
-      var err = false;
-      var copy = Array.prototype.slice.call(arguments);
-      copy.unshift("PeerJS: ");
-      for (var i = 0, l = copy.length; i < l; i++) {
-        if (copy[i] instanceof Error) {
-          copy[i] = "(" + copy[i].name + ") " + copy[i].message;
-          err = true;
-        }
+  static pack = BinaryPack.pack;
+  static unpack = BinaryPack.unpack;
+
+  static log(...rest): void {
+    if (!util.debug) return;
+
+    let err = false;
+    const copy = [...rest];
+
+    copy.unshift("PeerJS: ");
+
+    for (let i in copy) {
+      if (copy[i] instanceof Error) {
+        copy[i] = "(" + copy[i].name + ") " + copy[i].message;
+        err = true;
       }
-      err
-        ? console.error.apply(console, copy)
-        : console.log.apply(console, copy);
     }
-  },
 
-  setZeroTimeout: (function(global) {
-    var timeouts = [];
-    var messageName = "zero-timeout-message";
+    err ? console.error.apply(console, copy) : console.log.apply(console, copy);
+  }
+
+  static warn(...rest): void {}
+  static error(...rest): void {}
+
+  static setZeroTimeout = (global => {
+    const timeouts = [];
+    const messageName = "zero-timeout-message";
 
     // Like setTimeout, but only takes a function argument.	 There's
     // no time argument (always zero) and no arguments (you have to
@@ -243,7 +268,7 @@ export const util = {
     }
 
     function handleMessage(event) {
-      if (event.source == global && event.data == messageName) {
+      if (event.source === global && event.data === messageName) {
         if (event.stopPropagation) {
           event.stopPropagation();
         }
@@ -252,29 +277,38 @@ export const util = {
         }
       }
     }
+
     if (global.addEventListener) {
       global.addEventListener("message", handleMessage, true);
-    } else if (global.attachEvent) {
+    }
+    // @ts-ignore
+    else if (global.attachEvent) {
+      // @ts-ignore
       global.attachEvent("onmessage", handleMessage);
     }
+
     return setZeroTimeoutPostMessage;
-  })(window),
+  })(window);
 
   // Binary stuff
 
-  // chunks a blob.
-  chunk: function(bl) {
-    var chunks = [];
-    var size = bl.size;
-    var index;
-    var start = (index = 0);
-    var total = Math.ceil(size / util.chunkedMTU);
-    while (start < size) {
-      var end = Math.min(size, start + util.chunkedMTU);
-      var b = bl.slice(start, end);
+  private static _dataCount = 1;
 
-      var chunk = {
-        __peerData: dataCount,
+  // chunks a blob.
+  static chunk(bl: Blob): any[] {
+    const chunks = [];
+    const size = bl.size;
+    const total = Math.ceil(size / util.chunkedMTU);
+
+    let index;
+    let start = (index = 0);
+
+    while (start < size) {
+      const end = Math.min(size, start + util.chunkedMTU);
+      const b = bl.slice(start, end);
+
+      const chunk = {
+        __peerData: this._dataCount,
         n: index,
         data: b,
         total: total
@@ -283,41 +317,53 @@ export const util = {
       chunks.push(chunk);
 
       start = end;
-      index += 1;
+      index++;
     }
-    dataCount += 1;
-    return chunks;
-  },
 
-  blobToArrayBuffer: function(blob, cb) {
-    var fr = new FileReader();
+    this._dataCount++;
+
+    return chunks;
+  }
+
+  static blobToArrayBuffer(blob: Blob, cb: (arg: any) => void): void {
+    const fr = new FileReader();
+
     fr.onload = function(evt) {
+      // @ts-ignore
       cb(evt.target.result);
     };
+
     fr.readAsArrayBuffer(blob);
-  },
-  blobToBinaryString: function(blob, cb) {
-    var fr = new FileReader();
+  }
+
+  static blobToBinaryString(blob: Blob, cb: (arg: any) => void): void {
+    const fr = new FileReader();
+
     fr.onload = function(evt) {
+      // @ts-ignore
       cb(evt.target.result);
     };
+
     fr.readAsBinaryString(blob);
-  },
-  binaryStringToArrayBuffer: function(binary) {
-    var byteArray = new Uint8Array(binary.length);
-    for (var i = 0; i < binary.length; i++) {
+  }
+
+  static binaryStringToArrayBuffer(binary): ArrayBuffer | SharedArrayBuffer {
+    let byteArray = new Uint8Array(binary.length);
+
+    for (let i = 0; i < binary.length; i++) {
       byteArray[i] = binary.charCodeAt(i) & 0xff;
     }
+
     return byteArray.buffer;
-  },
-  randomToken: function() {
+  }
+
+  static randomToken(): string {
     return Math.random()
       .toString(36)
       .substr(2);
-  },
-  //
+  }
 
-  isSecure: function() {
+  static isSecure(): boolean {
     return location.protocol === "https:";
   }
-};
+}

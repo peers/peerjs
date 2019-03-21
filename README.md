@@ -82,6 +82,11 @@ peer.on('call', function(call) {
   });
 });
 ```
+
+## Run tests
+
+`npm test`
+
 ## Links
 
 ### [Documentation / API Reference](http://peerjs.com/docs)
