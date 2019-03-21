@@ -12,7 +12,7 @@ Prints log messages depending on the debug level passed in. Defaults to 0.
 2  Prints errors and warnings.
 3  Prints all logs.
 */
-const enum DebugLevel {
+export enum DebugLevel {
   Disabled,
   Errors,
   Warnings,
