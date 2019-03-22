@@ -251,7 +251,7 @@ class Negotiator {
       try {
         await peerConnection.setLocalDescription(offer);
 
-        util.log(`Set localDescription: offer for:${connection.peer}`);
+        util.log("Set localDescription:", offer, `for:${connection.peer}`);
 
         let payload: any = {
           sdp: offer,
@@ -310,7 +310,7 @@ class Negotiator {
       try {
         await peerConnection.setLocalDescription(answer);
 
-        util.log(`Set localDescription: answer for:${connection.peer}`);
+        util.log(`Set localDescription:`, answer, `for:${connection.peer}`);
 
         connection.provider.socket.send({
           type: "ANSWER",
