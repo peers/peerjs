@@ -11,7 +11,7 @@
   "license": "MIT",
   "scripts": {
     "build": "parcel build lib/exports.ts -d dist --out-file peerjs.min.js",
-    "prepublish": "yarn build",
+    "prepublish": "npm run build",
     "postinstall": "opencollective-postinstall",
     "test": "mocha -r ts-node/register -r jsdom-global/register test/**/*.ts"
   },
