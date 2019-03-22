@@ -32,6 +32,8 @@ class PeerOptions implements PeerJSOption {
  * A peer who can initiate connections with other peers.
  */
 export class Peer extends EventEmitter {
+  private static readonly DEFAULT_KEY = "peerjs";
+
   private readonly _options: PeerOptions;
   private _id: string;
   private _lastServerId: string;
@@ -92,7 +94,7 @@ export class Peer extends EventEmitter {
       host: util.CLOUD_HOST,
       port: util.CLOUD_PORT,
       path: "/",
-      key: "peerjs",
+      key: Peer.DEFAULT_KEY,
       token: util.randomToken(),
       config: util.defaultConfig,
       ...options
