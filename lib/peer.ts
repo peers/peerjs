@@ -148,13 +148,9 @@ export class Peer extends EventEmitter {
     if (id) {
       this._initialize(id);
     } else {
-      this._api.retrieveId((error, id) => {
-        if (error) {
-          return this._abort(error.type, error.message);
-        }
-
-        this._initialize(id);
-      });
+      this._api.retrieveId()
+        .then(id => this._initialize(id))
+        .catch(error => this._abort(PeerErrorType.ServerError, error));
     }
   }
 
@@ -188,7 +184,7 @@ export class Peer extends EventEmitter {
       }
     });
 
-    this.socket.on(SocketEventType.Close, function() {
+    this.socket.on(SocketEventType.Close, function () {
       // If we haven't explicitly disconnected, emit error.
       if (!self.disconnected) {
         self._abort(
@@ -338,9 +334,9 @@ export class Peer extends EventEmitter {
     if (this.disconnected) {
       util.warn(
         "You cannot connect to a new Peer because you called " +
-          ".disconnect() on this Peer and ended your connection with the " +
-          "server. You can create a new Peer to reconnect, or call reconnect " +
-          "on this peer if you believe its ID to still be available."
+        ".disconnect() on this Peer and ended your connection with the " +
+        "server. You can create a new Peer to reconnect, or call reconnect " +
+        "on this peer if you believe its ID to still be available."
       );
       this.emitError(
         PeerErrorType.Disconnected,
@@ -362,8 +358,8 @@ export class Peer extends EventEmitter {
     if (this.disconnected) {
       util.warn(
         "You cannot connect to a new Peer because you called " +
-          ".disconnect() on this Peer and ended your connection with the " +
-          "server. You can create a new Peer to reconnect."
+        ".disconnect() on this Peer and ended your connection with the " +
+        "server. You can create a new Peer to reconnect."
       );
       this.emitError(
         PeerErrorType.Disconnected,
@@ -417,7 +413,7 @@ export class Peer extends EventEmitter {
 
   private _delayedAbort(type: PeerErrorType, message): void {
     const self = this;
-    util.setZeroTimeout(function() {
+    util.setZeroTimeout(function () {
       self._abort(type, message);
     });
   }
@@ -495,7 +491,7 @@ export class Peer extends EventEmitter {
    */
   disconnect(): void {
     const self = this;
-    util.setZeroTimeout(function() {
+    util.setZeroTimeout(function () {
       if (!self.disconnected) {
         self._disconnected = true;
         self._open = false;
@@ -531,8 +527,8 @@ export class Peer extends EventEmitter {
     } else {
       throw new Error(
         "Peer " +
-          this.id +
-          " cannot reconnect because it is not disconnected from the server!"
+        this.id +
+        " cannot reconnect because it is not disconnected from the server!"
       );
     }
   }
@@ -543,13 +539,9 @@ export class Peer extends EventEmitter {
    * the cloud server, email team@peerjs.com to get the functionality enabled for
    * your key.
    */
-  listAllPeers(cb = (arg: any[]) => {}): void {
-    this._api.listAllPeers((error, peers) => {
-      if (error) {
-        return this._abort(error.type, error.message);
-      }
-
-      cb(peers);
-    });
+  listAllPeers(cb = (arg: any[]) => { }): void {
+    this._api.listAllPeers()
+      .then(peers => cb(peers))
+      .catch(error => this._abort(PeerErrorType.ServerError, error));
   }
 }
