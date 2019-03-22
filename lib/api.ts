@@ -1,12 +1,8 @@
 import { util } from "./util";
 import { PeerErrorType, PeerEventType } from "./enums";
 
-export class ApiError {
-  type: PeerErrorType;
-  message: string = "";
-}
 export class API {
-  constructor(private readonly _options: any) {}
+  constructor(private readonly _options: any) { }
 
   private _buildUrl(method: string): string {
     const protocol = this._options.secure ? "https://" : "http://";
@@ -26,21 +22,25 @@ export class API {
   }
 
   /** Get a unique ID from the server via XHR and initialize with it. */
-  retrieveId(cb = (error: ApiError, id?: string) => {}): void {
-    const http = new XMLHttpRequest();
+  async retrieveId(): Promise<string> {
     const url = this._buildUrl("id");
-    // If there's no ID we need to wait for one before trying to init socket.
-    http.open("get", url, true);
 
-    const self = this;
+    try {
+      const response = await fetch(url);
 
-    http.onerror = function(e) {
-      util.error("Error retrieving ID", e);
+      if (response.status !== 200) {
+        throw new Error(`Error. Status:${response.status}`)
+      }
+
+      return response.text();
+    } catch (error) {
+      util.error("Error retrieving ID", error);
+
       let pathError = "";
 
       if (
-        self._options.path === "/" &&
-        self._options.host !== util.CLOUD_HOST
+        this._options.path === "/" &&
+        this._options.host !== util.CLOUD_HOST
       ) {
         pathError =
           " If you passed in a `path` to your self-hosted PeerServer, " +
@@ -48,76 +48,43 @@ export class API {
           "Peer.";
       }
 
-      cb({
-        type: PeerErrorType.ServerError,
-        message: "Could not get an ID from the server." + pathError
-      });
-    };
-
-    http.onreadystatechange = function() {
-      if (http.readyState !== 4 || http.status === 0) {
-        return;
-      }
-
-      if (http.status !== 200) {
-        http.onerror(new ProgressEvent(`status === ${http.status}`));
-        return;
-      }
-
-      cb(null, http.responseText);
-    };
-
-    http.send(null);
+      throw new Error("Could not get an ID from the server." + pathError);
+    }
   }
 
-  listAllPeers(cb = (error: ApiError, peers?: any[]) => {}): void {
-    const http = new XMLHttpRequest();
-    let url = this._buildUrl("peers");
+  /** @deprecated */
+  async listAllPeers(): Promise<any[]> {
+    const url = this._buildUrl("peers");
 
-    // If there's no ID we need to wait for one before trying to init socket.
-    http.open("get", url, true);
+    try {
+      const response = await fetch(url);
 
-    const self = this;
+      if (response.status !== 200) {
+        if (response.status === 401) {
+          let helpfulError = "";
 
-    http.onerror = function(e) {
-      util.error("Error retrieving list of peers", e);
+          if (this._options.host === util.CLOUD_HOST) {
+            helpfulError =
+              "It looks like you're using the cloud server. You can email " +
+              "team@peerjs.com to enable peer listing for your API key.";
+          } else {
+            helpfulError =
+              "You need to enable `allow_discovery` on your self-hosted " +
+              "PeerServer to use this feature.";
+          }
 
-      cb({
-        type: PeerErrorType.ServerError,
-        message: "Could not get peers from the server."
-      });
-    };
-
-    http.onreadystatechange = function() {
-      if (http.readyState !== 4) {
-        return;
-      }
-
-      if (http.status === 401) {
-        let helpfulError = "";
-        if (self._options.host !== util.CLOUD_HOST) {
-          helpfulError =
-            "It looks like you're using the cloud server. You can email " +
-            "team@peerjs.com to enable peer listing for your API key.";
-        } else {
-          helpfulError =
-            "You need to enable `allow_discovery` on your self-hosted " +
-            "PeerServer to use this feature.";
+          throw new Error("It doesn't look like you have permission to list peers IDs. " +
+            helpfulError);
         }
 
-        cb({
-          type: PeerErrorType.ServerError,
-          message:
-            "It doesn't look like you have permission to list peers IDs. " +
-            helpfulError
-        });
-      } else if (http.status !== 200) {
-        cb(null, []);
-      } else {
-        cb(JSON.parse(http.responseText));
+        throw new Error(`Error. Status:${response.status}`)
       }
-    };
 
-    http.send(null);
+      return response.json();
+    } catch (error) {
+      util.error("Error retrieving list peers", error);
+
+      throw new Error("Could not get list peers from the server." + error);
+    }
   }
 }
