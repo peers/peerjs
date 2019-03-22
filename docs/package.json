@@ -12,6 +12,6 @@
   "readmeFilename": "readme.md",
   "dependencies": {
     "reference": ">0.0.0",
-    "handlebars": "~1.0.12"
+    "handlebars": ">=4.0.0"
   }
 }
