@@ -4,349 +4,407 @@ import {
   RTCSessionDescription,
   RTCIceCandidate
 } from "./adapter";
+import * as Reliable from "reliable";
+import { MediaConnection } from "./mediaconnection";
+import { DataConnection } from "./dataconnection";
+import { ConnectionType, PeerErrorType, ConnectionEventType } from "./enums";
+import { BaseConnection } from "./baseconnection";
+import { utils } from "mocha";
 
 /**
  * Manages all negotiations between Peers.
  */
-export const Negotiator = {
-  pcs: {
+class Negotiator {
+  readonly pcs = {
     data: {},
     media: {}
-  }, // type => {peerId: {pc_id: pc}}.
-  //providers: {}, // provider's id => providers (there may be multiple providers/client.
-  queue: [] // connections that are delayed due to a PC being in use.
-};
+  };
 
-Negotiator._idPrefix = "pc_";
+  queue: any[] = []; // connections that are delayed due to a PC being in use.
 
-/** Returns a PeerConnection object set up correctly (for data, media). */
-Negotiator.startConnection = function(connection, options) {
-  var pc = Negotiator._getPeerConnection(connection, options);
+  private readonly _idPrefix = "pc_";
 
-  // Set the connection's PC.
-  connection.pc = connection.peerConnection = pc;
+  /** Returns a PeerConnection object set up correctly (for data, media). */
+  startConnection(connection: BaseConnection, options: any) {
+    const peerConnection = this._getPeerConnection(connection, options);
 
-  if (connection.type === "media" && options._stream) {
-    addStreamToConnection(options._stream, pc);
-  }
+    // Set the connection's PC.
+    connection.peerConnection = peerConnection;
 
-  // What do we need to do now?
-  if (options.originator) {
-    if (connection.type === "data") {
-      // Create the datachannel.
-      var config = {};
-      // Dropping reliable:false support, since it seems to be crashing
-      // Chrome.
-      /*if (util.supports.sctp && !options.reliable) {
-        // If we have canonical reliable support...
-        config = {maxRetransmits: 0};
-      }*/
-      // Fallback to ensure older browsers don't crash.
-      if (!util.supports.sctp) {
-        config = { reliable: options.reliable };
-      }
-      var dc = pc.createDataChannel(connection.label, config);
-      connection.initialize(dc);
+    if (connection.type === ConnectionType.Media && options._stream) {
+      this._addTracksToConnection(options._stream, peerConnection);
     }
 
-    Negotiator._makeOffer(connection);
-  } else {
-    Negotiator.handleSDP("OFFER", connection, options.sdp);
-  }
-};
+    // What do we need to do now?
+    if (options.originator) {
+      if (connection.type === ConnectionType.Data) {
+        const dataConnection = <DataConnection>connection;
 
-Negotiator._getPeerConnection = function(connection, options) {
-  if (!Negotiator.pcs[connection.type]) {
-    util.error(
-      connection.type +
-        " is not a valid connection type. Maybe you overrode the `type` property somewhere."
+        let config = {};
+
+        if (!util.supports.sctp) {
+          config = { reliable: options.reliable };
+        }
+
+        const dataChannel = peerConnection.createDataChannel(
+          dataConnection.label,
+          config
+        );
+        dataConnection.initialize(dataChannel);
+      }
+
+      this._makeOffer(connection);
+    } else {
+      this.handleSDP("OFFER", connection, options.sdp);
+    }
+  }
+
+  private _getPeerConnection(
+    connection: BaseConnection,
+    options: any
+  ): RTCPeerConnection {
+    if (!this.pcs[connection.type]) {
+      util.error(
+        connection.type +
+          " is not a valid connection type. Maybe you overrode the `type` property somewhere."
+      );
+    }
+
+    if (!this.pcs[connection.type][connection.peer]) {
+      this.pcs[connection.type][connection.peer] = {};
+    }
+
+    const peerConnections = this.pcs[connection.type][connection.peer];
+
+    let pc;
+
+    if (options.pc) {
+      // Simplest case: PC id already provided for us.
+      pc = peerConnections[options.pc];
+    }
+
+    if (!pc || pc.signalingState !== "stable") {
+      pc = this._startPeerConnection(connection);
+    }
+
+    return pc;
+  }
+
+  /** Start a PC. */
+  private _startPeerConnection(connection: BaseConnection): RTCPeerConnection {
+    util.log("Creating RTCPeerConnection.");
+
+    const id = this._idPrefix + util.randomToken();
+    let optional = {};
+
+    if (connection.type === ConnectionType.Data && !util.supports.sctp) {
+      optional = { optional: [{ RtpDataChannels: true }] };
+    } else if (connection.type === ConnectionType.Media) {
+      // Interop req for chrome.
+      optional = { optional: [{ DtlsSrtpKeyAgreement: true }] };
+    }
+
+    const peerConnection = new RTCPeerConnection(
+      connection.provider.options.config,
+      optional
     );
+
+    this.pcs[connection.type][connection.peer][id] = peerConnection;
+
+    this._setupListeners(connection, peerConnection);
+
+    return peerConnection;
   }
 
-  if (!Negotiator.pcs[connection.type][connection.peer]) {
-    Negotiator.pcs[connection.type][connection.peer] = {};
-  }
-  var peerConnections = Negotiator.pcs[connection.type][connection.peer];
-
-  var pc;
-  // Not multiplexing while FF and Chrome have not-great support for it.
-  /*if (options.multiplex) {
-    ids = Object.keys(peerConnections);
-    for (var i = 0, ii = ids.length; i < ii; i += 1) {
-      pc = peerConnections[ids[i]];
-      if (pc.signalingState === 'stable') {
-        break; // We can go ahead and use this PC.
-      }
-    }
-  } else */
-  if (options.pc) {
-    // Simplest case: PC id already provided for us.
-    pc = Negotiator.pcs[connection.type][connection.peer][options.pc];
-  }
-
-  if (!pc || pc.signalingState !== "stable") {
-    pc = Negotiator._startPeerConnection(connection);
-  }
-  return pc;
-};
-
-/*
-Negotiator._addProvider = function(provider) {
-  if ((!provider.id && !provider.disconnected) || !provider.socket.open) {
-    // Wait for provider to obtain an ID.
-    provider.on('open', function(id) {
-      Negotiator._addProvider(provider);
-    });
-  } else {
-    Negotiator.providers[provider.id] = provider;
-  }
-}*/
-
-/** Start a PC. */
-Negotiator._startPeerConnection = function(connection) {
-  util.log("Creating RTCPeerConnection.");
-
-  var id = Negotiator._idPrefix + util.randomToken();
-  var optional = {};
-
-  if (connection.type === "data" && !util.supports.sctp) {
-    optional = { optional: [{ RtpDataChannels: true }] };
-  } else if (connection.type === "media") {
-    // Interop req for chrome.
-    optional = { optional: [{ DtlsSrtpKeyAgreement: true }] };
-  }
-
-  var pc = new RTCPeerConnection(connection.provider.options.config, optional);
-  Negotiator.pcs[connection.type][connection.peer][id] = pc;
-
-  Negotiator._setupListeners(connection, pc, id);
-
-  return pc;
-};
-
-/** Set up various WebRTC listeners. */
-Negotiator._setupListeners = function(connection, pc, pc_id) {
-  var peerId = connection.peer;
-  var connectionId = connection.id;
-  var provider = connection.provider;
-
-  // ICE CANDIDATES.
-  util.log("Listening for ICE candidates.");
-  pc.onicecandidate = function(evt) {
-    if (evt.candidate) {
-      util.log("Received ICE candidates for:", connection.peer);
-      provider.socket.send({
-        type: "CANDIDATE",
-        payload: {
-          candidate: evt.candidate,
-          type: connection.type,
-          connectionId: connection.id
-        },
-        dst: peerId
-      });
-    }
-  };
-
-  pc.oniceconnectionstatechange = function() {
-    switch (pc.iceConnectionState) {
-      case "failed":
-        util.log(
-          "iceConnectionState is disconnected, closing connections to " + peerId
-        );
-        connection.emit(
-          "error",
-          new Error("Negotiation of connection to " + peerId + " failed.")
-        );
-        connection.close();
-        break;
-      case "disconnected":
-        util.log(
-          "iceConnectionState is disconnected, closing connections to " + peerId
-        );
-        break;
-      case "completed":
-        pc.onicecandidate = util.noop;
-        break;
-    }
-  };
-
-  // Fallback for older Chrome impls.
-  pc.onicechange = pc.oniceconnectionstatechange;
-
-  // DATACONNECTION.
-  util.log("Listening for data channel");
-  // Fired between offer and answer, so options should already be saved
-  // in the options hash.
-  pc.ondatachannel = function(evt) {
-    util.log("Received data channel");
-    var dc = evt.channel;
-    var connection = provider.getConnection(peerId, connectionId);
-    connection.initialize(dc);
-  };
-
-  // MEDIACONNECTION.
-  util.log("Listening for remote stream");
-  pc.ontrack = function(evt) {
-    util.log("Received remote stream");
-    var stream = evt.streams[0];
-    var connection = provider.getConnection(peerId, connectionId);
-    if (connection.type === "media") {
-      addStreamToConnection(stream, connection);
-    }
-  };
-};
-
-Negotiator.cleanup = function(connection) {
-  util.log("Cleaning up PeerConnection to " + connection.peer);
-
-  var pc = connection.pc;
-
-  if (
-    !!pc &&
-    ((pc.readyState && pc.readyState !== "closed") ||
-      pc.signalingState !== "closed")
+  /** Set up various WebRTC listeners. */
+  private _setupListeners(
+    connection: BaseConnection,
+    peerConnection: RTCPeerConnection
   ) {
-    pc.close();
-    connection.pc = null;
+    const peerId = connection.peer;
+    const connectionId = connection.connectionId;
+    const connectionType = connection.type;
+    const provider = connection.provider;
+
+    // ICE CANDIDATES.
+    util.log("Listening for ICE candidates.");
+
+    peerConnection.onicecandidate = function(evt) {
+      if (evt.candidate) {
+        util.log("Received ICE candidates for:", peerId);
+        provider.socket.send({
+          type: "CANDIDATE",
+          payload: {
+            candidate: evt.candidate,
+            type: connectionType,
+            connectionId: connectionId
+          },
+          dst: peerId
+        });
+      }
+    };
+
+    peerConnection.oniceconnectionstatechange = function() {
+      switch (peerConnection.iceConnectionState) {
+        case "failed":
+          util.log(
+            "iceConnectionState is disconnected, closing connections to " +
+              peerId
+          );
+          connection.emit(
+            ConnectionEventType.Error,
+            new Error("Negotiation of connection to " + peerId + " failed.")
+          );
+          connection.close();
+          break;
+        case "disconnected":
+          util.log(
+            "iceConnectionState is disconnected, closing connections to " +
+              peerId
+          );
+          break;
+        case "completed":
+          peerConnection.onicecandidate = util.noop;
+          break;
+      }
+    };
+
+    // Fallback for older Chrome impls.
+    //@ts-ignore
+    peerConnection.onicechange = peerConnection.oniceconnectionstatechange;
+
+    // DATACONNECTION.
+    util.log("Listening for data channel");
+    // Fired between offer and answer, so options should already be saved
+    // in the options hash.
+    peerConnection.ondatachannel = function(evt) {
+      util.log("Received data channel");
+
+      const dataChannel = evt.channel;
+      const connection = <DataConnection>(
+        provider.getConnection(peerId, connectionId)
+      );
+
+      connection.initialize(dataChannel);
+    };
+
+    // MEDIACONNECTION.
+    util.log("Listening for remote stream");
+    const self = this;
+    peerConnection.ontrack = function(evt) {
+      util.log("Received remote stream");
+
+      const stream = evt.streams[0];
+      const connection = provider.getConnection(peerId, connectionId);
+
+      if (connection.type === ConnectionType.Media) {
+        const mediaConnection = <MediaConnection>connection;
+
+        self._addStreamToMediaConnection(stream, mediaConnection);
+      }
+    };
   }
-};
 
-Negotiator._makeOffer = function(connection) {
-  var pc: RTCPeerConnection = connection.pc;
-  const callback = function(offer) {
-    util.log("Created offer.");
+  cleanup(connection: BaseConnection): void {
+    util.log("Cleaning up PeerConnection to " + connection.peer);
 
-    if (
-      !util.supports.sctp &&
-      connection.type === "data" &&
-      connection.reliable
-    ) {
-      offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
+    const peerConnection = connection.peerConnection;
+
+    if (!peerConnection) {
+      return;
     }
-    const descCallback = function() {
-      util.log("Set localDescription: offer", "for:", connection.peer);
-      connection.provider.socket.send({
-        type: "OFFER",
-        payload: {
+
+    const peerConnectionNotClosed = peerConnection.signalingState !== "closed";
+    let dataChannelNotClosed = false;
+
+    if (connection.type === ConnectionType.Data) {
+      const dataConnection = <DataConnection>connection;
+      const dataChannel = dataConnection.dataChannel;
+
+      dataChannelNotClosed =
+        dataChannel.readyState && dataChannel.readyState !== "closed";
+    }
+
+    if (peerConnectionNotClosed || dataChannelNotClosed) {
+      peerConnection.close();
+      connection.peerConnection = null;
+    }
+  }
+
+  private async _makeOffer(connection: BaseConnection): Promise<void> {
+    const peerConnection = connection.peerConnection;
+
+    try {
+      const offer = await peerConnection.createOffer(
+        connection.options.constraints
+      );
+
+      util.log("Created offer.");
+
+      if (!util.supports.sctp && connection.type === ConnectionType.Data) {
+        const dataConnection = <DataConnection>connection;
+        if (dataConnection.reliable) {
+          offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
+        }
+      }
+
+      try {
+        await peerConnection.setLocalDescription(offer);
+
+        util.log("Set localDescription:", offer, `for:${connection.peer}`);
+
+        let payload: any = {
           sdp: offer,
           type: connection.type,
-          label: connection.label,
-          connectionId: connection.id,
-          reliable: connection.reliable,
-          serialization: connection.serialization,
+          connectionId: connection.connectionId,
           metadata: connection.metadata,
           browser: util.browser
-        },
-        dst: connection.peer
-      });
+        };
+
+        if (connection.type === ConnectionType.Data) {
+          const dataConnection = <DataConnection>connection;
+
+          payload = {
+            ...payload,
+            label: dataConnection.label,
+            reliable: dataConnection.reliable,
+            serialization: dataConnection.serialization
+          };
+        }
+
+        connection.provider.socket.send({
+          type: "OFFER",
+          payload,
+          dst: connection.peer
+        });
+      } catch (err) {
+        // TODO: investigate why _makeOffer is being called from the answer
+        if (
+          err !=
+          "OperationError: Failed to set local offer sdp: Called in wrong state: kHaveRemoteOffer"
+        ) {
+          connection.provider.emitError(PeerErrorType.WebRTC, err);
+          util.log("Failed to setLocalDescription, ", err);
+        }
+      }
+    } catch (err_1) {
+      connection.provider.emitError(PeerErrorType.WebRTC, err_1);
+      util.log("Failed to createOffer, ", err_1);
     }
-    const descError = function(err) {
-      // TODO: investigate why _makeOffer is being called from the answer
-      if (
-        err !=
-        "OperationError: Failed to set local offer sdp: Called in wrong state: kHaveRemoteOffer"
-      ) {
-        connection.provider.emitError("webrtc", err);
+  }
+
+  private async _makeAnswer(connection: BaseConnection): Promise<void> {
+    const peerConnection = connection.peerConnection;
+
+    try {
+      const answer = await peerConnection.createAnswer();
+      util.log("Created answer.");
+
+      if (!util.supports.sctp && connection.type === ConnectionType.Data) {
+        const dataConnection = <DataConnection>connection;
+        if (dataConnection.reliable) {
+          answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
+        }
+      }
+
+      try {
+        await peerConnection.setLocalDescription(answer);
+
+        util.log(`Set localDescription:`, answer, `for:${connection.peer}`);
+
+        connection.provider.socket.send({
+          type: "ANSWER",
+          payload: {
+            sdp: answer,
+            type: connection.type,
+            connectionId: connection.connectionId,
+            browser: util.browser
+          },
+          dst: connection.peer
+        });
+      } catch (err) {
+        connection.provider.emitError(PeerErrorType.WebRTC, err);
         util.log("Failed to setLocalDescription, ", err);
       }
+    } catch (err_1) {
+      connection.provider.emitError(PeerErrorType.WebRTC, err_1);
+      util.log("Failed to create answer, ", err_1);
     }
-    pc.setLocalDescription(offer)
-    .then(() => descCallback())
-    .catch(err => descError(err));
   }
-  const errorHandler = function(err) {
-    connection.provider.emitError("webrtc", err);
-    util.log("Failed to createOffer, ", err);
-  }
-  pc.createOffer(connection.options.constraints)
-    .then(offer => callback(offer))
-    .catch(err => errorHandler(err));
-};
 
-Negotiator._makeAnswer = function(connection) {
-  var pc: RTCPeerConnection = connection.pc;
-  const callback = function(answer) {
-    util.log("Created answer.");
+  /** Handle an SDP. */
+  async handleSDP(
+    type: string,
+    connection: BaseConnection,
+    sdp: any
+  ): Promise<void> {
+    sdp = new RTCSessionDescription(sdp);
+    const peerConnection = connection.peerConnection;
 
-    if (
-      !util.supports.sctp &&
-      connection.type === "data" &&
-      connection.reliable
-    ) {
-      answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
-    }
+    util.log("Setting remote description", sdp);
 
-    const descCallback = function() {
-      util.log("Set localDescription: answer", "for:", connection.peer);
-      connection.provider.socket.send({
-        type: "ANSWER",
-        payload: {
-          sdp: answer,
-          type: connection.type,
-          connectionId: connection.id,
-          browser: util.browser
-        },
-        dst: connection.peer
-      });
-    }
-    pc.setLocalDescription(answer)
-    .then(() => descCallback())
-    .catch(err => {
-        connection.provider.emitError("webrtc", err);
-        util.log("Failed to setLocalDescription, ", err);
-      });
-  };
-  pc.createAnswer()
-  .then(answer => callback(answer))
-  .catch(err => {
-    connection.provider.emitError("webrtc", err);
-    util.log("Failed to create answer, ", err);
-  });
-};
+    const self = this;
 
-/** Handle an SDP. */
-Negotiator.handleSDP = function(type, connection, sdp) {
-  sdp = new RTCSessionDescription(sdp);
-  const pc: RTCPeerConnection = connection.pc;
-
-  util.log("Setting remote description", sdp);
-
-  const callback = function() {
-    util.log("Set remoteDescription:", type, "for:", connection.peer);
-
-    if (type === "OFFER") {
-      Negotiator._makeAnswer(connection);
-    }
-  };
-
-  pc.setRemoteDescription(sdp)
-  .then(() => callback())
-  .catch(err => {
-      connection.provider.emitError("webrtc", err);
+    try {
+      await peerConnection.setRemoteDescription(sdp);
+      util.log(`Set remoteDescription:${type} for:${connection.peer}`);
+      if (type === "OFFER") {
+        await self._makeAnswer(connection);
+      }
+    } catch (err) {
+      connection.provider.emitError(PeerErrorType.WebRTC, err);
       util.log("Failed to setRemoteDescription, ", err);
     }
-  );
-};
+  }
 
-/** Handle a candidate. */
-Negotiator.handleCandidate = function(connection, ice) {
-  var candidate = ice.candidate;
-  var sdpMLineIndex = ice.sdpMLineIndex;
-  connection.pc.addIceCandidate(
-    new RTCIceCandidate({
-      sdpMLineIndex: sdpMLineIndex,
-      candidate: candidate
-    })
-  );
-  util.log("Added ICE candidate for:", connection.peer);
-};
+  /** Handle a candidate. */
+  async handleCandidate(connection: BaseConnection, ice: any): Promise<void> {
+    const candidate = ice.candidate;
+    const sdpMLineIndex = ice.sdpMLineIndex;
 
-function addStreamToConnection(stream: MediaStream, connection: RTCPeerConnection) {
-  if ('addTrack' in connection) {
+    try {
+      await connection.peerConnection.addIceCandidate(
+        new RTCIceCandidate({
+          sdpMLineIndex: sdpMLineIndex,
+          candidate: candidate
+        })
+      );
+      util.log(`Added ICE candidate for:${connection.peer}`);
+    } catch (err) {
+      connection.provider.emitError(PeerErrorType.WebRTC, err);
+      util.log("Failed to handleCandidate, ", err);
+    }
+  }
+
+  private _addTracksToConnection(
+    stream: MediaStream,
+    peerConnection: RTCPeerConnection
+  ): void {
+    util.log(`add tracks from stream ${stream.id} to peer connection`);
+
+    if (!peerConnection.addTrack) {
+      return util.error(
+        `Your browser does't support RTCPeerConnection#addTrack. Ignored.`
+      );
+    }
+
     stream.getTracks().forEach(track => {
-      connection.addTrack(track, stream);
+      peerConnection.addTrack(track, stream);
     });
-  } else if ('addStream' in connection) {
-    (<any>connection).addStream(stream);
+  }
+
+  private _addStreamToMediaConnection(
+    stream: MediaStream,
+    mediaConnection: MediaConnection
+  ): void {
+    util.log(
+      `add stream ${stream.id} to media connection ${
+        mediaConnection.connectionId
+      }`
+    );
+
+    mediaConnection.addStream(stream);
   }
 }
+
+export default new Negotiator();

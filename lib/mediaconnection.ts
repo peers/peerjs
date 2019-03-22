@@ -1,98 +1,99 @@
 import { util } from "./util";
-import { EventEmitter } from "eventemitter3";
-import { Negotiator } from "./negotiator";
+import Negotiator from "./negotiator";
+import { ConnectionType, ConnectionEventType } from "./enums";
+import { Peer } from "./peer";
+import { BaseConnection } from "./baseconnection";
+import { ServerMessage } from "./servermessage";
 
 /**
  * Wraps the streaming interface between two Peers.
  */
-export function MediaConnection(peer, provider, options) {
-  if (!(this instanceof MediaConnection))
-    return new MediaConnection(peer, provider, options);
-  EventEmitter.call(this);
+export class MediaConnection extends BaseConnection {
+  private static readonly ID_PREFIX = "mc_";
 
-  this.options = util.extend({}, options);
+  private localStream: MediaStream;
+  private remoteStream: MediaStream;
 
-  this.open = false;
-  this.type = "media";
-  this.peer = peer;
-  this.provider = provider;
-  this.metadata = this.options.metadata;
-  this.localStream = this.options._stream;
+  get type() {
+    return ConnectionType.Media;
+  }
 
-  this.id =
-    this.options.connectionId || MediaConnection._idPrefix + util.randomToken();
-  if (this.localStream) {
-    Negotiator.startConnection(this, {
-      _stream: this.localStream,
-      originator: true
-    });
+  constructor(peerId: string, provider: Peer, options: any) {
+    super(peerId, provider, options);
+
+    this.localStream = this.options._stream;
+    this.connectionId =
+      this.options.connectionId ||
+      MediaConnection.ID_PREFIX + util.randomToken();
+
+    if (this.localStream) {
+      Negotiator.startConnection(this, {
+        _stream: this.localStream,
+        originator: true
+      });
+    }
+  }
+
+  addStream(remoteStream) {
+    util.log("Receiving stream", remoteStream);
+
+    this.remoteStream = remoteStream;
+    super.emit(ConnectionEventType.Stream, remoteStream); // Should we call this `open`?
+  }
+
+  handleMessage(message: ServerMessage): void {
+    const type = message.type;
+    const payload = message.payload;
+
+    switch (message.type) {
+      case "ANSWER":
+        // Forward to negotiator
+        Negotiator.handleSDP(type, this, payload.sdp);
+        this._open = true;
+        break;
+      case "CANDIDATE":
+        Negotiator.handleCandidate(this, payload.candidate);
+        break;
+      default:
+        util.warn(`Unrecognized message type:${type} from peer:${this.peer}`);
+        break;
+    }
+  }
+
+  answer(stream: MediaStream): void {
+    if (this.localStream) {
+      util.warn(
+        "Local stream already exists on this MediaConnection. Are you answering a call twice?"
+      );
+      return;
+    }
+
+    this.options._payload._stream = stream;
+
+    this.localStream = stream;
+    Negotiator.startConnection(this, this.options._payload);
+    // Retrieve lost messages stored because PeerConnection not set up.
+    const messages = this.provider._getMessages(this.connectionId);
+
+    for (let message of messages) {
+      this.handleMessage(message);
+    }
+
+    this._open = true;
+  }
+
+  /**
+   * Exposed functionality for users.
+   */
+
+  /** Allows user to close connection. */
+  close(): void {
+    if (!this.open) {
+      return;
+    }
+
+    this._open = false;
+    Negotiator.cleanup(this);
+    super.emit(ConnectionEventType.Close);
   }
 }
-
-util.inherits(MediaConnection, EventEmitter);
-
-MediaConnection._idPrefix = "mc_";
-
-MediaConnection.prototype.addStream = function(remoteStream) {
-  util.log("Receiving stream", remoteStream);
-
-  this.remoteStream = remoteStream;
-  this.emit("stream", remoteStream); // Should we call this `open`?
-};
-
-MediaConnection.prototype.handleMessage = function(message) {
-  var payload = message.payload;
-
-  switch (message.type) {
-    case "ANSWER":
-      // Forward to negotiator
-      Negotiator.handleSDP(message.type, this, payload.sdp);
-      this.open = true;
-      break;
-    case "CANDIDATE":
-      Negotiator.handleCandidate(this, payload.candidate);
-      break;
-    default:
-      util.warn(
-        "Unrecognized message type:",
-        message.type,
-        "from peer:",
-        this.peer
-      );
-      break;
-  }
-};
-
-MediaConnection.prototype.answer = function(stream) {
-  if (this.localStream) {
-    util.warn(
-      "Local stream already exists on this MediaConnection. Are you answering a call twice?"
-    );
-    return;
-  }
-
-  this.options._payload._stream = stream;
-
-  this.localStream = stream;
-  Negotiator.startConnection(this, this.options._payload);
-  // Retrieve lost messages stored because PeerConnection not set up.
-  var messages = this.provider._getMessages(this.id);
-  for (var i = 0, ii = messages.length; i < ii; i += 1) {
-    this.handleMessage(messages[i]);
-  }
-  this.open = true;
-};
-
-/**
- * Exposed functionality for users.
- */
-
-/** Allows user to close connection. */
-MediaConnection.prototype.close = function() {
-  if (!this.open) {
-    return;
-  }
-  this.open = false;
-  Negotiator.cleanup(this);
-  this.emit("close");
-};

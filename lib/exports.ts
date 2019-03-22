@@ -8,7 +8,7 @@ import { Socket } from "./socket";
 import { MediaConnection } from "./mediaconnection";
 import { DataConnection } from "./dataconnection";
 import { Peer } from "./peer";
-import { Negotiator } from "./negotiator";
+import Negotiator from "./negotiator";
 import jsBinarypack from "js-binarypack";
 
 window.Socket = Socket;
@@ -22,4 +22,4 @@ window.Negotiator = Negotiator;
 window.util = util;
 window.BinaryPack = jsBinarypack;
 
-export default Peer
+export default Peer;
