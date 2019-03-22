@@ -1,17 +1,16 @@
-$(document).ready(function() {
-  var $api = $('.api');
-  var $start = $('.start');
-  var $show = $('.left .show');
-  var $hide = $('.left .hide');
-  var width = $(window).width();
-  var height = $(window).height();
-  var THRESHOLD = 700;
+/* global $ */
+$(document).ready(function () {
+  const $api = $('.api');
+  const $start = $('.start');
+  const $show = $('.left .show');
+  const $hide = $('.left .hide');
+  let width = $(window).width();
+  const THRESHOLD = 700;
 
   init();
 
-  $(window).on('resize', function() {
+  $(window).on('resize', function () {
     width = $(window).width();
-    height = $(window).height();
 
     init();
   });
@@ -21,8 +20,7 @@ $(document).ready(function() {
     hideAPI();
   }
 
-
-  function init() {
+  function init () {
     if (width < THRESHOLD) {
       $api.addClass('fullscreen');
       $start.addClass('full');
@@ -42,7 +40,7 @@ $(document).ready(function() {
     }
   }
 
-  function hideAPI() {
+  function hideAPI () {
     $api.addClass('hidden');
     if (width >= THRESHOLD) {
       $start.addClass('full');
@@ -51,7 +49,7 @@ $(document).ready(function() {
     }
   }
 
-  function showAPI() {
+  function showAPI () {
     if (width >= THRESHOLD) {
       $start.removeClass('full');
       $show.hide();
@@ -60,7 +58,7 @@ $(document).ready(function() {
     $api.removeClass('hidden');
   }
 
-  $('body').on('click', '.left', function() {
+  $('body').on('click', '.left', function () {
     if ($api.attr('class').indexOf('hidden') !== -1) {
       showAPI();
     } else if ($api.attr('class').indexOf('fullscreen') === -1) {
@@ -68,10 +66,10 @@ $(document).ready(function() {
       hideAPI();
     }
   });
-  $('body').on('click', '.right', function() {
+  $('body').on('click', '.right', function () {
     hideAPI();
   });
-  $('body').on('click', 'a', function() {
+  $('body').on('click', 'a', function () {
     if ($(this).attr('href').indexOf('#') === 0) {
       showAPI();
     }

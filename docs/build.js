@@ -1,8 +1,13 @@
-var fs = require('fs');
-var handlebars = require('handlebars');
-var reference = require('reference');
+const fs = require('fs');
+const handlebars = require('handlebars');
+const reference = require('reference');
 
-var file = fs.readFileSync('./api.json');
+const file = fs.readFileSync('./api.json');
 
-var template = handlebars.compile(fs.readFileSync('./template.html', {encoding: 'utf8'}));
-fs.writeFile('./index.html', template({html: reference(file, {anchor: true})}));
+const template = handlebars.compile(
+  fs.readFileSync('./template.html', { encoding: 'utf8' })
+);
+fs.writeFileSync(
+  './index.html',
+  template({ html: reference(file, { anchor: true }) })
+);
