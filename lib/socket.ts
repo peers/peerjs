@@ -8,8 +8,8 @@ class HttpRequest {
   previousRequest: HttpRequest;
   private _xmlHttpRequest = new XMLHttpRequest();
 
-  private _onError = sender => {};
-  private _onSuccess = sender => {};
+  private _onError = sender => { };
+  private _onSuccess = sender => { };
 
   set onError(handler) {
     this._onError = handler;
@@ -90,7 +90,8 @@ class HttpRequest {
  * possible connection for peers.
  */
 export class Socket extends EventEmitter {
-  private readonly HTTP_TIMEOUT = 25000;
+  private readonly HTTP_TIMEOUT = 25000;//ms
+  private readonly WEB_SOCKET_PING_INTERVAL = 20000;//ms
 
   private _disconnected = false;
   private _id: string;
@@ -98,6 +99,7 @@ export class Socket extends EventEmitter {
   private _httpUrl: string;
   private _wsUrl: string;
   private _socket: WebSocket;
+  private _wsPingTimer: any;
   private _httpRequest: HttpRequest;
   private _timeout: any;
 
@@ -139,7 +141,7 @@ export class Socket extends EventEmitter {
 
     const self = this;
 
-    this._socket.onmessage = function(event) {
+    this._socket.onmessage = function (event) {
       let data;
 
       try {
@@ -151,18 +153,19 @@ export class Socket extends EventEmitter {
       self.emit(SocketEventType.Message, data);
     };
 
-    this._socket.onclose = function(event) {
-      util.log("Socket closed.");
+    this._socket.onclose = function (event) {
+      util.log("Socket closed.", event);;
+
       self._disconnected = true;
       self.emit(SocketEventType.Disconnected);
     };
 
     // Take care of the queue of connections if necessary and make sure Peer knows
     // socket is open.
-    this._socket.onopen = function() {
+    this._socket.onopen = function () {
       if (self._timeout) {
         clearTimeout(self._timeout);
-        setTimeout(function() {
+        setTimeout(function () {
           self._httpRequest.abort();
           self._httpRequest = null;
         }, 5000);
@@ -170,6 +173,8 @@ export class Socket extends EventEmitter {
 
       self._sendQueuedMessages();
       util.log("Socket open");
+
+      self._wsPingTimer = setTimeout(function () { self._sendHeartbeat() }, self.WEB_SOCKET_PING_INTERVAL);
     };
   }
 
@@ -195,6 +200,21 @@ export class Socket extends EventEmitter {
     } catch (e) {
       util.log("XMLHttpRequest not available; defaulting to WebSockets");
     }
+  }
+
+  private _sendHeartbeat(): void {
+    if (!this._wsOpen()) {
+      util.log(`Cannot send heartbeat, because socket closed`);
+      return;
+    }
+
+    const data = { type: 'HEARTBEAT' };
+    const message = JSON.stringify(data);
+    this._socket.send(message);
+
+    const self = this;
+
+    this._wsPingTimer = setTimeout(function () { self._sendHeartbeat() }, this.WEB_SOCKET_PING_INTERVAL);
   }
 
   /** Handles onreadystatechange response as a stream. */
@@ -243,7 +263,7 @@ export class Socket extends EventEmitter {
   private _setHTTPTimeout() {
     const self = this;
 
-    this._timeout = setTimeout(function() {
+    this._timeout = setTimeout(function () {
       if (!self._wsOpen()) {
         const oldHttp = self._httpRequest;
         self._startXhrStream(oldHttp.streamIndex + 1);
@@ -308,6 +328,7 @@ export class Socket extends EventEmitter {
     if (!this._disconnected && this._wsOpen()) {
       this._socket.close();
       this._disconnected = true;
+      clearTimeout(this._wsPingTimer);
     }
   }
 }
