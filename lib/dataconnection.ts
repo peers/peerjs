@@ -72,7 +72,7 @@ export class DataConnection extends BaseConnection {
 
     const self = this;
 
-    this.dataChannel.onopen = function() {
+    this.dataChannel.onopen = function () {
       util.log("Data channel connection success");
       self._open = true;
       self.emit(ConnectionEventType.Open);
@@ -84,15 +84,15 @@ export class DataConnection extends BaseConnection {
     }
 
     if (this._reliable) {
-      this._reliable.onmessage = function(msg) {
+      this._reliable.onmessage = function (msg) {
         self.emit(ConnectionEventType.Data, msg);
       };
     } else {
-      this.dataChannel.onmessage = function(e) {
+      this.dataChannel.onmessage = function (e) {
         self._handleDataMessage(e);
       };
     }
-    this.dataChannel.onclose = function(e) {
+    this.dataChannel.onclose = function (e) {
       util.log("DataChannel closed for:", self.peer);
       self.close();
     };
@@ -111,7 +111,7 @@ export class DataConnection extends BaseConnection {
         const self = this;
 
         // Datatype should never be blob
-        util.blobToArrayBuffer(data, function(ab) {
+        util.blobToArrayBuffer(data, function (ab) {
           data = util.unpack(ab);
           self.emit(ConnectionEventType.Data, data);
         });
@@ -213,13 +213,13 @@ export class DataConnection extends BaseConnection {
 
       // DataChannel currently only supports strings.
       if (!util.supports.sctp) {
-        util.blobToBinaryString(blob, function(str) {
+        util.blobToBinaryString(blob, function (str) {
           self._bufferedSend(str);
         });
       } else if (!util.supports.binaryBlob) {
         // We only do this if we really need to (e.g. blobs are not supported),
         // because this conversion is costly.
-        util.blobToArrayBuffer(blob, function(ab) {
+        util.blobToArrayBuffer(blob, function (ab) {
           self._bufferedSend(ab);
         });
       } else {
@@ -246,7 +246,7 @@ export class DataConnection extends BaseConnection {
 
       const self = this;
 
-      setTimeout(function() {
+      setTimeout(function () {
         // Try again.
         self._buffering = false;
         self._tryBuffer();

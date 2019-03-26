@@ -66,7 +66,7 @@ class Negotiator {
     if (!this.pcs[connection.type]) {
       util.error(
         connection.type +
-          " is not a valid connection type. Maybe you overrode the `type` property somewhere."
+        " is not a valid connection type. Maybe you overrode the `type` property somewhere."
       );
     }
 
@@ -129,7 +129,7 @@ class Negotiator {
     // ICE CANDIDATES.
     util.log("Listening for ICE candidates.");
 
-    peerConnection.onicecandidate = function(evt) {
+    peerConnection.onicecandidate = function (evt) {
       if (evt.candidate) {
         util.log("Received ICE candidates for:", peerId);
         provider.socket.send({
@@ -144,12 +144,12 @@ class Negotiator {
       }
     };
 
-    peerConnection.oniceconnectionstatechange = function() {
+    peerConnection.oniceconnectionstatechange = function () {
       switch (peerConnection.iceConnectionState) {
         case "failed":
           util.log(
             "iceConnectionState is disconnected, closing connections to " +
-              peerId
+            peerId
           );
           connection.emit(
             ConnectionEventType.Error,
@@ -160,7 +160,7 @@ class Negotiator {
         case "disconnected":
           util.log(
             "iceConnectionState is disconnected, closing connections to " +
-              peerId
+            peerId
           );
           break;
         case "completed":
@@ -177,7 +177,7 @@ class Negotiator {
     util.log("Listening for data channel");
     // Fired between offer and answer, so options should already be saved
     // in the options hash.
-    peerConnection.ondatachannel = function(evt) {
+    peerConnection.ondatachannel = function (evt) {
       util.log("Received data channel");
 
       const dataChannel = evt.channel;
@@ -191,7 +191,7 @@ class Negotiator {
     // MEDIACONNECTION.
     util.log("Listening for remote stream");
     const self = this;
-    peerConnection.ontrack = function(evt) {
+    peerConnection.ontrack = function (evt) {
       util.log("Received remote stream");
 
       const stream = evt.streams[0];
@@ -399,7 +399,7 @@ class Negotiator {
   ): void {
     util.log(
       `add stream ${stream.id} to media connection ${
-        mediaConnection.connectionId
+      mediaConnection.connectionId
       }`
     );
 
