@@ -255,41 +255,6 @@ export class util {
   static warn(...rest): void { }
   static error(...rest): void { }
 
-  static setZeroTimeout = (global => {
-    const timeouts = [];
-    const messageName = "zero-timeout-message";
-
-    // Like setTimeout, but only takes a function argument.	 There's
-    // no time argument (always zero) and no arguments (you have to
-    // use a closure).
-    function setZeroTimeoutPostMessage(fn) {
-      timeouts.push(fn);
-      global.postMessage(messageName, "*");
-    }
-
-    function handleMessage(event) {
-      if (event.source === global && event.data === messageName) {
-        if (event.stopPropagation) {
-          event.stopPropagation();
-        }
-        if (timeouts.length) {
-          timeouts.shift()();
-        }
-      }
-    }
-
-    if (global.addEventListener) {
-      global.addEventListener("message", handleMessage, true);
-    }
-    // @ts-ignore
-    else if (global.attachEvent) {
-      // @ts-ignore
-      global.attachEvent("onmessage", handleMessage);
-    }
-
-    return setZeroTimeoutPostMessage;
-  })(window);
-
   // Binary stuff
 
   private static _dataCount = 1;

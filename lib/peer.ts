@@ -166,28 +166,26 @@ export class Peer extends EventEmitter {
       this._options.wsport
     );
 
-    const self = this;
-
     this.socket.on(SocketEventType.Message, data => {
-      self._handleMessage(data);
+      this._handleMessage(data);
     });
 
     this.socket.on(SocketEventType.Error, error => {
-      self._abort(PeerErrorType.SocketError, error);
+      this._abort(PeerErrorType.SocketError, error);
     });
 
     this.socket.on(SocketEventType.Disconnected, () => {
       // If we haven't explicitly disconnected, emit error and disconnect.
-      if (!self.disconnected) {
-        self.emitError(PeerErrorType.Network, "Lost connection to server.");
-        self.disconnect();
+      if (!this.disconnected) {
+        this.emitError(PeerErrorType.Network, "Lost connection to server.");
+        this.disconnect();
       }
     });
 
-    this.socket.on(SocketEventType.Close, function () {
+    this.socket.on(SocketEventType.Close, () => {
       // If we haven't explicitly disconnected, emit error.
-      if (!self.disconnected) {
-        self._abort(
+      if (!this.disconnected) {
+        this._abort(
           PeerErrorType.SocketClosed,
           "Underlying socket is already closed."
         );
@@ -412,10 +410,9 @@ export class Peer extends EventEmitter {
   }
 
   private _delayedAbort(type: PeerErrorType, message): void {
-    const self = this;
-    util.setZeroTimeout(function () {
-      self._abort(type, message);
-    });
+    setTimeout(() => {
+      this._abort(type, message);
+    }, 0);
   }
 
   /**
@@ -490,20 +487,19 @@ export class Peer extends EventEmitter {
    *  disconnected. It also cannot reconnect to the server.
    */
   disconnect(): void {
-    const self = this;
-    util.setZeroTimeout(function () {
-      if (!self.disconnected) {
-        self._disconnected = true;
-        self._open = false;
-        if (self.socket) {
-          self.socket.close();
+    setTimeout(() => {
+      if (!this.disconnected) {
+        this._disconnected = true;
+        this._open = false;
+        if (this.socket) {
+          this.socket.close();
         }
 
-        self.emit(PeerEventType.Disconnected, self.id);
-        self._lastServerId = self.id;
-        self._id = null;
+        this.emit(PeerEventType.Disconnected, this.id);
+        this._lastServerId = this.id;
+        this._id = null;
       }
-    });
+    }, 0);
   }
 
   /** Attempts to reconnect with the same ID. */

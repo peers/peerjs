@@ -20,17 +20,15 @@ class HttpRequest {
   }
 
   constructor(readonly streamIndex: number, private readonly _httpUrl: string) {
-    const self = this;
-
     this._xmlHttpRequest.onerror = () => {
-      self._onError(self);
+      this._onError(self);
     };
 
     this._xmlHttpRequest.onreadystatechange = () => {
-      if (self.needsClearPreviousRequest()) {
-        self.clearPreviousRequest();
-      } else if (self.isSuccess()) {
-        self._onSuccess(self);
+      if (this.needsClearPreviousRequest()) {
+        this.clearPreviousRequest();
+      } else if (this.isSuccess()) {
+        this._onSuccess(self);
       }
     };
   }
@@ -139,9 +137,7 @@ export class Socket extends EventEmitter {
 
     this._socket = new WebSocket(this._wsUrl);
 
-    const self = this;
-
-    this._socket.onmessage = function (event) {
+    this._socket.onmessage = (event) => {
       let data;
 
       try {
@@ -150,31 +146,31 @@ export class Socket extends EventEmitter {
         util.log("Invalid server message", event.data);
         return;
       }
-      self.emit(SocketEventType.Message, data);
+      this.emit(SocketEventType.Message, data);
     };
 
-    this._socket.onclose = function (event) {
+    this._socket.onclose = (event) => {
       util.log("Socket closed.", event);;
 
-      self._disconnected = true;
-      self.emit(SocketEventType.Disconnected);
+      this._disconnected = true;
+      this.emit(SocketEventType.Disconnected);
     };
 
     // Take care of the queue of connections if necessary and make sure Peer knows
     // socket is open.
-    this._socket.onopen = function () {
-      if (self._timeout) {
-        clearTimeout(self._timeout);
-        setTimeout(function () {
-          self._httpRequest.abort();
-          self._httpRequest = null;
+    this._socket.onopen = () => {
+      if (this._timeout) {
+        clearTimeout(this._timeout);
+        setTimeout(() => {
+          this._httpRequest.abort();
+          this._httpRequest = null;
         }, 5000);
       }
 
-      self._sendQueuedMessages();
+      this._sendQueuedMessages();
       util.log("Socket open");
 
-      self._wsPingTimer = setTimeout(function () { self._sendHeartbeat() }, self.WEB_SOCKET_PING_INTERVAL);
+      this._wsPingTimer = setTimeout(() => { this._sendHeartbeat() }, this.WEB_SOCKET_PING_INTERVAL);
     };
   }
 
@@ -212,9 +208,7 @@ export class Socket extends EventEmitter {
     const message = JSON.stringify(data);
     this._socket.send(message);
 
-    const self = this;
-
-    this._wsPingTimer = setTimeout(function () { self._sendHeartbeat() }, this.WEB_SOCKET_PING_INTERVAL);
+    this._wsPingTimer = setTimeout(() => { this._sendHeartbeat() }, this.WEB_SOCKET_PING_INTERVAL);
   }
 
   /** Handles onreadystatechange response as a stream. */
@@ -261,16 +255,14 @@ export class Socket extends EventEmitter {
   }
 
   private _setHTTPTimeout() {
-    const self = this;
-
-    this._timeout = setTimeout(function () {
-      if (!self._wsOpen()) {
-        const oldHttp = self._httpRequest;
-        self._startXhrStream(oldHttp.streamIndex + 1);
-        self._httpRequest.previousRequest = oldHttp;
+    this._timeout = setTimeout(() => {
+      if (!this._wsOpen()) {
+        const oldHttp = this._httpRequest;
+        this._startXhrStream(oldHttp.streamIndex + 1);
+        this._httpRequest.previousRequest = oldHttp;
       } else {
-        self._httpRequest.abort();
-        self._httpRequest = null;
+        this._httpRequest.abort();
+        this._httpRequest = null;
       }
     }, this.HTTP_TIMEOUT);
   }

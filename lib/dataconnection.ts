@@ -70,12 +70,10 @@ export class DataConnection extends BaseConnection {
       this.dataChannel.binaryType = "arraybuffer";
     }
 
-    const self = this;
-
-    this.dataChannel.onopen = function () {
+    this.dataChannel.onopen = () => {
       util.log("Data channel connection success");
-      self._open = true;
-      self.emit(ConnectionEventType.Open);
+      this._open = true;
+      this.emit(ConnectionEventType.Open);
     };
 
     // Use the Reliable shim for non Firefox browsers
@@ -84,17 +82,17 @@ export class DataConnection extends BaseConnection {
     }
 
     if (this._reliable) {
-      this._reliable.onmessage = function (msg) {
-        self.emit(ConnectionEventType.Data, msg);
+      this._reliable.onmessage = (msg) => {
+        this.emit(ConnectionEventType.Data, msg);
       };
     } else {
-      this.dataChannel.onmessage = function (e) {
-        self._handleDataMessage(e);
+      this.dataChannel.onmessage = (e) => {
+        this._handleDataMessage(e);
       };
     }
-    this.dataChannel.onclose = function (e) {
-      util.log("DataChannel closed for:", self.peer);
-      self.close();
+    this.dataChannel.onclose = (e) => {
+      util.log("DataChannel closed for:", this.peer);
+      this.close();
     };
   }
 
@@ -103,17 +101,15 @@ export class DataConnection extends BaseConnection {
     let data = e.data;
     const datatype = data.constructor;
 
-    if (
-      this.serialization === SerializationType.Binary ||
-      this.serialization === SerializationType.BinaryUTF8
-    ) {
-      if (datatype === Blob) {
-        const self = this;
+    const isBinarySerialization = this.serialization === SerializationType.Binary ||
+      this.serialization === SerializationType.BinaryUTF8;
 
+    if (isBinarySerialization) {
+      if (datatype === Blob) {
         // Datatype should never be blob
-        util.blobToArrayBuffer(data, function (ab) {
+        util.blobToArrayBuffer(data, (ab) => {
           data = util.unpack(ab);
-          self.emit(ConnectionEventType.Data, data);
+          this.emit(ConnectionEventType.Data, data);
         });
         return;
       } else if (datatype === ArrayBuffer) {
@@ -209,18 +205,16 @@ export class DataConnection extends BaseConnection {
         return;
       }
 
-      const self = this;
-
       // DataChannel currently only supports strings.
       if (!util.supports.sctp) {
-        util.blobToBinaryString(blob, function (str) {
-          self._bufferedSend(str);
+        util.blobToBinaryString(blob, (str) => {
+          this._bufferedSend(str);
         });
       } else if (!util.supports.binaryBlob) {
         // We only do this if we really need to (e.g. blobs are not supported),
         // because this conversion is costly.
-        util.blobToArrayBuffer(blob, function (ab) {
-          self._bufferedSend(ab);
+        util.blobToArrayBuffer(blob, (ab) => {
+          this._bufferedSend(ab);
         });
       } else {
         this._bufferedSend(blob);
@@ -244,13 +238,12 @@ export class DataConnection extends BaseConnection {
     } catch (e) {
       this._buffering = true;
 
-      const self = this;
-
-      setTimeout(function () {
+      setTimeout(() => {
         // Try again.
-        self._buffering = false;
-        self._tryBuffer();
+        this._buffering = false;
+        this._tryBuffer();
       }, 100);
+
       return false;
     }
 

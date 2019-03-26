@@ -129,7 +129,7 @@ class Negotiator {
     // ICE CANDIDATES.
     util.log("Listening for ICE candidates.");
 
-    peerConnection.onicecandidate = function (evt) {
+    peerConnection.onicecandidate = (evt) => {
       if (evt.candidate) {
         util.log("Received ICE candidates for:", peerId);
         provider.socket.send({
@@ -144,7 +144,7 @@ class Negotiator {
       }
     };
 
-    peerConnection.oniceconnectionstatechange = function () {
+    peerConnection.oniceconnectionstatechange = () => {
       switch (peerConnection.iceConnectionState) {
         case "failed":
           util.log(
@@ -177,7 +177,7 @@ class Negotiator {
     util.log("Listening for data channel");
     // Fired between offer and answer, so options should already be saved
     // in the options hash.
-    peerConnection.ondatachannel = function (evt) {
+    peerConnection.ondatachannel = (evt) => {
       util.log("Received data channel");
 
       const dataChannel = evt.channel;
@@ -190,8 +190,8 @@ class Negotiator {
 
     // MEDIACONNECTION.
     util.log("Listening for remote stream");
-    const self = this;
-    peerConnection.ontrack = function (evt) {
+
+    peerConnection.ontrack = (evt) => {
       util.log("Received remote stream");
 
       const stream = evt.streams[0];
@@ -200,7 +200,7 @@ class Negotiator {
       if (connection.type === ConnectionType.Media) {
         const mediaConnection = <MediaConnection>connection;
 
-        self._addStreamToMediaConnection(stream, mediaConnection);
+        this._addStreamToMediaConnection(stream, mediaConnection);
       }
     };
   }
