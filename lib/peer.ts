@@ -8,7 +8,6 @@ import {
   PeerErrorType,
   PeerEventType,
   SocketEventType,
-  SerializationType,
   ServerMessageType
 } from "./enums";
 import { BaseConnection } from "./baseconnection";
@@ -85,7 +84,7 @@ export class Peer extends EventEmitter {
     return this._disconnected;
   }
 
-  constructor(id: any, options?: PeerOptions) {
+  constructor(id?: any, options?: PeerOptions) {
     super();
 
     // Deal with overloading
@@ -320,7 +319,8 @@ export class Peer extends EventEmitter {
   }
 
   /** Retrieve messages from lost message store */
-  private _getMessages(connectionId: string): ServerMessage[] {
+  //TODO Change it to private
+  public _getMessages(connectionId: string): ServerMessage[] {
     const messages = this._lostMessages.get(connectionId);
 
     if (messages) {
