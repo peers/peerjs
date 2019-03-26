@@ -43,7 +43,7 @@ export class Peer extends EventEmitter {
   private _destroyed = false; // Connections have been killed
   private _disconnected = false; // Connection to PeerServer killed but P2P connections still active
   private _open = false; // Sockets and such are not yet open.
-  private readonly _connections: Map<string, BaseConnection[]> = new Map(); // DataConnections for this peer.
+  private readonly _connections: Map<string, BaseConnection[]> = new Map(); // All connections for this peer.
   private readonly _lostMessages: Map<string, ServerMessage[]> = new Map(); // src => [list of messages]
 
   private _socket: Socket;
@@ -64,8 +64,18 @@ export class Peer extends EventEmitter {
     return this._socket;
   }
 
-  get connections() {
-    return this._connections;
+  /**
+   * @deprecated 
+   * Return type will change from Object to Map<string,[]> 
+   */
+  get connections(): Object {
+    const plainConnections = Object.create(null);
+
+    for (let [k, v] of this._connections) {
+      plainConnections[k] = v;
+    }
+
+    return plainConnections;
   }
 
   get destroyed() {
@@ -224,6 +234,7 @@ export class Peer extends EventEmitter {
       case ServerMessageType.Leave: // Another peer has closed its connection to this peer.
         util.log("Received leave message from", peerId);
         this._cleanupPeer(peerId);
+        this._connections.delete(peerId);
         break;
       case ServerMessageType.Expire: // The offer sent to a peer has expired without response.
         this.emitError(
@@ -339,9 +350,9 @@ export class Peer extends EventEmitter {
       return;
     }
 
-    const connection = new DataConnection(peer, this, options);
-    this._addConnection(peer, connection);
-    return connection;
+    const dataConnection = new DataConnection(peer, this, options);
+    this._addConnection(peer, dataConnection);
+    return dataConnection;
   }
 
   /**
@@ -371,9 +382,9 @@ export class Peer extends EventEmitter {
 
     options._stream = stream;
 
-    const call = new MediaConnection(peer, this, options);
-    this._addConnection(peer, call);
-    return call;
+    const mediaConnection = new MediaConnection(peer, this, options);
+    this._addConnection(peer, mediaConnection);
+    return mediaConnection;
   }
 
   /** Add a data/media connection to this peer. */
@@ -383,15 +394,15 @@ export class Peer extends EventEmitter {
        to peerId:${peerId}`
     );
 
-    if (!this.connections.has(peerId)) {
-      this.connections.set(peerId, []);
+    if (!this._connections.has(peerId)) {
+      this._connections.set(peerId, []);
     }
-    this.connections.get(peerId).push(connection);
+    this._connections.get(peerId).push(connection);
   }
 
   /** Retrieve a data/media connection for this peer. */
   getConnection(peerId: string, connectionId: string): null | BaseConnection {
-    const connections = this.connections.get(peerId);
+    const connections = this._connections.get(peerId);
     if (!connections) {
       return null;
     }
@@ -457,9 +468,9 @@ export class Peer extends EventEmitter {
 
   /** Disconnects every connection on this peer. */
   private _cleanup(): void {
-    for (let peerId of this.connections.keys()) {
+    for (let peerId of this._connections.keys()) {
       this._cleanupPeer(peerId);
-      this.connections.delete(peerId);
+      this._connections.delete(peerId);
     }
 
     this.emit(PeerEventType.Close);
@@ -467,7 +478,7 @@ export class Peer extends EventEmitter {
 
   /** Closes all connections to this peer. */
   private _cleanupPeer(peerId: string): void {
-    const connections = this.connections.get(peerId);
+    const connections = this._connections.get(peerId);
 
     if (!connections) return;
 
