@@ -20,7 +20,7 @@ export enum DebugLevel {
 }
 
 export class util {
-  static noop(): void {}
+  static noop(): void { }
 
   static readonly CLOUD_HOST = "0.peerjs.com";
   static readonly CLOUD_PORT = 443;
@@ -65,7 +65,7 @@ export class util {
   }
 
   private static _printWith(prefix) {
-    return function() {
+    return function () {
       const copy = Array.prototype.slice.call(arguments);
       copy.unshift(prefix);
       util._print.apply(util, copy);
@@ -92,7 +92,7 @@ export class util {
   static readonly defaultConfig = DEFAULT_CONFIG;
 
   // Returns the current browser.
-  static readonly browser: string = (function(global) {
+  static readonly browser: string = (function (global) {
     // @ts-ignore
     if (global.mozRTCPeerConnection) {
       return "Firefox";
@@ -110,7 +110,7 @@ export class util {
   })(window);
 
   // Lists which features are supported
-  static readonly supports = (function() {
+  static readonly supports = (function () {
     if (typeof RTCPeerConnection === "undefined") {
       return {};
     }
@@ -147,7 +147,7 @@ export class util {
       try {
         dc.binaryType = "blob";
         binaryBlob = true;
-      } catch (e) {}
+      } catch (e) { }
 
       // Reliable test.
       // Unfortunately Chrome is a bit unreliable about whether or not they
@@ -159,7 +159,7 @@ export class util {
           {}
         );
         sctp = reliableDC.reliable;
-      } catch (e) {}
+      } catch (e) { }
       reliablePC.close();
     }
 
@@ -252,8 +252,8 @@ export class util {
     err ? console.error.apply(console, copy) : console.log.apply(console, copy);
   }
 
-  static warn(...rest): void {}
-  static error(...rest): void {}
+  static warn(...rest): void { }
+  static error(...rest): void { }
 
   static setZeroTimeout = (global => {
     const timeouts = [];
@@ -328,7 +328,7 @@ export class util {
   static blobToArrayBuffer(blob: Blob, cb: (arg: any) => void): void {
     const fr = new FileReader();
 
-    fr.onload = function(evt) {
+    fr.onload = function (evt) {
       // @ts-ignore
       cb(evt.target.result);
     };
@@ -339,7 +339,7 @@ export class util {
   static blobToBinaryString(blob: Blob, cb: (arg: any) => void): void {
     const fr = new FileReader();
 
-    fr.onload = function(evt) {
+    fr.onload = function (evt) {
       // @ts-ignore
       cb(evt.target.result);
     };
