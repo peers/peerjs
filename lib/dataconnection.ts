@@ -4,7 +4,8 @@ import { Reliable } from "reliable";
 import {
   ConnectionType,
   ConnectionEventType,
-  SerializationType
+  SerializationType,
+  ServerMessageType
 } from "./enums";
 import { Peer } from "./peer";
 import { BaseConnection } from "./baseconnection";
@@ -277,13 +278,13 @@ export class DataConnection extends BaseConnection {
     const payload = message.payload;
 
     switch (message.type) {
-      case "ANSWER":
+      case ServerMessageType.Answer:
         this._peerBrowser = payload.browser;
 
         // Forward to negotiator
         Negotiator.handleSDP(message.type, this, payload.sdp);
         break;
-      case "CANDIDATE":
+      case ServerMessageType.Candidate:
         Negotiator.handleCandidate(this, payload.candidate);
         break;
       default:

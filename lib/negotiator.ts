@@ -7,9 +7,8 @@ import {
 import * as Reliable from "reliable";
 import { MediaConnection } from "./mediaconnection";
 import { DataConnection } from "./dataconnection";
-import { ConnectionType, PeerErrorType, ConnectionEventType } from "./enums";
+import { ConnectionType, PeerErrorType, ConnectionEventType, ServerMessageType } from "./enums";
 import { BaseConnection } from "./baseconnection";
-import { utils } from "mocha";
 
 /**
  * Manages all negotiations between Peers.
@@ -133,7 +132,7 @@ class Negotiator {
       if (evt.candidate) {
         util.log("Received ICE candidates for:", peerId);
         provider.socket.send({
-          type: "CANDIDATE",
+          type: ServerMessageType.Candidate,
           payload: {
             candidate: evt.candidate,
             type: connectionType,
@@ -273,7 +272,7 @@ class Negotiator {
         }
 
         connection.provider.socket.send({
-          type: "OFFER",
+          type: ServerMessageType.Offer,
           payload,
           dst: connection.peer
         });
@@ -313,7 +312,7 @@ class Negotiator {
         util.log(`Set localDescription:`, answer, `for:${connection.peer}`);
 
         connection.provider.socket.send({
-          type: "ANSWER",
+          type: ServerMessageType.Answer,
           payload: {
             sdp: answer,
             type: connection.type,
