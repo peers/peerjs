@@ -7,9 +7,8 @@ import {
 import * as Reliable from "reliable";
 import { MediaConnection } from "./mediaconnection";
 import { DataConnection } from "./dataconnection";
-import { ConnectionType, PeerErrorType, ConnectionEventType } from "./enums";
+import { ConnectionType, PeerErrorType, ConnectionEventType, ServerMessageType } from "./enums";
 import { BaseConnection } from "./baseconnection";
-import { utils } from "mocha";
 
 /**
  * Manages all negotiations between Peers.
@@ -129,11 +128,11 @@ class Negotiator {
     // ICE CANDIDATES.
     util.log("Listening for ICE candidates.");
 
-    peerConnection.onicecandidate = function (evt) {
+    peerConnection.onicecandidate = (evt) => {
       if (evt.candidate) {
         util.log("Received ICE candidates for:", peerId);
         provider.socket.send({
-          type: "CANDIDATE",
+          type: ServerMessageType.Candidate,
           payload: {
             candidate: evt.candidate,
             type: connectionType,
@@ -144,7 +143,7 @@ class Negotiator {
       }
     };
 
-    peerConnection.oniceconnectionstatechange = function () {
+    peerConnection.oniceconnectionstatechange = () => {
       switch (peerConnection.iceConnectionState) {
         case "failed":
           util.log(
@@ -177,7 +176,7 @@ class Negotiator {
     util.log("Listening for data channel");
     // Fired between offer and answer, so options should already be saved
     // in the options hash.
-    peerConnection.ondatachannel = function (evt) {
+    peerConnection.ondatachannel = (evt) => {
       util.log("Received data channel");
 
       const dataChannel = evt.channel;
@@ -190,8 +189,8 @@ class Negotiator {
 
     // MEDIACONNECTION.
     util.log("Listening for remote stream");
-    const self = this;
-    peerConnection.ontrack = function (evt) {
+
+    peerConnection.ontrack = (evt) => {
       util.log("Received remote stream");
 
       const stream = evt.streams[0];
@@ -200,7 +199,7 @@ class Negotiator {
       if (connection.type === ConnectionType.Media) {
         const mediaConnection = <MediaConnection>connection;
 
-        self._addStreamToMediaConnection(stream, mediaConnection);
+        this._addStreamToMediaConnection(stream, mediaConnection);
       }
     };
   }
@@ -273,7 +272,7 @@ class Negotiator {
         }
 
         connection.provider.socket.send({
-          type: "OFFER",
+          type: ServerMessageType.Offer,
           payload,
           dst: connection.peer
         });
@@ -313,7 +312,7 @@ class Negotiator {
         util.log(`Set localDescription:`, answer, `for:${connection.peer}`);
 
         connection.provider.socket.send({
-          type: "ANSWER",
+          type: ServerMessageType.Answer,
           payload: {
             sdp: answer,
             type: connection.type,

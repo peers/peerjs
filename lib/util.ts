@@ -210,27 +210,6 @@ export class util {
     return !id || /^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.test(id);
   }
 
-  static inherits(ctor, superCtor): void {
-    ctor.super_ = superCtor;
-    ctor.prototype = Object.create(superCtor.prototype, {
-      constructor: {
-        value: ctor,
-        enumerable: false,
-        writable: true,
-        configurable: true
-      }
-    });
-  }
-
-  static extend(dest, source): any {
-    for (let key in source) {
-      if (source.hasOwnProperty(key)) {
-        dest[key] = source[key];
-      }
-    }
-    return dest;
-  }
-
   static pack = BinaryPack.pack;
   static unpack = BinaryPack.unpack;
 
@@ -254,41 +233,6 @@ export class util {
 
   static warn(...rest): void { }
   static error(...rest): void { }
-
-  static setZeroTimeout = (global => {
-    const timeouts = [];
-    const messageName = "zero-timeout-message";
-
-    // Like setTimeout, but only takes a function argument.	 There's
-    // no time argument (always zero) and no arguments (you have to
-    // use a closure).
-    function setZeroTimeoutPostMessage(fn) {
-      timeouts.push(fn);
-      global.postMessage(messageName, "*");
-    }
-
-    function handleMessage(event) {
-      if (event.source === global && event.data === messageName) {
-        if (event.stopPropagation) {
-          event.stopPropagation();
-        }
-        if (timeouts.length) {
-          timeouts.shift()();
-        }
-      }
-    }
-
-    if (global.addEventListener) {
-      global.addEventListener("message", handleMessage, true);
-    }
-    // @ts-ignore
-    else if (global.attachEvent) {
-      // @ts-ignore
-      global.attachEvent("onmessage", handleMessage);
-    }
-
-    return setZeroTimeoutPostMessage;
-  })(window);
 
   // Binary stuff
 

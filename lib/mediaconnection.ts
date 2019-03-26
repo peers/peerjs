@@ -1,6 +1,6 @@
 import { util } from "./util";
 import Negotiator from "./negotiator";
-import { ConnectionType, ConnectionEventType } from "./enums";
+import { ConnectionType, ConnectionEventType, ServerMessageType } from "./enums";
 import { Peer } from "./peer";
 import { BaseConnection } from "./baseconnection";
 import { ServerMessage } from "./servermessage";
@@ -46,12 +46,12 @@ export class MediaConnection extends BaseConnection {
     const payload = message.payload;
 
     switch (message.type) {
-      case "ANSWER":
+      case ServerMessageType.Answer:
         // Forward to negotiator
         Negotiator.handleSDP(type, this, payload.sdp);
         this._open = true;
         break;
-      case "CANDIDATE":
+      case ServerMessageType.Candidate:
         Negotiator.handleCandidate(this, payload.candidate);
         break;
       default:

@@ -8,7 +8,8 @@ import {
   PeerErrorType,
   PeerEventType,
   SocketEventType,
-  SerializationType
+  SerializationType,
+  ServerMessageType
 } from "./enums";
 import { BaseConnection } from "./baseconnection";
 import { ServerMessage } from "./servermessage";
@@ -19,7 +20,6 @@ class PeerOptions implements PeerJSOption {
   debug: number; // 1: Errors, 2: Warnings, 3: All logs
   host: string;
   port: number;
-  wsport: number;
   path: string;
   key: string;
   token: string;
@@ -163,31 +163,28 @@ export class Peer extends EventEmitter {
       this._options.port,
       this._options.path,
       this._options.key,
-      this._options.wsport
     );
 
-    const self = this;
-
     this.socket.on(SocketEventType.Message, data => {
-      self._handleMessage(data);
+      this._handleMessage(data);
     });
 
     this.socket.on(SocketEventType.Error, error => {
-      self._abort(PeerErrorType.SocketError, error);
+      this._abort(PeerErrorType.SocketError, error);
     });
 
     this.socket.on(SocketEventType.Disconnected, () => {
       // If we haven't explicitly disconnected, emit error and disconnect.
-      if (!self.disconnected) {
-        self.emitError(PeerErrorType.Network, "Lost connection to server.");
-        self.disconnect();
+      if (!this.disconnected) {
+        this.emitError(PeerErrorType.Network, "Lost connection to server.");
+        this.disconnect();
       }
     });
 
-    this.socket.on(SocketEventType.Close, function () {
+    this.socket.on(SocketEventType.Close, () => {
       // If we haven't explicitly disconnected, emit error.
-      if (!self.disconnected) {
-        self._abort(
+      if (!this.disconnected) {
+        this._abort(
           PeerErrorType.SocketClosed,
           "Underlying socket is already closed."
         );
@@ -208,36 +205,33 @@ export class Peer extends EventEmitter {
     const peerId = message.src;
 
     switch (type) {
-      case "OPEN": // The connection to the server is open.
+      case ServerMessageType.Open: // The connection to the server is open.
         this.emit(PeerEventType.Open, this.id);
         this._open = true;
         break;
-      case "ERROR": // Server error.
+      case ServerMessageType.Error: // Server error.
         this._abort(PeerErrorType.ServerError, payload.msg);
         break;
-      case "ID-TAKEN": // The selected ID is taken.
+      case ServerMessageType.IdTaken: // The selected ID is taken.
         this._abort(PeerErrorType.UnavailableID, `ID "${this.id}" is taken`);
         break;
-      case "INVALID-KEY": // The given API key cannot be found.
+      case ServerMessageType.InvalidKey: // The given API key cannot be found.
         this._abort(
           PeerErrorType.InvalidKey,
           `API KEY "${this._options.key}" is invalid`
         );
         break;
-
-      //
-      case "LEAVE": // Another peer has closed its connection to this peer.
+      case ServerMessageType.Leave: // Another peer has closed its connection to this peer.
         util.log("Received leave message from", peerId);
         this._cleanupPeer(peerId);
         break;
-
-      case "EXPIRE": // The offer sent to a peer has expired without response.
+      case ServerMessageType.Expire: // The offer sent to a peer has expired without response.
         this.emitError(
           PeerErrorType.PeerUnavailable,
           "Could not connect to peer " + peerId
         );
         break;
-      case "OFFER": {
+      case ServerMessageType.Offer: {
         // we should consider switching this to CALL/CONNECT, but this is the least breaking option.
         const connectionId = payload.connectionId;
         let connection = this.getConnection(peerId, connectionId);
@@ -412,10 +406,9 @@ export class Peer extends EventEmitter {
   }
 
   private _delayedAbort(type: PeerErrorType, message): void {
-    const self = this;
-    util.setZeroTimeout(function () {
-      self._abort(type, message);
-    });
+    setTimeout(() => {
+      this._abort(type, message);
+    }, 0);
   }
 
   /**
@@ -490,20 +483,19 @@ export class Peer extends EventEmitter {
    *  disconnected. It also cannot reconnect to the server.
    */
   disconnect(): void {
-    const self = this;
-    util.setZeroTimeout(function () {
-      if (!self.disconnected) {
-        self._disconnected = true;
-        self._open = false;
-        if (self.socket) {
-          self.socket.close();
+    setTimeout(() => {
+      if (!this.disconnected) {
+        this._disconnected = true;
+        this._open = false;
+        if (this.socket) {
+          this.socket.close();
         }
 
-        self.emit(PeerEventType.Disconnected, self.id);
-        self._lastServerId = self.id;
-        self._id = null;
+        this.emit(PeerEventType.Disconnected, this.id);
+        this._lastServerId = this.id;
+        this._id = null;
       }
-    });
+    }, 0);
   }
 
   /** Attempts to reconnect with the same ID. */

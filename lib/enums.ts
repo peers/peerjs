@@ -47,3 +47,17 @@ export enum SocketEventType {
   Error = "error",
   Close = "close"
 }
+
+export enum ServerMessageType {
+  Heartbeat = "HEARTBEAT",
+  Candidate = "CANDIDATE",
+  Offer = "OFFER",
+  Answer = "ANSWER",
+  Open = "OPEN", // The connection to the server is open.
+  Error = "ERROR", // Server error.
+  IdTaken = "ID-TAKEN", // The selected ID is taken.
+  InvalidKey = "INVALID-KEY", // The given API key cannot be found.
+  Leave = "LEAVE", // Another peer has closed its connection to this peer.
+  Expire = "EXPIRE" // The offer sent to a peer has expired without response.
+
+}

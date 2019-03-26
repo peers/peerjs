@@ -1,5 +1,7 @@
+import { ServerMessageType } from "./enums";
+
 export class ServerMessage {
-  type: string;
+  type: ServerMessageType;
   payload: any;
   src: string;
 }
