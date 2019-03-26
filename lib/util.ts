@@ -210,27 +210,6 @@ export class util {
     return !id || /^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.test(id);
   }
 
-  static inherits(ctor, superCtor): void {
-    ctor.super_ = superCtor;
-    ctor.prototype = Object.create(superCtor.prototype, {
-      constructor: {
-        value: ctor,
-        enumerable: false,
-        writable: true,
-        configurable: true
-      }
-    });
-  }
-
-  static extend(dest, source): any {
-    for (let key in source) {
-      if (source.hasOwnProperty(key)) {
-        dest[key] = source[key];
-      }
-    }
-    return dest;
-  }
-
   static pack = BinaryPack.pack;
   static unpack = BinaryPack.unpack;
 
