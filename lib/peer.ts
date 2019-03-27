@@ -16,15 +16,15 @@ import { PeerConnectOption, PeerJSOption } from "..";
 import { API } from "./api";
 
 class PeerOptions implements PeerJSOption {
-  debug: number; // 1: Errors, 2: Warnings, 3: All logs
-  host: string;
-  port: number;
-  path: string;
-  key: string;
-  token: string;
-  config: any;
-  secure: boolean;
-  logFunction: any;
+  debug?: number; // 1: Errors, 2: Warnings, 3: All logs
+  host?: string;
+  port?: number;
+  path?: string;
+  key?: string;
+  token?: string;
+  config?: any;
+  secure?: boolean;
+  logFunction?: any;
 }
 
 /**
