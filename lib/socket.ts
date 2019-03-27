@@ -72,6 +72,8 @@ export class Socket extends EventEmitter {
     // Take care of the queue of connections if necessary and make sure Peer knows
     // socket is open.
     this._socket.onopen = () => {
+      if (this._disconnected) return;
+
       this._sendQueuedMessages();
 
       util.log("Socket open");
@@ -99,7 +101,7 @@ export class Socket extends EventEmitter {
 
   /** Is the websocket currently open? */
   private _wsOpen(): boolean {
-    return this._socket && this._socket.readyState == 1;
+    return !!this._socket && this._socket.readyState == 1;
   }
 
   /** Send queued messages. */
@@ -142,7 +144,7 @@ export class Socket extends EventEmitter {
   }
 
   close(): void {
-    if (!this._disconnected && this._wsOpen()) {
+    if (!this._disconnected && !!this._socket) {
       this._socket.close();
       this._disconnected = true;
       clearTimeout(this._wsPingTimer);
