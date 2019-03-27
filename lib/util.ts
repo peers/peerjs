@@ -2,7 +2,8 @@ import * as BinaryPack from "js-binarypack";
 import { RTCPeerConnection } from "./adapter";
 
 const DEFAULT_CONFIG = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  sdpSemantics: "unified-plan"
 };
 
 /*
