@@ -1,6 +1,5 @@
 import { EventEmitter } from "eventemitter3";
 import { Peer } from "./peer";
-import { RTCPeerConnection } from "./adapter";
 import { ServerMessage } from "./servermessage";
 import { ConnectionType } from "./enums";
 

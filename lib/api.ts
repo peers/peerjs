@@ -1,5 +1,4 @@
 import { util } from "./util";
-import { PeerErrorType, PeerEventType } from "./enums";
 
 export class API {
   constructor(private readonly _options: any) { }
