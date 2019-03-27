@@ -92,10 +92,8 @@ export class Peer extends EventEmitter {
       options = id;
       id = undefined;
     } else if (id) {
-      // Ensure id is a string
       id = id.toString();
     }
-    //
 
     // Configurize options
     options = {
@@ -542,7 +540,7 @@ export class Peer extends EventEmitter {
    * the cloud server, email team@peerjs.com to get the functionality enabled for
    * your key.
    */
-  listAllPeers(cb = (arg: any[]) => { }): void {
+  listAllPeers(cb = (_: any[]) => { }): void {
     this._api.listAllPeers()
       .then(peers => cb(peers))
       .catch(error => this._abort(PeerErrorType.ServerError, error));

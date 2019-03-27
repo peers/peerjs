@@ -232,8 +232,8 @@ export class util {
     err ? console.error.apply(console, copy) : console.log.apply(console, copy);
   }
 
-  static warn(...rest): void { }
-  static error(...rest): void { }
+  static warn(..._): void { }
+  static error(..._): void { }
 
   // Binary stuff
 

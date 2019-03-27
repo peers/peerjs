@@ -34,9 +34,11 @@ export class DataConnection extends BaseConnection {
   private _dc: RTCDataChannel;
   private _reliable: Reliable;
 
-  get dataChannel() {
+  get dataChannel(): RTCDataChannel {
     return this._dc;
   }
+
+  get bufferSize(): number { return this._bufferSize; }
 
   constructor(peerId: string, provider: Peer, options: any) {
     super(peerId, provider, options);
@@ -91,7 +93,7 @@ export class DataConnection extends BaseConnection {
         this._handleDataMessage(e);
       };
     }
-    this.dataChannel.onclose = (e) => {
+    this.dataChannel.onclose = () => {
       util.log("DataChannel closed for:", this.peer);
       this.close();
     };

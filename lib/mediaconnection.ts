@@ -11,24 +11,27 @@ import { ServerMessage } from "./servermessage";
 export class MediaConnection extends BaseConnection {
   private static readonly ID_PREFIX = "mc_";
 
-  private localStream: MediaStream;
-  private remoteStream: MediaStream;
+  private _localStream: MediaStream;
+  private _remoteStream: MediaStream;
 
   get type() {
     return ConnectionType.Media;
   }
 
+  get localStream(): MediaStream { return this._localStream; }
+  get remoteStream(): MediaStream { return this._remoteStream; }
+
   constructor(peerId: string, provider: Peer, options: any) {
     super(peerId, provider, options);
 
-    this.localStream = this.options._stream;
+    this._localStream = this.options._stream;
     this.connectionId =
       this.options.connectionId ||
       MediaConnection.ID_PREFIX + util.randomToken();
 
-    if (this.localStream) {
+    if (this._localStream) {
       Negotiator.startConnection(this, {
-        _stream: this.localStream,
+        _stream: this._localStream,
         originator: true
       });
     }
@@ -37,7 +40,7 @@ export class MediaConnection extends BaseConnection {
   addStream(remoteStream) {
     util.log("Receiving stream", remoteStream);
 
-    this.remoteStream = remoteStream;
+    this._remoteStream = remoteStream;
     super.emit(ConnectionEventType.Stream, remoteStream); // Should we call this `open`?
   }
 
@@ -61,7 +64,7 @@ export class MediaConnection extends BaseConnection {
   }
 
   answer(stream: MediaStream): void {
-    if (this.localStream) {
+    if (this._localStream) {
       util.warn(
         "Local stream already exists on this MediaConnection. Are you answering a call twice?"
       );
@@ -70,7 +73,7 @@ export class MediaConnection extends BaseConnection {
 
     this.options._payload._stream = stream;
 
-    this.localStream = stream;
+    this._localStream = stream;
     Negotiator.startConnection(this, this.options._payload);
     // Retrieve lost messages stored because PeerConnection not set up.
     const messages = this.provider._getMessages(this.connectionId);

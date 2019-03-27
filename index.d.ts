@@ -160,24 +160,25 @@ declare namespace Peer {
     label: string;
     metadata: any;
     open: boolean;
-    peerConnection: any;
+    peerConnection: RTCPeerConnection;
     peer: string;
     reliable: boolean;
     serialization: string;
     type: string;
-    buffSize: number;
+    bufferSize: number;
   }
 
   interface MediaConnection {
-    answer(stream?: any): void;
+    answer(stream?: MediaStream): void;
     close(): void;
     on(event: string, cb: () => void): void;
-    on(event: "stream", cb: (stream: any) => void): void;
+    on(event: "stream", cb: (stream: MediaStream) => void): void;
     on(event: "close", cb: () => void): void;
     on(event: "error", cb: (err: any) => void): void;
     off(event: string, fn: Function, once?: boolean): void;
     open: boolean;
     metadata: any;
+    peerConnection: RTCPeerConnection;
     peer: string;
     type: string;
   }
