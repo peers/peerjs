@@ -247,6 +247,10 @@ class Negotiator {
         }
       }
 
+      if (connection.options.sdpTransform && typeof connection.options.sdpTransform === 'function') {
+        offer.sdp = connection.options.sdpTransform(offer.sdp) || offer.sdp;
+      }
+
       try {
         await peerConnection.setLocalDescription(offer);
 
