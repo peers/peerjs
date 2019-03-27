@@ -1,6 +1,10 @@
 {
     "compilerOptions": {
         "target": "es6",
-        "downlevelIteration": true
+        "module": "commonjs",
+        "downlevelIteration": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "skipLibCheck": true,
     }
 }
