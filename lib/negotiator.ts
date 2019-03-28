@@ -1,10 +1,11 @@
+import * as Reliable from "reliable";
 import { util } from "./util";
+import logger from "./logger";
 import {
   RTCPeerConnection,
   RTCSessionDescription,
   RTCIceCandidate
 } from "./adapter";
-import * as Reliable from "reliable";
 import { MediaConnection } from "./mediaconnection";
 import { DataConnection } from "./dataconnection";
 import { ConnectionType, PeerErrorType, ConnectionEventType, ServerMessageType } from "./enums";
@@ -63,7 +64,7 @@ class Negotiator {
     options: any
   ): RTCPeerConnection {
     if (!this.pcs[connection.type]) {
-      util.error(
+      logger.error(
         connection.type +
         " is not a valid connection type. Maybe you overrode the `type` property somewhere."
       );
@@ -91,7 +92,7 @@ class Negotiator {
 
   /** Start a PC. */
   private _startPeerConnection(connection: BaseConnection): RTCPeerConnection {
-    util.log("Creating RTCPeerConnection.");
+    logger.log("Creating RTCPeerConnection.");
 
     const id = this._idPrefix + util.randomToken();
     let optional = {};
@@ -126,11 +127,11 @@ class Negotiator {
     const provider = connection.provider;
 
     // ICE CANDIDATES.
-    util.log("Listening for ICE candidates.");
+    logger.log("Listening for ICE candidates.");
 
     peerConnection.onicecandidate = (evt) => {
       if (evt.candidate) {
-        util.log("Received ICE candidates for:", peerId);
+        logger.log("Received ICE candidates for:", peerId);
         provider.socket.send({
           type: ServerMessageType.Candidate,
           payload: {
@@ -146,7 +147,7 @@ class Negotiator {
     peerConnection.oniceconnectionstatechange = () => {
       switch (peerConnection.iceConnectionState) {
         case "failed":
-          util.log(
+          logger.log(
             "iceConnectionState is failed, closing connections to " +
             peerId
           );
@@ -157,7 +158,7 @@ class Negotiator {
           connection.close();
           break;
         case "closed":
-          util.log(
+          logger.log(
             "iceConnectionState is closed, closing connections to " +
             peerId
           );
@@ -168,7 +169,7 @@ class Negotiator {
           connection.close();
           break;
         case "disconnected":
-          util.log(
+          logger.log(
             "iceConnectionState is disconnected, closing connections to " +
             peerId
           );
@@ -184,11 +185,11 @@ class Negotiator {
     peerConnection.onicechange = peerConnection.oniceconnectionstatechange;
 
     // DATACONNECTION.
-    util.log("Listening for data channel");
+    logger.log("Listening for data channel");
     // Fired between offer and answer, so options should already be saved
     // in the options hash.
     peerConnection.ondatachannel = (evt) => {
-      util.log("Received data channel");
+      logger.log("Received data channel");
 
       const dataChannel = evt.channel;
       const connection = <DataConnection>(
@@ -199,10 +200,10 @@ class Negotiator {
     };
 
     // MEDIACONNECTION.
-    util.log("Listening for remote stream");
+    logger.log("Listening for remote stream");
 
     peerConnection.ontrack = (evt) => {
-      util.log("Received remote stream");
+      logger.log("Received remote stream");
 
       const stream = evt.streams[0];
       const connection = provider.getConnection(peerId, connectionId);
@@ -216,7 +217,7 @@ class Negotiator {
   }
 
   cleanup(connection: BaseConnection): void {
-    util.log("Cleaning up PeerConnection to " + connection.peer);
+    logger.log("Cleaning up PeerConnection to " + connection.peer);
 
     const peerConnection = connection.peerConnection;
 
@@ -249,7 +250,7 @@ class Negotiator {
         connection.options.constraints
       );
 
-      util.log("Created offer.");
+      logger.log("Created offer.");
 
       if (!util.supports.sctp && connection.type === ConnectionType.Data) {
         const dataConnection = <DataConnection>connection;
@@ -265,7 +266,7 @@ class Negotiator {
       try {
         await peerConnection.setLocalDescription(offer);
 
-        util.log("Set localDescription:", offer, `for:${connection.peer}`);
+        logger.log("Set localDescription:", offer, `for:${connection.peer}`);
 
         let payload: any = {
           sdp: offer,
@@ -298,12 +299,12 @@ class Negotiator {
           "OperationError: Failed to set local offer sdp: Called in wrong state: kHaveRemoteOffer"
         ) {
           connection.provider.emitError(PeerErrorType.WebRTC, err);
-          util.log("Failed to setLocalDescription, ", err);
+          logger.log("Failed to setLocalDescription, ", err);
         }
       }
     } catch (err_1) {
       connection.provider.emitError(PeerErrorType.WebRTC, err_1);
-      util.log("Failed to createOffer, ", err_1);
+      logger.log("Failed to createOffer, ", err_1);
     }
   }
 
@@ -312,7 +313,7 @@ class Negotiator {
 
     try {
       const answer = await peerConnection.createAnswer();
-      util.log("Created answer.");
+      logger.log("Created answer.");
 
       if (!util.supports.sctp && connection.type === ConnectionType.Data) {
         const dataConnection = <DataConnection>connection;
@@ -324,7 +325,7 @@ class Negotiator {
       try {
         await peerConnection.setLocalDescription(answer);
 
-        util.log(`Set localDescription:`, answer, `for:${connection.peer}`);
+        logger.log(`Set localDescription:`, answer, `for:${connection.peer}`);
 
         connection.provider.socket.send({
           type: ServerMessageType.Answer,
@@ -338,11 +339,11 @@ class Negotiator {
         });
       } catch (err) {
         connection.provider.emitError(PeerErrorType.WebRTC, err);
-        util.log("Failed to setLocalDescription, ", err);
+        logger.log("Failed to setLocalDescription, ", err);
       }
     } catch (err_1) {
       connection.provider.emitError(PeerErrorType.WebRTC, err_1);
-      util.log("Failed to create answer, ", err_1);
+      logger.log("Failed to create answer, ", err_1);
     }
   }
 
@@ -355,19 +356,19 @@ class Negotiator {
     sdp = new RTCSessionDescription(sdp);
     const peerConnection = connection.peerConnection;
 
-    util.log("Setting remote description", sdp);
+    logger.log("Setting remote description", sdp);
 
     const self = this;
 
     try {
       await peerConnection.setRemoteDescription(sdp);
-      util.log(`Set remoteDescription:${type} for:${connection.peer}`);
+      logger.log(`Set remoteDescription:${type} for:${connection.peer}`);
       if (type === "OFFER") {
         await self._makeAnswer(connection);
       }
     } catch (err) {
       connection.provider.emitError(PeerErrorType.WebRTC, err);
-      util.log("Failed to setRemoteDescription, ", err);
+      logger.log("Failed to setRemoteDescription, ", err);
     }
   }
 
@@ -383,10 +384,10 @@ class Negotiator {
           candidate: candidate
         })
       );
-      util.log(`Added ICE candidate for:${connection.peer}`);
+      logger.log(`Added ICE candidate for:${connection.peer}`);
     } catch (err) {
       connection.provider.emitError(PeerErrorType.WebRTC, err);
-      util.log("Failed to handleCandidate, ", err);
+      logger.log("Failed to handleCandidate, ", err);
     }
   }
 
@@ -394,10 +395,10 @@ class Negotiator {
     stream: MediaStream,
     peerConnection: RTCPeerConnection
   ): void {
-    util.log(`add tracks from stream ${stream.id} to peer connection`);
+    logger.log(`add tracks from stream ${stream.id} to peer connection`);
 
     if (!peerConnection.addTrack) {
-      return util.error(
+      return logger.error(
         `Your browser does't support RTCPeerConnection#addTrack. Ignored.`
       );
     }
@@ -411,7 +412,7 @@ class Negotiator {
     stream: MediaStream,
     mediaConnection: MediaConnection
   ): void {
-    util.log(
+    logger.log(
       `add stream ${stream.id} to media connection ${
       mediaConnection.connectionId
       }`

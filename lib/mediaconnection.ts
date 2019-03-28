@@ -1,4 +1,5 @@
 import { util } from "./util";
+import logger from "./logger";
 import Negotiator from "./negotiator";
 import { ConnectionType, ConnectionEventType, ServerMessageType } from "./enums";
 import { Peer } from "./peer";
@@ -38,7 +39,7 @@ export class MediaConnection extends BaseConnection {
   }
 
   addStream(remoteStream) {
-    util.log("Receiving stream", remoteStream);
+    logger.log("Receiving stream", remoteStream);
 
     this._remoteStream = remoteStream;
     super.emit(ConnectionEventType.Stream, remoteStream); // Should we call this `open`?
@@ -58,14 +59,14 @@ export class MediaConnection extends BaseConnection {
         Negotiator.handleCandidate(this, payload.candidate);
         break;
       default:
-        util.warn(`Unrecognized message type:${type} from peer:${this.peer}`);
+        logger.warn(`Unrecognized message type:${type} from peer:${this.peer}`);
         break;
     }
   }
 
   answer(stream: MediaStream): void {
     if (this._localStream) {
-      util.warn(
+      logger.warn(
         "Local stream already exists on this MediaConnection. Are you answering a call twice?"
       );
       return;

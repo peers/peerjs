@@ -1,4 +1,5 @@
 import { util } from "./util";
+import logger from "./logger";
 
 export class API {
   constructor(private readonly _options: any) { }
@@ -33,7 +34,7 @@ export class API {
 
       return response.text();
     } catch (error) {
-      util.error("Error retrieving ID", error);
+      logger.error("Error retrieving ID", error);
 
       let pathError = "";
 
@@ -81,7 +82,7 @@ export class API {
 
       return response.json();
     } catch (error) {
-      util.error("Error retrieving list peers", error);
+      logger.error("Error retrieving list peers", error);
 
       throw new Error("Could not get list peers from the server." + error);
     }

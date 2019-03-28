@@ -1,5 +1,5 @@
-import { util } from "./util";
 import { EventEmitter } from "eventemitter3";
+import logger from "./logger";
 import { SocketEventType, ServerMessageType } from "./enums";
 
 /**
@@ -53,7 +53,7 @@ export class Socket extends EventEmitter {
       try {
         data = JSON.parse(event.data);
       } catch (e) {
-        util.log("Invalid server message", event.data);
+        logger.log("Invalid server message", event.data);
         return;
       }
 
@@ -61,7 +61,7 @@ export class Socket extends EventEmitter {
     };
 
     this._socket.onclose = (event) => {
-      util.log("Socket closed.", event);;
+      logger.log("Socket closed.", event);;
 
       this._disconnected = true;
       clearTimeout(this._wsPingTimer);
@@ -76,7 +76,7 @@ export class Socket extends EventEmitter {
 
       this._sendQueuedMessages();
 
-      util.log("Socket open");
+      logger.log("Socket open");
 
       this._scheduleHeartbeat();
     };
@@ -88,7 +88,7 @@ export class Socket extends EventEmitter {
 
   private _sendHeartbeat(): void {
     if (!this._wsOpen()) {
-      util.log(`Cannot send heartbeat, because socket closed`);
+      logger.log(`Cannot send heartbeat, because socket closed`);
       return;
     }
 
