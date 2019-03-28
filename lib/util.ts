@@ -159,7 +159,7 @@ export class util {
           "_PEERJSRELIABLETEST",
           {}
         );
-        sctp = reliableDC.reliable;
+        sctp = reliableDC.ordered;
       } catch (e) { }
       reliablePC.close();
     }
