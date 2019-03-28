@@ -166,7 +166,11 @@ export class DataConnection extends BaseConnection {
     }
 
     this._open = false;
+    this._buffer = [];
+    this._bufferSize = 0;
+
     Negotiator.cleanup(this);
+
     super.emit(ConnectionEventType.Close);
   }
 
@@ -227,7 +231,7 @@ export class DataConnection extends BaseConnection {
     }
   }
 
-  private _bufferedSend(msg): void {
+  private _bufferedSend(msg: any): void {
     if (this._buffering || !this._trySend(msg)) {
       this._buffer.push(msg);
       this._bufferSize = this._buffer.length;
@@ -235,7 +239,11 @@ export class DataConnection extends BaseConnection {
   }
 
   // Returns true if the send succeeds.
-  private _trySend(msg): boolean {
+  private _trySend(msg: any): boolean {
+    if (!this.open) {
+      return false;
+    }
+
     try {
       this.dataChannel.send(msg);
     } catch (e) {
@@ -255,6 +263,10 @@ export class DataConnection extends BaseConnection {
 
   // Try to send the first message in the buffer.
   private _tryBuffer(): void {
+    if (!this.open) {
+      return;
+    }
+
     if (this._buffer.length === 0) {
       return;
     }
