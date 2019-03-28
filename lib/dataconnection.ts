@@ -1,6 +1,7 @@
-import { util } from "./util";
-import Negotiator from "./negotiator";
 import { Reliable } from "reliable";
+import { util } from "./util";
+import logger, { LogLevel } from "./logger";
+import Negotiator from "./negotiator";
 import {
   ConnectionType,
   ConnectionEventType,
@@ -74,14 +75,15 @@ export class DataConnection extends BaseConnection {
     }
 
     this.dataChannel.onopen = () => {
-      util.log("Data channel connection success");
+      logger.log("Data channel connection success");
       this._open = true;
       this.emit(ConnectionEventType.Open);
     };
 
     // Use the Reliable shim for non Firefox browsers
     if (!util.supports.sctp && this.reliable) {
-      this._reliable = new Reliable(this.dataChannel, util.debug);
+      const isLoggingEnable = logger.logLevel > LogLevel.Disabled;
+      this._reliable = new Reliable(this.dataChannel, isLoggingEnable);
     }
 
     if (this._reliable) {
@@ -94,7 +96,7 @@ export class DataConnection extends BaseConnection {
       };
     }
     this.dataChannel.onclose = () => {
-      util.log("DataChannel closed for:", this.peer);
+      logger.log("DataChannel closed for:", this.peer);
       this.close();
     };
   }
@@ -302,7 +304,7 @@ export class DataConnection extends BaseConnection {
         Negotiator.handleCandidate(this, payload.candidate);
         break;
       default:
-        util.warn(
+        logger.warn(
           "Unrecognized message type:",
           message.type,
           "from peer:",

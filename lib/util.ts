@@ -6,20 +6,6 @@ const DEFAULT_CONFIG = {
   sdpSemantics: "unified-plan"
 };
 
-/*
-Prints log messages depending on the debug level passed in. Defaults to 0.
-0  Prints no logs.
-1  Prints only errors.
-2  Prints errors and warnings.
-3  Prints all logs.
-*/
-export enum DebugLevel {
-  Disabled,
-  Errors,
-  Warnings,
-  All
-}
-
 export class util {
   static noop(): void { }
 
@@ -29,65 +15,6 @@ export class util {
   // Browsers that need chunking:
   static readonly chunkedBrowsers = { Chrome: 1 };
   static readonly chunkedMTU = 16300; // The original 60000 bytes setting does not work when sending data from Firefox to Chrome, which is "cut off" after 16384 bytes and delivered individually.
-
-  // Logging logic
-  static readonly debug = false;
-  static logLevel = DebugLevel.Disabled;
-
-  static setLogLevel(level: string): void {
-    const debugLevel = parseInt(level, 10);
-
-    if (!isNaN(parseInt(level, 10))) {
-      util.logLevel = debugLevel;
-    } else {
-      // If they are using truthy/falsy values for debug
-      util.logLevel = level ? DebugLevel.All : DebugLevel.Disabled;
-    }
-    util.log = util.warn = util.error = util.noop;
-    if (util.logLevel > DebugLevel.Disabled) {
-      util.error = util._printWith("ERROR");
-    }
-    if (util.logLevel > DebugLevel.Errors) {
-      util.warn = util._printWith("WARNING");
-    }
-    if (util.logLevel > DebugLevel.Warnings) {
-      util.log = util._print;
-    }
-  }
-
-  static setLogFunction(fn): void {
-    if (fn.constructor !== Function) {
-      util.warn(
-        "The log function you passed in is not a function. Defaulting to regular logs."
-      );
-    } else {
-      util._print = fn;
-    }
-  }
-
-  private static _printWith(prefix) {
-    return function () {
-      const copy = Array.prototype.slice.call(arguments);
-      copy.unshift(prefix);
-      util._print.apply(util, copy);
-    };
-  }
-
-  private static _print(...rest): void {
-    let err = false;
-    const copy = [...rest];
-
-    copy.unshift("PeerJS: ");
-
-    for (let i in copy) {
-      if (copy[i] instanceof Error) {
-        copy[i] = "(" + copy[i].name + ") " + copy[i].message;
-        err = true;
-      }
-    }
-
-    err ? console.error.apply(console, copy) : console.log.apply(console, copy);
-  }
 
   // Returns browser-agnostic default config
   static readonly defaultConfig = DEFAULT_CONFIG;
@@ -169,27 +96,6 @@ export class util {
       audioVideo = !!pc.addStream;
     }
 
-    // FIXME: this is not great because in theory it doesn't work for
-    // av-only browsers (?).
-    /*
-    if (!onnegotiationneeded && data) {
-      // sync default check.
-      var negotiationPC = new RTCPeerConnection(defaultConfig, {optional: [{RtpDataChannels: true}]});
-      negotiationPC.onnegotiationneeded = function() {
-        onnegotiationneeded = true;
-        // async check.
-        if (util && util.supports) {
-          util.supports.onnegotiationneeded = true;
-        }
-      };
-      negotiationPC.createDataChannel('_PEERJSNEGOTIATIONTEST');
-
-      setTimeout(function() {
-        negotiationPC.close();
-      }, 1000);
-    }
-    */
-
     if (pc) {
       pc.close();
     }
@@ -213,27 +119,6 @@ export class util {
 
   static pack = BinaryPack.pack;
   static unpack = BinaryPack.unpack;
-
-  static log(...rest): void {
-    if (!util.debug) return;
-
-    let err = false;
-    const copy = [...rest];
-
-    copy.unshift("PeerJS: ");
-
-    for (let i in copy) {
-      if (copy[i] instanceof Error) {
-        copy[i] = "(" + copy[i].name + ") " + copy[i].message;
-        err = true;
-      }
-    }
-
-    err ? console.error.apply(console, copy) : console.log.apply(console, copy);
-  }
-
-  static warn(..._): void { }
-  static error(..._): void { }
 
   // Binary stuff
 
