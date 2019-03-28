@@ -1,5 +1,5 @@
 import { WebSocket } from 'mock-socket';
-import "webrtc-adapter";
+import { adapter as _ } from 'webrtc-adapter';
 
 const fakeGlobals = {
     WebSocket,

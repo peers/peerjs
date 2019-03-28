@@ -1,4 +1,4 @@
-import "webrtc-adapter";
+import { adapter as _ } from "webrtc-adapter";
 
 export const RTCSessionDescription =
   // @ts-ignore
