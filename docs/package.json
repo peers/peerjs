@@ -2,16 +2,20 @@
   "name": "docs",
   "version": "0.0.0",
   "description": "**Due to browsers' incomplete support of the WebRTC DataChannel specification, many features of PeerJS have caveats.\r [View the status page for full details](http://peerjs.com/status).**",
-  "main": "index.js",
+  "main": "build.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node build.js"
   },
   "repository": "",
   "author": "",
   "license": "BSD",
   "readmeFilename": "readme.md",
   "dependencies": {
-    "reference": ">0.0.0",
+    "reference": "^0.1.1",
     "handlebars": ">=4.0.0"
+  },
+  "devDependencies": {
+    "standard": "^12.0.1"
   }
 }
