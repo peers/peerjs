@@ -179,7 +179,7 @@ var peer = new Peer({
 
     <h3>Why am I unable to connect?</h3>
     <p>You could be behind a symmetric NAT, in which case you'll need to set up a TURN server.</p>
-    <p>Another possible issue is your network blocking port 9000, which the PeerServer cloud runs on. In this you must
+    <p>Another possible issue is your network blocking port 443, which the PeerServer cloud runs on. In this you must
       use your
       own PeerServer running on an appropriate port instead of the cloud service.</p>
 
@@ -238,7 +238,7 @@ var peer = new Peer({
             <div class="child " id="peer-options-key"><span class="name"><a href="#peer-options-key">key</a><span
                   class="tag type string">string</span></span>
               <p class="description">API key for the cloud PeerServer. This is not used for servers other than
-                <code>0.peerjs.com</code>.<span class='warn'>PeerServer cloud runs on port 9000. Please ensure it is not
+                <code>0.peerjs.com</code>.<span class='warn'>PeerServer cloud runs on port 443. Please ensure it is not
                   blocked or consider running your own PeerServer instead.</span></p>
             </div>
             <div class="child " id="peer-options-host"><span class="name"><a href="#peer-options-host">host</a><span

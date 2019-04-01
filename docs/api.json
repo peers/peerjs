@@ -19,7 +19,7 @@
           {
             "name": "key",
             "type": "string",
-            "description": "API key for the cloud PeerServer. This is not used for servers other than <code>0.peerjs.com</code>.<span class='warn'>PeerServer cloud runs on port 9000. Please ensure it is not blocked or consider running your own PeerServer instead.</span>"
+            "description": "API key for the cloud PeerServer. This is not used for servers other than <code>0.peerjs.com</code>.<span class='warn'>PeerServer cloud runs on port 443. Please ensure it is not blocked or consider running your own PeerServer instead.</span>"
           },
           {
             "name": "host",
