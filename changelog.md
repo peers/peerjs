@@ -1,6 +1,20 @@
 # Change Log
 
-All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+All notable changes to this project will be documented in this file.
+
+<a name="0.4.0"></a>
+
+## vNEXT 0.4.0 (2019-XX-XX)
+
+### Refactoring
+
+Almost all project was refactored!!!
+
+- removed: xhr long-pooling #506
+- changed: fetch api instead of xhr
+
+### Features
+- added: heartbeat #502
 
 <a name="0.3.18"></a>
 
