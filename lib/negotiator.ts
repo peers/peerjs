@@ -136,6 +136,8 @@ export class Negotiator {
           peerConnection.onicecandidate = util.noop;
           break;
       }
+
+      this.connection.emit(ConnectionEventType.IceStateChanged, peerConnection.iceConnectionState);
     };
 
     // DATACONNECTION.
@@ -202,6 +204,7 @@ export class Negotiator {
 
   private async _makeOffer(): Promise<void> {
     const peerConnection = this.connection.peerConnection;
+    const provider = this.connection.provider;
 
     try {
       const offer = await peerConnection.createOffer(
@@ -245,7 +248,7 @@ export class Negotiator {
           };
         }
 
-        this.connection.provider.socket.send({
+        provider.socket.send({
           type: ServerMessageType.Offer,
           payload,
           dst: this.connection.peer
@@ -256,18 +259,19 @@ export class Negotiator {
           err !=
           "OperationError: Failed to set local offer sdp: Called in wrong state: kHaveRemoteOffer"
         ) {
-          this.connection.provider.emitError(PeerErrorType.WebRTC, err);
+          provider.emitError(PeerErrorType.WebRTC, err);
           logger.log("Failed to setLocalDescription, ", err);
         }
       }
     } catch (err_1) {
-      this.connection.provider.emitError(PeerErrorType.WebRTC, err_1);
+      provider.emitError(PeerErrorType.WebRTC, err_1);
       logger.log("Failed to createOffer, ", err_1);
     }
   }
 
   private async _makeAnswer(): Promise<void> {
     const peerConnection = this.connection.peerConnection;
+    const provider = this.connection.provider;
 
     try {
       const answer = await peerConnection.createAnswer();
@@ -285,7 +289,7 @@ export class Negotiator {
 
         logger.log(`Set localDescription:`, answer, `for:${this.connection.peer}`);
 
-        this.connection.provider.socket.send({
+        provider.socket.send({
           type: ServerMessageType.Answer,
           payload: {
             sdp: answer,
@@ -296,11 +300,11 @@ export class Negotiator {
           dst: this.connection.peer
         });
       } catch (err) {
-        this.connection.provider.emitError(PeerErrorType.WebRTC, err);
+        provider.emitError(PeerErrorType.WebRTC, err);
         logger.log("Failed to setLocalDescription, ", err);
       }
     } catch (err_1) {
-      this.connection.provider.emitError(PeerErrorType.WebRTC, err_1);
+      provider.emitError(PeerErrorType.WebRTC, err_1);
       logger.log("Failed to create answer, ", err_1);
     }
   }
@@ -312,6 +316,7 @@ export class Negotiator {
   ): Promise<void> {
     sdp = new RTCSessionDescription(sdp);
     const peerConnection = this.connection.peerConnection;
+    const provider = this.connection.provider;
 
     logger.log("Setting remote description", sdp);
 
@@ -324,7 +329,7 @@ export class Negotiator {
         await self._makeAnswer();
       }
     } catch (err) {
-      this.connection.provider.emitError(PeerErrorType.WebRTC, err);
+      provider.emitError(PeerErrorType.WebRTC, err);
       logger.log("Failed to setRemoteDescription, ", err);
     }
   }
@@ -333,9 +338,11 @@ export class Negotiator {
   async handleCandidate(ice: any): Promise<void> {
     const candidate = ice.candidate;
     const sdpMLineIndex = ice.sdpMLineIndex;
+    const peerConnection = this.connection.peerConnection;
+    const provider = this.connection.provider;
 
     try {
-      await this.connection.peerConnection.addIceCandidate(
+      await peerConnection.addIceCandidate(
         new RTCIceCandidate({
           sdpMLineIndex: sdpMLineIndex,
           candidate: candidate
@@ -343,7 +350,7 @@ export class Negotiator {
       );
       logger.log(`Added ICE candidate for:${this.connection.peer}`);
     } catch (err) {
-      this.connection.provider.emitError(PeerErrorType.WebRTC, err);
+      provider.emitError(PeerErrorType.WebRTC, err);
       logger.log("Failed to handleCandidate, ", err);
     }
   }

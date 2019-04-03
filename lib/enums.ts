@@ -3,7 +3,8 @@ export enum ConnectionEventType {
   Stream = "stream",
   Data = "data",
   Close = "close",
-  Error = "error"
+  Error = "error",
+  IceStateChanged = "iceStateChanged"
 }
 
 export enum ConnectionType {
