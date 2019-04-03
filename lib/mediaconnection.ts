@@ -75,10 +75,8 @@ export class MediaConnection extends BaseConnection {
       return;
     }
 
-    this.options._payload._stream = stream;
-
     this._localStream = stream;
-    this._negotiator.startConnection(this.options._payload);
+    this._negotiator.startConnection({ ...this.options._payload, _stream: stream });
     // Retrieve lost messages stored because PeerConnection not set up.
     const messages = this.provider._getMessages(this.connectionId);
 
@@ -98,6 +96,27 @@ export class MediaConnection extends BaseConnection {
     if (this._negotiator) {
       this._negotiator.cleanup();
       this._negotiator = null;
+    }
+
+    this._localStream = null;
+    this._remoteStream = null;
+
+    if (this.provider) {
+      const connections = this.provider.connections[this.peer];
+
+      if (connections) {
+        const index = connections.indexOf(this);
+
+        if (index !== -1) {
+          connections.splice(index, 1);
+        }
+      }
+
+      this.provider = null;
+    }
+
+    if (this.options && this.options._stream) {
+      this.options._stream = null;
     }
 
     if (!this.open) {
