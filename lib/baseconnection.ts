@@ -19,7 +19,7 @@ export abstract class BaseConnection extends EventEmitter {
 
   constructor(
     readonly peer: string,
-    readonly provider: Peer,
+    public provider: Peer,
     readonly options: any
   ) {
     super();
