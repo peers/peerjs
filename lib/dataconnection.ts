@@ -1,7 +1,7 @@
 import { Reliable } from "reliable";
 import { util } from "./util";
 import logger, { LogLevel } from "./logger";
-import Negotiator from "./negotiator";
+import { Negotiator } from "./negotiator";
 import {
   ConnectionType,
   ConnectionEventType,
@@ -18,6 +18,7 @@ import { ServerMessage } from "./servermessage";
 export class DataConnection extends BaseConnection {
   private static readonly ID_PREFIX = "dc_";
 
+  private _negotiator: Negotiator;
   readonly label: string;
   readonly serialization: SerializationType;
   readonly reliable: boolean;
@@ -55,8 +56,9 @@ export class DataConnection extends BaseConnection {
       this._peerBrowser = options._payload.browser;
     }
 
-    Negotiator.startConnection(
-      this,
+    this._negotiator = new Negotiator(this);
+
+    this._negotiator.startConnection(
       options._payload || {
         originator: true
       }
@@ -163,15 +165,19 @@ export class DataConnection extends BaseConnection {
 
   /** Allows user to close connection. */
   close(): void {
+    this._buffer = [];
+    this._bufferSize = 0;
+
+    if (this._negotiator) {
+      this._negotiator.cleanup();
+      this._negotiator = null;
+    }
+
     if (!this.open) {
       return;
     }
 
     this._open = false;
-    this._buffer = [];
-    this._bufferSize = 0;
-
-    Negotiator.cleanup(this);
 
     super.emit(ConnectionEventType.Close);
   }
@@ -298,10 +304,10 @@ export class DataConnection extends BaseConnection {
         this._peerBrowser = payload.browser;
 
         // Forward to negotiator
-        Negotiator.handleSDP(message.type, this, payload.sdp);
+        this._negotiator.handleSDP(message.type, payload.sdp);
         break;
       case ServerMessageType.Candidate:
-        Negotiator.handleCandidate(this, payload.candidate);
+        this._negotiator.handleCandidate(payload.candidate);
         break;
       default:
         logger.warn(

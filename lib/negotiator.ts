@@ -14,31 +14,24 @@ import { BaseConnection } from "./baseconnection";
 /**
  * Manages all negotiations between Peers.
  */
-class Negotiator {
-  readonly pcs = {
-    data: {},
-    media: {}
-  };
-
-  queue: any[] = []; // connections that are delayed due to a PC being in use.
-
-  private readonly _idPrefix = "pc_";
+export class Negotiator {
+  constructor(readonly connection: BaseConnection) { }
 
   /** Returns a PeerConnection object set up correctly (for data, media). */
-  startConnection(connection: BaseConnection, options: any) {
-    const peerConnection = this._getPeerConnection(connection, options);
+  startConnection(options: any) {
+    const peerConnection = this._startPeerConnection();
 
     // Set the connection's PC.
-    connection.peerConnection = peerConnection;
+    this.connection.peerConnection = peerConnection;
 
-    if (connection.type === ConnectionType.Media && options._stream) {
+    if (this.connection.type === ConnectionType.Media && options._stream) {
       this._addTracksToConnection(options._stream, peerConnection);
     }
 
     // What do we need to do now?
     if (options.originator) {
-      if (connection.type === ConnectionType.Data) {
-        const dataConnection = <DataConnection>connection;
+      if (this.connection.type === ConnectionType.Data) {
+        const dataConnection = <DataConnection>this.connection;
 
         let config = {};
 
@@ -53,78 +46,43 @@ class Negotiator {
         dataConnection.initialize(dataChannel);
       }
 
-      this._makeOffer(connection);
+      this._makeOffer();
     } else {
-      this.handleSDP("OFFER", connection, options.sdp);
+      this.handleSDP("OFFER", options.sdp);
     }
-  }
-
-  private _getPeerConnection(
-    connection: BaseConnection,
-    options: any
-  ): RTCPeerConnection {
-    if (!this.pcs[connection.type]) {
-      logger.error(
-        connection.type +
-        " is not a valid connection type. Maybe you overrode the `type` property somewhere."
-      );
-    }
-
-    if (!this.pcs[connection.type][connection.peer]) {
-      this.pcs[connection.type][connection.peer] = {};
-    }
-
-    const peerConnections = this.pcs[connection.type][connection.peer];
-
-    let pc;
-
-    if (options.pc) {
-      // Simplest case: PC id already provided for us.
-      pc = peerConnections[options.pc];
-    }
-
-    if (!pc || pc.signalingState !== "stable") {
-      pc = this._startPeerConnection(connection);
-    }
-
-    return pc;
   }
 
   /** Start a PC. */
-  private _startPeerConnection(connection: BaseConnection): RTCPeerConnection {
+  private _startPeerConnection(): RTCPeerConnection {
     logger.log("Creating RTCPeerConnection.");
 
-    const id = this._idPrefix + util.randomToken();
     let optional = {};
 
-    if (connection.type === ConnectionType.Data && !util.supports.sctp) {
+    if (this.connection.type === ConnectionType.Data && !util.supports.sctp) {
       optional = { optional: [{ RtpDataChannels: true }] };
-    } else if (connection.type === ConnectionType.Media) {
+    } else if (this.connection.type === ConnectionType.Media) {
       // Interop req for chrome.
       optional = { optional: [{ DtlsSrtpKeyAgreement: true }] };
     }
 
     const peerConnection = new RTCPeerConnection(
-      connection.provider.options.config,
+      this.connection.provider.options.config,
       optional
     );
 
-    this.pcs[connection.type][connection.peer][id] = peerConnection;
-
-    this._setupListeners(connection, peerConnection);
+    this._setupListeners(peerConnection);
 
     return peerConnection;
   }
 
   /** Set up various WebRTC listeners. */
   private _setupListeners(
-    connection: BaseConnection,
     peerConnection: RTCPeerConnection
   ) {
-    const peerId = connection.peer;
-    const connectionId = connection.connectionId;
-    const connectionType = connection.type;
-    const provider = connection.provider;
+    const peerId = this.connection.peer;
+    const connectionId = this.connection.connectionId;
+    const connectionType = this.connection.type;
+    const provider = this.connection.provider;
 
     // ICE CANDIDATES.
     logger.log("Listening for ICE candidates.");
@@ -151,22 +109,22 @@ class Negotiator {
             "iceConnectionState is failed, closing connections to " +
             peerId
           );
-          connection.emit(
+          this.connection.emit(
             ConnectionEventType.Error,
             new Error("Negotiation of connection to " + peerId + " failed.")
           );
-          connection.close();
+          this.connection.close();
           break;
         case "closed":
           logger.log(
             "iceConnectionState is closed, closing connections to " +
             peerId
           );
-          connection.emit(
+          this.connection.emit(
             ConnectionEventType.Error,
             new Error("Negotiation of connection to " + peerId + " failed.")
           );
-          connection.close();
+          this.connection.close();
           break;
         case "disconnected":
           logger.log(
@@ -179,10 +137,6 @@ class Negotiator {
           break;
       }
     };
-
-    // Fallback for older Chrome impls.
-    //@ts-ignore
-    peerConnection.onicechange = peerConnection.oniceconnectionstatechange;
 
     // DATACONNECTION.
     logger.log("Listening for data channel");
@@ -216,20 +170,25 @@ class Negotiator {
     };
   }
 
-  cleanup(connection: BaseConnection): void {
-    logger.log("Cleaning up PeerConnection to " + connection.peer);
+  cleanup(): void {
+    logger.log("Cleaning up PeerConnection to " + this.connection.peer);
 
-    const peerConnection = connection.peerConnection;
+    const peerConnection = this.connection.peerConnection;
 
     if (!peerConnection) {
       return;
     }
 
+    this.connection.peerConnection = null;
+
+    //unsubscribe from all PeerConnection's events
+    peerConnection.onicecandidate = peerConnection.oniceconnectionstatechange = peerConnection.ondatachannel = peerConnection.ontrack = () => { };
+
     const peerConnectionNotClosed = peerConnection.signalingState !== "closed";
     let dataChannelNotClosed = false;
 
-    if (connection.type === ConnectionType.Data) {
-      const dataConnection = <DataConnection>connection;
+    if (this.connection.type === ConnectionType.Data) {
+      const dataConnection = <DataConnection>this.connection;
       const dataChannel = dataConnection.dataChannel;
 
       dataChannelNotClosed =
@@ -238,46 +197,45 @@ class Negotiator {
 
     if (peerConnectionNotClosed || dataChannelNotClosed) {
       peerConnection.close();
-      connection.peerConnection = null;
     }
   }
 
-  private async _makeOffer(connection: BaseConnection): Promise<void> {
-    const peerConnection = connection.peerConnection;
+  private async _makeOffer(): Promise<void> {
+    const peerConnection = this.connection.peerConnection;
 
     try {
       const offer = await peerConnection.createOffer(
-        connection.options.constraints
+        this.connection.options.constraints
       );
 
       logger.log("Created offer.");
 
-      if (!util.supports.sctp && connection.type === ConnectionType.Data) {
-        const dataConnection = <DataConnection>connection;
+      if (!util.supports.sctp && this.connection.type === ConnectionType.Data) {
+        const dataConnection = <DataConnection>this.connection;
         if (dataConnection.reliable) {
           offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
         }
       }
 
-      if (connection.options.sdpTransform && typeof connection.options.sdpTransform === 'function') {
-        offer.sdp = connection.options.sdpTransform(offer.sdp) || offer.sdp;
+      if (this.connection.options.sdpTransform && typeof this.connection.options.sdpTransform === 'function') {
+        offer.sdp = this.connection.options.sdpTransform(offer.sdp) || offer.sdp;
       }
 
       try {
         await peerConnection.setLocalDescription(offer);
 
-        logger.log("Set localDescription:", offer, `for:${connection.peer}`);
+        logger.log("Set localDescription:", offer, `for:${this.connection.peer}`);
 
         let payload: any = {
           sdp: offer,
-          type: connection.type,
-          connectionId: connection.connectionId,
-          metadata: connection.metadata,
+          type: this.connection.type,
+          connectionId: this.connection.connectionId,
+          metadata: this.connection.metadata,
           browser: util.browser
         };
 
-        if (connection.type === ConnectionType.Data) {
-          const dataConnection = <DataConnection>connection;
+        if (this.connection.type === ConnectionType.Data) {
+          const dataConnection = <DataConnection>this.connection;
 
           payload = {
             ...payload,
@@ -287,10 +245,10 @@ class Negotiator {
           };
         }
 
-        connection.provider.socket.send({
+        this.connection.provider.socket.send({
           type: ServerMessageType.Offer,
           payload,
-          dst: connection.peer
+          dst: this.connection.peer
         });
       } catch (err) {
         // TODO: investigate why _makeOffer is being called from the answer
@@ -298,25 +256,25 @@ class Negotiator {
           err !=
           "OperationError: Failed to set local offer sdp: Called in wrong state: kHaveRemoteOffer"
         ) {
-          connection.provider.emitError(PeerErrorType.WebRTC, err);
+          this.connection.provider.emitError(PeerErrorType.WebRTC, err);
           logger.log("Failed to setLocalDescription, ", err);
         }
       }
     } catch (err_1) {
-      connection.provider.emitError(PeerErrorType.WebRTC, err_1);
+      this.connection.provider.emitError(PeerErrorType.WebRTC, err_1);
       logger.log("Failed to createOffer, ", err_1);
     }
   }
 
-  private async _makeAnswer(connection: BaseConnection): Promise<void> {
-    const peerConnection = connection.peerConnection;
+  private async _makeAnswer(): Promise<void> {
+    const peerConnection = this.connection.peerConnection;
 
     try {
       const answer = await peerConnection.createAnswer();
       logger.log("Created answer.");
 
-      if (!util.supports.sctp && connection.type === ConnectionType.Data) {
-        const dataConnection = <DataConnection>connection;
+      if (!util.supports.sctp && this.connection.type === ConnectionType.Data) {
+        const dataConnection = <DataConnection>this.connection;
         if (dataConnection.reliable) {
           answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
         }
@@ -325,24 +283,24 @@ class Negotiator {
       try {
         await peerConnection.setLocalDescription(answer);
 
-        logger.log(`Set localDescription:`, answer, `for:${connection.peer}`);
+        logger.log(`Set localDescription:`, answer, `for:${this.connection.peer}`);
 
-        connection.provider.socket.send({
+        this.connection.provider.socket.send({
           type: ServerMessageType.Answer,
           payload: {
             sdp: answer,
-            type: connection.type,
-            connectionId: connection.connectionId,
+            type: this.connection.type,
+            connectionId: this.connection.connectionId,
             browser: util.browser
           },
-          dst: connection.peer
+          dst: this.connection.peer
         });
       } catch (err) {
-        connection.provider.emitError(PeerErrorType.WebRTC, err);
+        this.connection.provider.emitError(PeerErrorType.WebRTC, err);
         logger.log("Failed to setLocalDescription, ", err);
       }
     } catch (err_1) {
-      connection.provider.emitError(PeerErrorType.WebRTC, err_1);
+      this.connection.provider.emitError(PeerErrorType.WebRTC, err_1);
       logger.log("Failed to create answer, ", err_1);
     }
   }
@@ -350,11 +308,10 @@ class Negotiator {
   /** Handle an SDP. */
   async handleSDP(
     type: string,
-    connection: BaseConnection,
     sdp: any
   ): Promise<void> {
     sdp = new RTCSessionDescription(sdp);
-    const peerConnection = connection.peerConnection;
+    const peerConnection = this.connection.peerConnection;
 
     logger.log("Setting remote description", sdp);
 
@@ -362,31 +319,31 @@ class Negotiator {
 
     try {
       await peerConnection.setRemoteDescription(sdp);
-      logger.log(`Set remoteDescription:${type} for:${connection.peer}`);
+      logger.log(`Set remoteDescription:${type} for:${this.connection.peer}`);
       if (type === "OFFER") {
-        await self._makeAnswer(connection);
+        await self._makeAnswer();
       }
     } catch (err) {
-      connection.provider.emitError(PeerErrorType.WebRTC, err);
+      this.connection.provider.emitError(PeerErrorType.WebRTC, err);
       logger.log("Failed to setRemoteDescription, ", err);
     }
   }
 
   /** Handle a candidate. */
-  async handleCandidate(connection: BaseConnection, ice: any): Promise<void> {
+  async handleCandidate(ice: any): Promise<void> {
     const candidate = ice.candidate;
     const sdpMLineIndex = ice.sdpMLineIndex;
 
     try {
-      await connection.peerConnection.addIceCandidate(
+      await this.connection.peerConnection.addIceCandidate(
         new RTCIceCandidate({
           sdpMLineIndex: sdpMLineIndex,
           candidate: candidate
         })
       );
-      logger.log(`Added ICE candidate for:${connection.peer}`);
+      logger.log(`Added ICE candidate for:${this.connection.peer}`);
     } catch (err) {
-      connection.provider.emitError(PeerErrorType.WebRTC, err);
+      this.connection.provider.emitError(PeerErrorType.WebRTC, err);
       logger.log("Failed to handleCandidate, ", err);
     }
   }
@@ -421,5 +378,3 @@ class Negotiator {
     mediaConnection.addStream(stream);
   }
 }
-
-export default new Negotiator();

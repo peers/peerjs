@@ -1,6 +1,6 @@
 import { util } from "./util";
 import logger from "./logger";
-import Negotiator from "./negotiator";
+import { Negotiator } from "./negotiator";
 import { ConnectionType, ConnectionEventType, ServerMessageType } from "./enums";
 import { Peer } from "./peer";
 import { BaseConnection } from "./baseconnection";
@@ -12,6 +12,7 @@ import { ServerMessage } from "./servermessage";
 export class MediaConnection extends BaseConnection {
   private static readonly ID_PREFIX = "mc_";
 
+  private _negotiator: Negotiator;
   private _localStream: MediaStream;
   private _remoteStream: MediaStream;
 
@@ -30,8 +31,10 @@ export class MediaConnection extends BaseConnection {
       this.options.connectionId ||
       MediaConnection.ID_PREFIX + util.randomToken();
 
+    this._negotiator = new Negotiator(this);
+
     if (this._localStream) {
-      Negotiator.startConnection(this, {
+      this._negotiator.startConnection({
         _stream: this._localStream,
         originator: true
       });
@@ -52,11 +55,11 @@ export class MediaConnection extends BaseConnection {
     switch (message.type) {
       case ServerMessageType.Answer:
         // Forward to negotiator
-        Negotiator.handleSDP(type, this, payload.sdp);
+        this._negotiator.handleSDP(type, payload.sdp);
         this._open = true;
         break;
       case ServerMessageType.Candidate:
-        Negotiator.handleCandidate(this, payload.candidate);
+        this._negotiator.handleCandidate(payload.candidate);
         break;
       default:
         logger.warn(`Unrecognized message type:${type} from peer:${this.peer}`);
@@ -75,7 +78,7 @@ export class MediaConnection extends BaseConnection {
     this.options._payload._stream = stream;
 
     this._localStream = stream;
-    Negotiator.startConnection(this, this.options._payload);
+    this._negotiator.startConnection(this.options._payload);
     // Retrieve lost messages stored because PeerConnection not set up.
     const messages = this.provider._getMessages(this.connectionId);
 
@@ -92,12 +95,17 @@ export class MediaConnection extends BaseConnection {
 
   /** Allows user to close connection. */
   close(): void {
+    if (this._negotiator) {
+      this._negotiator.cleanup();
+      this._negotiator = null;
+    }
+
     if (!this.open) {
       return;
     }
 
     this._open = false;
-    Negotiator.cleanup(this);
+
     super.emit(ConnectionEventType.Close);
   }
 }
