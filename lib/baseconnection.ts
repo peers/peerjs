@@ -25,7 +25,6 @@ export abstract class BaseConnection extends EventEmitter {
     super();
 
     this.metadata = options.metadata;
-    this.connectionId = options.connectionId;
   }
 
   abstract close(): void;

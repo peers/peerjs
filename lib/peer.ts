@@ -335,7 +335,7 @@ export class Peer extends EventEmitter {
    * Returns a DataConnection to the specified peer. See documentation for a
    * complete list of options.
    */
-  connect(peer: string, options?: PeerConnectOption): DataConnection {
+  connect(peer: string, options: PeerConnectOption = {}): DataConnection {
     if (this.disconnected) {
       logger.warn(
         "You cannot connect to a new Peer because you called " +
