@@ -102,15 +102,7 @@ export class MediaConnection extends BaseConnection {
     this._remoteStream = null;
 
     if (this.provider) {
-      const connections = this.provider.connections[this.peer];
-
-      if (connections) {
-        const index = connections.indexOf(this);
-
-        if (index !== -1) {
-          connections.splice(index, 1);
-        }
-      }
+      this.provider._removeConnection(this);
 
       this.provider = null;
     }

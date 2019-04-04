@@ -400,6 +400,22 @@ export class Peer extends EventEmitter {
     this._connections.get(peerId).push(connection);
   }
 
+  //TODO should be private
+  _removeConnection(connection: BaseConnection): void {
+    const connections = this._connections.get(connection.peer);
+
+    if (connections) {
+      const index = connections.indexOf(connection);
+
+      if (index !== -1) {
+        connections.splice(index, 1);
+      }
+    }
+
+    //remove from lost messages
+    this._lostMessages.delete(connection.connectionId);
+  }
+
   /** Retrieve a data/media connection for this peer. */
   getConnection(peerId: string, connectionId: string): null | BaseConnection {
     const connections = this._connections.get(peerId);
