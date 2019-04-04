@@ -16,6 +16,11 @@ Almost all project was refactored!!!
 ### Features
 - added: heartbeat #502
 
+### Bug Fixes
+
+- fixed: destroy RTCPeerConnection #513
+- fixed: MediaStream memory leak #514
+
 <a name="0.3.18"></a>
 
 ## 0.3.18 (2018-10-30)
