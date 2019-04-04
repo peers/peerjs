@@ -101,10 +101,10 @@ declare class Peer {
 
   /**
    * Retrieve a data/media connection for this peer.
-   * @param peer
-   * @param id
+   * @param peerId
+   * @param connectionId
    */
-  getConnection(peer: Peer, id: string): any;
+  getConnection(peerId: string, connectionId: string): Peer.MediaConnection | Peer.DataConnection | null;
 
   /**
    * Get a list of available peer IDs
