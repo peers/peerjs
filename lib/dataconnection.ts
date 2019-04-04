@@ -46,20 +46,20 @@ export class DataConnection extends BaseConnection {
     super(peerId, provider, options);
 
     this.connectionId =
-      options.connectionId || DataConnection.ID_PREFIX + util.randomToken();
+      this.options.connectionId || DataConnection.ID_PREFIX + util.randomToken();
 
-    this.label = options.label || this.connectionId;
-    this.serialization = options.serialization;
-    this.reliable = options.reliable;
+    this.label = this.options.label || this.connectionId;
+    this.serialization = this.options.serialization || SerializationType.Binary;
+    this.reliable = this.options.reliable;
 
-    if (options._payload) {
-      this._peerBrowser = options._payload.browser;
+    if (this.options._payload) {
+      this._peerBrowser = this.options._payload.browser;
     }
 
     this._negotiator = new Negotiator(this);
 
     this._negotiator.startConnection(
-      options._payload || {
+      this.options._payload || {
         originator: true
       }
     );
