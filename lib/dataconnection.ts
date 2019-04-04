@@ -49,7 +49,7 @@ export class DataConnection extends BaseConnection {
       options.connectionId || DataConnection.ID_PREFIX + util.randomToken();
 
     this.label = options.label || this.connectionId;
-    this.serialization = options.serialization;
+    this.serialization = options.serialization || SerializationType.Binary;
     this.reliable = options.reliable;
 
     if (options._payload) {
