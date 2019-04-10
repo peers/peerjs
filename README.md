@@ -12,8 +12,8 @@ PeerJS provides a complete, configurable, and easy-to-use peer-to-peer API built
 
 **Include the library**
 
-  with modules:
-        `npm install peerjs` or `yarn add peerjs`
+  with npm:
+        `npm install peerjs`
     and the usage:
   ```js
   import Peer from 'peerjs';
@@ -47,8 +47,7 @@ peer.on('connection', (conn) => {
 ## Media calls
 **Call**
 ```javascript
-navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-navigator.getUserMedia({video: true, audio: true}, (stream) => {
+navigator.mediaDevices.getUserMedia({video: true, audio: true}, (stream) => {
   const call = peer.call('another-peers-id', stream);
   call.on('stream', (remoteStream) => {
     // Show stream in some <video> element.
@@ -60,9 +59,8 @@ navigator.getUserMedia({video: true, audio: true}, (stream) => {
 ```
 **Answer**
 ```javascript
-navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 peer.on('call', (call) => {
-  navigator.getUserMedia({video: true, audio: true}, (stream) => {
+  navigator.mediaDevices.getUserMedia({video: true, audio: true}, (stream) => {
     call.answer(stream); // Answer the call with an A/V stream.
     call.on('stream', (remoteStream) => {
       // Show stream in some <video> element.

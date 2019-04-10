@@ -2,9 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-<a name="0.4.0"></a>
+<a name="vNEXT"></a>
 
-## vNEXT 0.4.0 (2019-XX-XX)
+## vNEXT
+
+<a name="1.0.0"></a>
+
+## 1.0.0 (2019-04-10)
 
 ### Refactoring
 
