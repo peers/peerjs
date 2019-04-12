@@ -193,8 +193,9 @@ export class Negotiator {
       const dataConnection = <DataConnection>this.connection;
       const dataChannel = dataConnection.dataChannel;
 
-      dataChannelNotClosed =
-        dataChannel.readyState && dataChannel.readyState !== "closed";
+      if (dataChannel) {
+        dataChannelNotClosed = !!dataChannel.readyState && dataChannel.readyState !== "closed";
+      }
     }
 
     if (peerConnectionNotClosed || dataChannelNotClosed) {
