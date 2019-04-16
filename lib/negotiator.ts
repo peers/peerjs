@@ -285,6 +285,10 @@ export class Negotiator {
         }
       }
 
+      if (this.connection.options.sdpTransform && typeof this.connection.options.sdpTransform === 'function') {
+        answer.sdp = this.connection.options.sdpTransform(answer.sdp) || answer.sdp;
+      }
+
       try {
         await peerConnection.setLocalDescription(answer);
 
