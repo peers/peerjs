@@ -33,7 +33,7 @@ declare class Peer {
    * @param stream The caller's media stream
    * @param options Metadata associated with the connection, passed in by whoever initiated the connection.
    */
-  call(id: string, stream: MediaStream, options?: any): Peer.MediaConnection;
+  call(id: string, stream: MediaStream, options?: Peer.CallOption): Peer.MediaConnection;
   /**
    * Calls the remote peer specified by id and returns a media connection.
    * @param event Event name
@@ -147,6 +147,15 @@ declare namespace Peer {
     reliable?: boolean;
   }
 
+  interface CallOption {
+    metadata?: any;
+    sdpTransform?: Function;
+  }
+
+  interface AnswerOption {
+    sdpTransform?: Function;
+  }
+
   interface DataConnection {
     send(data: any): void;
     close(): void;
@@ -169,7 +178,7 @@ declare namespace Peer {
   }
 
   interface MediaConnection {
-    answer(stream?: MediaStream): void;
+    answer(stream?: MediaStream, options?: AnswerOption): void;
     close(): void;
     on(event: string, cb: () => void): void;
     on(event: "stream", cb: (stream: MediaStream) => void): void;

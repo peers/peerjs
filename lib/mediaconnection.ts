@@ -5,6 +5,7 @@ import { ConnectionType, ConnectionEventType, ServerMessageType } from "./enums"
 import { Peer } from "./peer";
 import { BaseConnection } from "./baseconnection";
 import { ServerMessage } from "./servermessage";
+import { AnswerOption } from "..";
 
 /**
  * Wraps the streaming interface between two Peers.
@@ -67,7 +68,7 @@ export class MediaConnection extends BaseConnection {
     }
   }
 
-  answer(stream: MediaStream): void {
+  answer(stream: MediaStream, options: AnswerOption = {}): void {
     if (this._localStream) {
       logger.warn(
         "Local stream already exists on this MediaConnection. Are you answering a call twice?"
@@ -76,6 +77,11 @@ export class MediaConnection extends BaseConnection {
     }
 
     this._localStream = stream;
+
+    if (options && options.sdpTransform) {
+      this.options.sdpTransform = options.sdpTransform;
+    }
+
     this._negotiator.startConnection({ ...this.options._payload, _stream: stream });
     // Retrieve lost messages stored because PeerConnection not set up.
     const messages = this.provider._getMessages(this.connectionId);
