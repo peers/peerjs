@@ -79,7 +79,7 @@ npm test
 
 ## Links
 
-### [Documentation / API Reference](https://peerjs.com/docs)
+### [Documentation / API Reference](https://peerjs.com/docs.html)
 
 ### [PeerServer](https://github.com/peers/peerjs-server)
 
