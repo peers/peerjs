@@ -1,11 +1,11 @@
 # PeerJS: Simple peer-to-peer with WebRTC #
 
+### https://t.me/peerjs
+
 [![Backers on Open Collective](https://opencollective.com/peer/backers/badge.svg)](#backers)
  [![Sponsors on Open Collective](https://opencollective.com/peer/sponsors/badge.svg)](#sponsors) 
 
 PeerJS provides a complete, configurable, and easy-to-use peer-to-peer API built on top of WebRTC, supporting both data channels and media streams.
-
-### [https://peerjs.com](https://peerjs.com)
 
 ## Setup
 
