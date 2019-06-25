@@ -16,7 +16,7 @@ A room has one type (audio, video, data) and it cannot change, but you can join 
 ## v2 Roadmap:
 
 - [ ] Disconnections
-- [ ] Allow configurate custom MQTT server
+- [ ] Allow configurate custom MQTT server and TURN/STUN servers
 - [ ] Test joining to multiple rooms
 - [ ] Mute/unmute audio
 
