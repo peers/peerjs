@@ -7,85 +7,62 @@
 
 PeerJS provides a complete, configurable, and easy-to-use peer-to-peer API built on top of WebRTC, supporting both data channels and media streams.
 
-## Setup
+It uses the concept of room, you can only connect to rooms, if you want to speak with someone, you both join to the same room. If you want to speak with multiple people, everyone join to the same room.
 
+A room has one type (audio, video, data) and it cannot change, but you can join to as many rooms as you want.
 
-**Include the library**
+- - - - -
 
-  with npm:
-        `npm install peerjs`
-    and the usage:
-  ```js
-  import Peer from 'peerjs';
+## v2 Roadmap:
+
+- [ ] Disconnections
+- [ ] Allow configurate custom MQTT server
+- [ ] Test joining to multiple rooms
+- [ ] Mute/unmute audio
+
+## Install
+
+  ```shell
+  yarn add peers/peerjs#v2.0.0
   ```
 
 
-**Create a Peer**  
+
+## Example
 ```javascript
-const peer = new Peer('pick-an-id'); 
-// You can pick your own id or omit the id if you want to get a random one from the server.
-```
+import Peer from 'peerjs'
 
-## Data connections
-**Connect**
-```javascript
-const conn = peer.connect('another-peers-id');
-conn.on('open', () => {
-  conn.send('hi!');
-});
-```
-**Receive**
-```javascript
-peer.on('connection', (conn) => {
-  conn.on('data', (data) => {
-    // Will print 'hi!'
-    console.log(data);
-  });
-});
-```
+const p = new Peer("Random room ID", {
+  mode: 'video', // 'audio' for audio only; 'data' for DataChannel
+  onRemoteStream: rs => {
+    document.querySelector('#remote_vid').srcObject = rs
+  },
+  onLocalStream: ls => {
+    document.querySelector('#local_vid').srcObject = ls
+  },
+  onDataStream: ds => {
+    ds.onmessage = m => {
+      console.log('Got message', m)
+    }
 
-## Media calls
-**Call**
-```javascript
-navigator.mediaDevices.getUserMedia({video: true, audio: true}, (stream) => {
-  const call = peer.call('another-peers-id', stream);
-  call.on('stream', (remoteStream) => {
-    // Show stream in some <video> element.
-  });
-}, (err) => {
-  console.error('Failed to get local stream', err);
-});
+    setTimeout(() => {
+      ds.send('hello')
+    }, 3000)
+  }
+})
+
+// unpause video send
+document.querySelector('#en').onclick = () => {
+  p.video(true)
+}
+// pause video send
+document.querySelector('#di').onclick = () => {
+  p.video(false)
+}
+
 
 ```
-**Answer**
-```javascript
-peer.on('call', (call) => {
-  navigator.mediaDevices.getUserMedia({video: true, audio: true}, (stream) => {
-    call.answer(stream); // Answer the call with an A/V stream.
-    call.on('stream', (remoteStream) => {
-      // Show stream in some <video> element.
-    });
-  }, (err) => {
-    console.error('Failed to get local stream', err);
-  });
-});
-```
 
-## Running tests
-
-```bash
-npm test
-```
-
-## Links
-
-### [Documentation / API Reference](https://peerjs.com/docs.html)
-
-### [PeerServer](https://github.com/peers/peerjs-server)
-
-### [Discuss PeerJS on our Google Group](https://groups.google.com/forum/?fromgroups#!forum/peerjs)
-
-### [Changelog](https://github.com/peers/peerjs/blob/master/changelog.md)
 
 ## Contributors
 
