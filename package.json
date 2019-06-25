@@ -1,54 +1,27 @@
 {
   "name": "peerjs",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "PeerJS client",
   "main": "./dist/peerjs.min.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/peers/peerjs.git"
   },
-  "author": "Michelle Bu, Eric Zhang, Jairo Caro-Accino, Carlos Caballero",
+  "author": "Jairo Caro-Accino",
   "license": "MIT",
   "scripts": {
-    "build": "parcel build lib/exports.ts -d dist --out-file peerjs.min.js",
-    "prepublish": "npm run build",
-    "postinstall": "opencollective-postinstall",
-    "test": "mocha -r ts-node/register -r jsdom-global/register test/**/*.ts"
+    "build": "parcel build index.js --out-file peerjs.min.js"
   },
   "release": {
     "branch": "master"
   },
-  "devDependencies": {
-    "@types/chai": "^4.1.7",
-    "@types/mocha": "^5.2.6",
-    "chai": "^4.2.0",
-    "grunt": "^1.0.4",
-    "grunt-browserify": "^5.3.0",
-    "grunt-cli": "^1.3.1",
-    "grunt-contrib-concat": "^0.5.0",
-    "grunt-contrib-copy": "^1.0.0",
-    "grunt-contrib-uglify": "^4.0.1",
-    "grunt-ts": "^6.0.0-beta.21",
-    "jsdom": "14.0.0",
-    "jsdom-global": "3.0.2",
-    "mocha": "^6.0.2",
-    "mock-socket": "^8.0.5",
-    "standard": "^12.0.1",
-    "ts-node": "^8.0.3",
-    "typescript": "^3.3.4000"
-  },
-  "dependencies": {
-    "@types/node": "^10.14.4",
-    "@types/webrtc": "0.0.24",
-    "eventemitter3": "^3.1.0",
-    "js-binarypack": "0.0.9",
-    "opencollective": "^1.0.3",
-    "opencollective-postinstall": "^2.0.0",
-    "reliable": "git+https://github.com/michelle/reliable.git",
-    "webrtc-adapter": "^7.2.1"
-  },
   "collective": {
     "type": "opencollective",
     "url": "https://opencollective.com/peer"
+  },
+  "dependencies": {
+    "mqtt": "^3.0.0",
+    "parcel": "^1.12.3",
+    "uuid": "^3.3.2"
   }
 }
