@@ -12,6 +12,9 @@
   "scripts": {
     "build": "parcel build index.js --out-file peerjs.min.js"
   },
+  "browserslist": [
+    "last 2 Chrome versions"
+  ],
   "release": {
     "branch": "master"
   },
