@@ -15,6 +15,7 @@ A room has one type (audio, video, data) and it cannot change, but you can join 
 
 ## v2 Roadmap:
 
+- [ ] Connection metadata
 - [ ] Max number of peers in a room
 - [ ] Room password
 - [ ] Disconnections
