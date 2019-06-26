@@ -1,6 +1,6 @@
 # PeerJS: Simple peer-to-peer with WebRTC #
 
-### https://t.me/peerjs
+### tg://join?invite=ENhPuhTvhm8WlIxTjQf7Og
 
 [![Backers on Open Collective](https://opencollective.com/peer/backers/badge.svg)](#backers)
  [![Sponsors on Open Collective](https://opencollective.com/peer/sponsors/badge.svg)](#sponsors) 
