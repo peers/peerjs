@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
-    "@types/mocha": "^5.2.6",
+    "@types/mocha": "^5.2.7",
     "chai": "^4.2.0",
     "grunt": "^1.0.4",
     "grunt-browserify": "^5.3.0",
@@ -31,21 +31,21 @@
     "grunt-ts": "^6.0.0-beta.21",
     "jsdom": "14.0.0",
     "jsdom-global": "3.0.2",
-    "mocha": "^6.0.2",
+    "mocha": "^6.1.4",
     "mock-socket": "^8.0.5",
     "standard": "^12.0.1",
-    "ts-node": "^8.0.3",
+    "ts-node": "^8.3.0",
     "typescript": "^3.5.3"
   },
   "dependencies": {
-    "@types/node": "^10.14.4",
-    "@types/webrtc": "0.0.24",
-    "eventemitter3": "^3.1.0",
+    "@types/node": "^10.14.12",
+    "@types/webrtc": "^0.0.25",
+    "eventemitter3": "^3.1.2",
     "js-binarypack": "0.0.9",
     "opencollective": "^1.0.3",
     "opencollective-postinstall": "^2.0.0",
     "reliable": "git+https://github.com/michelle/reliable.git",
-    "webrtc-adapter": "^7.2.1"
+    "webrtc-adapter": "^7.2.6"
   },
   "collective": {
     "type": "opencollective",
