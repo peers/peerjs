@@ -343,12 +343,14 @@ export class Negotiator {
   async handleCandidate(ice: any): Promise<void> {
     const candidate = ice.candidate;
     const sdpMLineIndex = ice.sdpMLineIndex;
+    const sdpMid = ice.sdpMid;
     const peerConnection = this.connection.peerConnection;
     const provider = this.connection.provider;
 
     try {
       await peerConnection.addIceCandidate(
         new RTCIceCandidate({
+          sdpMid: sdpMid,
           sdpMLineIndex: sdpMLineIndex,
           candidate: candidate
         })
