@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 
 ## vNEXT
 
+<a name="1.0.1"></a>
+
+## 1.0.1 (2019-07-09)
+
+### Bug Fixes
+
+- fixed: readyState of undefined #520
+- fixed: call sdpTransform in Answer #524
+- fixed: sdpTransform does not apply to makeAnswer SDP #523
+
 <a name="1.0.0"></a>
 
 ## 1.0.0 (2019-04-10)
