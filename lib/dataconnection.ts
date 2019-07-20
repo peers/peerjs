@@ -104,59 +104,63 @@ export class DataConnection extends BaseConnection {
   }
 
   // Handles a DataChannel message.
-  private _handleDataMessage(e): void {
-    let data = e.data;
+  private _handleDataMessage({ data }): void {
     const datatype = data.constructor;
 
     const isBinarySerialization = this.serialization === SerializationType.Binary ||
       this.serialization === SerializationType.BinaryUTF8;
 
+    let deserializedData = data;
+
     if (isBinarySerialization) {
       if (datatype === Blob) {
         // Datatype should never be blob
         util.blobToArrayBuffer(data, (ab) => {
-          data = util.unpack(ab);
-          this.emit(ConnectionEventType.Data, data);
+          const unpackedData = util.unpack(ab);
+          this.emit(ConnectionEventType.Data, unpackedData);
         });
         return;
       } else if (datatype === ArrayBuffer) {
-        data = util.unpack(data);
+        deserializedData = util.unpack(data);
       } else if (datatype === String) {
         // String fallback for binary data for browsers that don't support binary yet
         const ab = util.binaryStringToArrayBuffer(data);
-        data = util.unpack(ab);
+        deserializedData = util.unpack(ab);
       }
     } else if (this.serialization === SerializationType.JSON) {
-      data = JSON.parse(data);
+      deserializedData = JSON.parse(data);
     }
 
     // Check if we've chunked--if so, piece things back together.
     // We're guaranteed that this isn't 0.
-    if (data.__peerData) {
-      const id = data.__peerData;
-      const chunkInfo = this._chunkedData[id] || {
-        data: [],
-        count: 0,
-        total: data.total
-      };
-
-      chunkInfo.data[data.n] = data.data;
-      chunkInfo.count++;
-
-      if (chunkInfo.total === chunkInfo.count) {
-        // Clean up before making the recursive call to `_handleDataMessage`.
-        delete this._chunkedData[id];
-
-        // We've received all the chunks--time to construct the complete data.
-        data = new Blob(chunkInfo.data);
-        this._handleDataMessage({ data: data });
-      }
-
-      this._chunkedData[id] = chunkInfo;
+    if (deserializedData.__peerData) {
+      this._handleChunk(deserializedData);
       return;
     }
 
-    super.emit(ConnectionEventType.Data, data);
+    super.emit(ConnectionEventType.Data, deserializedData);
+  }
+
+  private _handleChunk(data: any): void {
+    const id = data.__peerData;
+    const chunkInfo = this._chunkedData[id] || {
+      data: [],
+      count: 0,
+      total: data.total
+    };
+
+    chunkInfo.data[data.n] = data.data;
+    chunkInfo.count++;
+    this._chunkedData[id] = chunkInfo;
+
+    if (chunkInfo.total === chunkInfo.count) {
+      // Clean up before making the recursive call to `_handleDataMessage`.
+      delete this._chunkedData[id];
+
+      // We've received all the chunks--time to construct the complete data.
+      const data = new Blob(chunkInfo.data);
+      this._handleDataMessage({ data });
+    }
   }
 
   /**
@@ -167,6 +171,7 @@ export class DataConnection extends BaseConnection {
   close(): void {
     this._buffer = [];
     this._bufferSize = 0;
+    this._chunkedData = {};
 
     if (this._negotiator) {
       this._negotiator.cleanup();
