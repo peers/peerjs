@@ -2,12 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-<a name="vNEXT"></a>
+<a name="1.0.2"></a>
 
-## vNEXT 1.0.2
+## 1.0.2 (2019-07-20)
+
+### Bug Fixes
 
 - fixed: memory leak in DataConnection #556
 - fixed: missing sdpMid in IceServer #550
+
+### Other
+
 - updated: old @types/webrtc dependency #549
 
 <a name="1.0.1"></a>
