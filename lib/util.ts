@@ -1,5 +1,8 @@
-import * as BinaryPack from "../externals/binarypack.min.js";
+/* global BinaryPack */
+import "../externals/binarypack.min.js";
 import { RTCPeerConnection } from "./adapter";
+
+declare var BinaryPack: any;
 
 const DEFAULT_CONFIG = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
