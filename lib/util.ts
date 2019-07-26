@@ -1,4 +1,4 @@
-import * as BinaryPack from "js-binarypack";
+import * as BinaryPack from "../externals/binarypack.min.js";
 import { RTCPeerConnection } from "./adapter";
 
 const DEFAULT_CONFIG = {
