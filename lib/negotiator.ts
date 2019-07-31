@@ -25,7 +25,11 @@ export class Negotiator {
     this.connection.peerConnection = peerConnection;
 
     if (this.connection.type === ConnectionType.Media && options._stream) {
-      this._addTracksToConnection(options._stream, peerConnection);
+      if(peerConnection.addStream){
+        this._addStreamToConnection(options._stream, peerConnection);
+      }else if(peerConnection.addTrack){
+        this._addTracksToConnection(options._stream, peerConnection);
+      }
     }
 
     // What do we need to do now?
@@ -157,19 +161,31 @@ export class Negotiator {
 
     // MEDIACONNECTION.
     logger.log("Listening for remote stream");
+    
+    if (peerConnection.addTrack){
+      peerConnection.ontrack = (evt) => {
+        logger.log("Received remote stream");
+  
+        const stream = evt.streams[0];
+        const connection = provider.getConnection(peerId, connectionId);
+  
+        if (connection.type === ConnectionType.Media) {
+          const mediaConnection = <MediaConnection>connection;
+  
+          this._addStreamToMediaConnection(stream, mediaConnection);
+        }
+      };
+    }else if (peerConnection.addStream){
+      peerConnection.onaddstream = (event) => {
+        const stream = event.stream;
+        const connection = provider.getConnection(peerId, connectionId);
+        if (connection.type === ConnectionType.Media) {
+          const mediaConnection = <MediaConnection>connection;
 
-    peerConnection.ontrack = (evt) => {
-      logger.log("Received remote stream");
-
-      const stream = evt.streams[0];
-      const connection = provider.getConnection(peerId, connectionId);
-
-      if (connection.type === ConnectionType.Media) {
-        const mediaConnection = <MediaConnection>connection;
-
-        this._addStreamToMediaConnection(stream, mediaConnection);
-      }
-    };
+          this._addStreamToMediaConnection(stream, mediaConnection);
+        }
+      };
+    }
   }
 
   cleanup(): void {
@@ -360,6 +376,21 @@ export class Negotiator {
       provider.emitError(PeerErrorType.WebRTC, err);
       logger.log("Failed to handleCandidate, ", err);
     }
+  }
+
+  private _addStreamToConnection(
+    stream: MediaStream,
+    peerConnection: RTCPeerConnection
+  ): void {
+    logger.log(`add stream ${stream.id} to peer connection`);
+
+    if (!peerConnection.addStream) {
+      return logger.error(
+        `Your browser does't support RTCPeerConnection#addStream. Ignored.`
+      );
+    }
+
+    peerConnection.addStream(stream);
   }
 
   private _addTracksToConnection(
