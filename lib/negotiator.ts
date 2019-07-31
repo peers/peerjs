@@ -25,10 +25,10 @@ export class Negotiator {
     this.connection.peerConnection = peerConnection;
 
     if (this.connection.type === ConnectionType.Media && options._stream) {
-      if(peerConnection.addStream){
-        this._addStreamToConnection(options._stream, peerConnection);
-      }else if(peerConnection.addTrack){
+      if(peerConnection.addTrack){
         this._addTracksToConnection(options._stream, peerConnection);
+      }else if(peerConnection.addStream){
+        this._addStreamToConnection(options._stream, peerConnection);
       }
     }
 
@@ -177,6 +177,8 @@ export class Negotiator {
       };
     }else if (peerConnection.addStream){
       peerConnection.onaddstream = (event) => {
+        logger.log("Received remote stream");
+        
         const stream = event.stream;
         const connection = provider.getConnection(peerId, connectionId);
         if (connection.type === ConnectionType.Media) {
