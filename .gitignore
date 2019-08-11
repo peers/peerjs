@@ -14,9 +14,9 @@ demo
 bower.json
 node_modules
 .cache
+.idea
 npm-debug.log
 
 test/output
 .tscache
 test/public
-
