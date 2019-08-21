@@ -50,6 +50,7 @@ export enum SocketEventType {
 }
 
 export enum ServerMessageType {
+  Data = "DATA",
   Heartbeat = "HEARTBEAT",
   Candidate = "CANDIDATE",
   Offer = "OFFER",

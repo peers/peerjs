@@ -11,17 +11,31 @@ import {
 import { Peer } from "./peer";
 import { BaseConnection } from "./baseconnection";
 import { ServerMessage } from "./servermessage";
+import { Encryption } from "./encryption";
 
 /**
  * Wraps a DataChannel between two Peers.
  */
 export class DataConnection extends BaseConnection {
-  private static readonly ID_PREFIX = "dc_";
+  constructor(peerId: string, provider: Peer, options: any) {
+    super(peerId, provider, options);
+    this.connectionId = this.options.connectionId || DataConnection.ID_PREFIX + util.randomToken();
+    this.label = this.options.label || this.connectionId;
+    this.serialization = this.options.serialization || SerializationType.Binary;
+    this.reliable = this.options.reliable;
+    if (this.options._payload){
+      this._peerBrowser = this.options._payload.browser;
+    }
+    this._negotiator = new Negotiator(this);
+    this._negotiator.startConnection(this.options._payload || {originator: true});
+  }
 
+  private static readonly ID_PREFIX = "dc_";
   private _negotiator: Negotiator;
   readonly label: string;
   readonly serialization: SerializationType;
   readonly reliable: boolean;
+
 
   get type() {
     return ConnectionType.Data;
@@ -41,29 +55,6 @@ export class DataConnection extends BaseConnection {
   }
 
   get bufferSize(): number { return this._bufferSize; }
-
-  constructor(peerId: string, provider: Peer, options: any) {
-    super(peerId, provider, options);
-
-    this.connectionId =
-      this.options.connectionId || DataConnection.ID_PREFIX + util.randomToken();
-
-    this.label = this.options.label || this.connectionId;
-    this.serialization = this.options.serialization || SerializationType.Binary;
-    this.reliable = this.options.reliable;
-
-    if (this.options._payload) {
-      this._peerBrowser = this.options._payload.browser;
-    }
-
-    this._negotiator = new Negotiator(this);
-
-    this._negotiator.startConnection(
-      this.options._payload || {
-        originator: true
-      }
-    );
-  }
 
   /** Called by the Negotiator when the DataChannel is ready. */
   initialize(dc: RTCDataChannel): void {
@@ -315,7 +306,9 @@ export class DataConnection extends BaseConnection {
         this._peerBrowser = payload.browser;
 
         // Forward to negotiator
-        this._negotiator.handleSDP(message.type, payload.sdp);
+        payload.sdp = Encryption.decryptStringSymmetric(payload.sdp, this.sharedSecret)
+        let answerSdp = {type: 'answer', sdp: payload.sdp}
+        this._negotiator.handleSDP(message.type, answerSdp);
         break;
       case ServerMessageType.Candidate:
         this._negotiator.handleCandidate(payload.candidate);

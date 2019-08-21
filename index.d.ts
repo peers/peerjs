@@ -145,6 +145,9 @@ declare namespace Peer {
     metadata?: any;
     serialization?: string;
     reliable?: boolean;
+    sessionEncryptionKey?: string;
+    encryptedSharedSecret?: string;
+    sharedSecret?: string;
   }
 
   interface CallOption {
