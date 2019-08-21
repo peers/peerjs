@@ -252,6 +252,10 @@ var peer = new Peer({
                   class="tag type number">number</span></span>
               <p class="description">Server port. Defaults to <code>443</code>.</p>
             </div>
+            <div class="child " id="peer-options-pinginterval"><span class="name"><a
+                  href="#peer-options-pinginterval">pingInterval</a><span class="tag type number">number</span></span>
+              <p class="description">Ping interval in ms. Defaults to <code>5000</code>.</p>
+            </div>
             <div class="child " id="peer-options-path"><span class="name"><a href="#peer-options-path">path</a><span
                   class="tag type string">string</span></span>
               <p class="description">The path where your self-hosted PeerServer is running. Defaults to
@@ -371,6 +375,11 @@ var peer = new Peer({
                 connection. Can be accessed with <a
                   href='#dataconnection-metadata'><code>dataConnection.metadata</code></a>. Can be any serializable
                 type.</p>
+            </div>
+            <div class="child " id="peercall-options-sdptransform"><span class="name"><a
+                  href="#peercall-options-sdptransform">sdpTransform</a><span
+                  class="tag type method">method</span></span>
+              <p class="description">Function which runs before create offer to modify sdp offer message.</p>
             </div>
           </div>
         </div>
@@ -640,7 +649,7 @@ var peer = new Peer({
       <div class="children">
         <div class="child " id="mediaconnection-answer"><span class="name"><a
               href="#mediaconnection-answer">.answer</a><span class="tag type method">method</span><span
-              class="snippet">mediaConnection.answer([stream]);</span></span>
+              class="snippet">mediaConnection.answer([stream],[options]);</span></span>
           <p class="description">When recieving a <a href='#peeron-call'><code>call</code></a> event on a peer, you can
             call <code>.answer</code> on the media connection provided by the callback to accept the call and optionally
             send your own media stream.</p>
@@ -651,6 +660,18 @@ var peer = new Peer({
               <p class="description">A WebRTC media stream from <a
                   href='https://developer.mozilla.org/en-US/docs/Web/API/Navigator.getUserMedia'><code>getUserMedia</code></a>.
               </p>
+            </div>
+            <div class="child " id="mediaconnection-answer-options"><span class="name"><a
+                  href="#mediaconnection-answer-options"><span class="optional"><span
+                      class="bracket">[</span>options<span class="bracket">]</span></span></a><span
+                  class="tag type object">object</span></span>
+              <div class="children">
+                <div class="child " id="mediaconnection-answer-options-sdptransform"><span class="name"><a
+                      href="#mediaconnection-answer-options-sdptransform">sdpTransform</a><span
+                      class="tag type method">method</span></span>
+                  <p class="description">Function which runs before create answer to modify sdp answer message.</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
