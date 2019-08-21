@@ -25,6 +25,7 @@ class PeerOptions implements PeerJSOption {
   token?: string;
   config?: any;
   secure?: boolean;
+  pingInterval?: number;
   logFunction?: (logLevel: LogLevel, ...rest) => void;
 }
 
@@ -172,6 +173,7 @@ export class Peer extends EventEmitter {
       this._options.port,
       this._options.path,
       this._options.key,
+      this._options.pingInterval
     );
 
     this.socket.on(SocketEventType.Message, data => {

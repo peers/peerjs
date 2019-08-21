@@ -32,6 +32,11 @@
             "description": "Server port. Defaults to <code>443</code>."
           },
           {
+            "name": "pingInterval",
+            "type": "number",
+            "description": "Ping interval in ms. Defaults to <code>5000</code>."
+          },
+          {
             "name": "path",
             "type": "string",
             "description": "The path where your self-hosted PeerServer is running. Defaults to <code>'/'</code>."

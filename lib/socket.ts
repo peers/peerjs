@@ -7,8 +7,6 @@ import { SocketEventType, ServerMessageType } from "./enums";
  * possible connection for peers.
  */
 export class Socket extends EventEmitter {
-  private readonly WEB_SOCKET_PING_INTERVAL = 20000;//ms
-
   private _disconnected = false;
   private _id: string;
   private _messagesQueue: Array<any> = [];
@@ -22,6 +20,7 @@ export class Socket extends EventEmitter {
     port: number,
     path: string,
     key: string,
+    private readonly pingInterval: number = 5000,
   ) {
     super();
 
@@ -83,7 +82,7 @@ export class Socket extends EventEmitter {
   }
 
   private _scheduleHeartbeat(): void {
-    this._wsPingTimer = setTimeout(() => { this._sendHeartbeat() }, this.WEB_SOCKET_PING_INTERVAL);
+    this._wsPingTimer = setTimeout(() => { this._sendHeartbeat() }, this.pingInterval);
   }
 
   private _sendHeartbeat(): void {
