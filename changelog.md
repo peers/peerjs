@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+<a name="1.0.3"></a>
+
+## 1.0.3 (2019-08-21)
+
+- add pingInterval option
+  
 <a name="1.0.2"></a>
 
 ## 1.0.2 (2019-07-20)
