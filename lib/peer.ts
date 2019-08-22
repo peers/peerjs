@@ -247,15 +247,7 @@ export class Peer extends EventEmitter {
       case ServerMessageType.Data:
           console.log("Received data message from", peerId);
           let sharedSecret = payload.data;
-          Encryption.decryptString(sharedSecret, this._options.privateKey)
-            .then(plaintext => {
-              this._options.sharedSecret = plaintext;
-              console.log("shared secret is:-##", this._options.sharedSecret);
-            })
-            .catch(error => {
-              console.log("unable to decrypt encrypted shared secret:-", error);
-            })
-          ;
+          this._options.sharedSecret = Encryption.decryptString(sharedSecret, this._options.privateKey)
         break
       case ServerMessageType.Offer: {
         // we should consider switching this to CALL/CONNECT, but this is the least breaking option.
@@ -360,14 +352,14 @@ export class Peer extends EventEmitter {
       this._options.sharedSecret = sharedSecret;
       options.sessionEncryptionKey = this._options.publicKey ;
       options.sharedSecret = sharedSecret;
-      return Encryption.encryptString(this._options.sharedSecret, options.sessionEncryptionKey).then((encryptedSharedSecret) => {
-        options.encryptedSharedSecret = encryptedSharedSecret;
-        console.log("shared secret is:-##", options.sharedSecret);
-        console.log(options)
-        const dataConnection = new DataConnection(peerId, this, options);
-        this._addConnection(peerId, dataConnection);
-        return dataConnection;
-      })
+
+      options.encryptedSharedSecret = Encryption.encryptString(this._options.sharedSecret, options.sessionEncryptionKey);
+      console.log("shared secret is:-##", options.sharedSecret);
+      console.log(options)
+      const dataConnection = new DataConnection(peerId, this, options);
+      this._addConnection(peerId, dataConnection);
+      return dataConnection;
+
     }
 
     if (this.disconnected) {
