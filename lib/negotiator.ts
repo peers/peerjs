@@ -42,9 +42,6 @@ export class Negotiator {
         dataConnection.initialize(dataChannel);
       }
       this._shareSessionSecret();
-      setTimeout(function(){
-        //do what you need here
-    }, 3000);
       this._makeOffer();
     } else {
       this.handleSDP("OFFER", options.sdp);
