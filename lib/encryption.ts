@@ -1,16 +1,45 @@
 var crypto = require("crypto");
+var eccrypto = require("eccrypto");
+import logger from "./logger";
+
 
 export class Encryption{
     static encryptString(value, publicKey){
-        let buffer = Buffer.from(value, "utf8");
-        let encrypted = crypto.publicEncrypt(publicKey, buffer);
-        return encrypted.toString("base64");
+        let buffer = Buffer.from(value, "hex");
+        let publicKeyBufferFromHexEncoded = Buffer.from(publicKey, 'hex')
+
+        return eccrypto.encrypt(publicKeyBufferFromHexEncoded, buffer)
+            .then(function(encrypted){
+                console.log("encrypt first then:-", encrypted)
+
+                let encodedEncrypted = {}
+                for (let key of Object.keys(encrypted)) {
+                    encodedEncrypted[key] = encrypted[key].toString('hex')
+                }
+                let enryptedString = JSON.stringify(encodedEncrypted);
+                return enryptedString;
+            })
+            .catch(function(error){
+                logger.error("Asymmetric string encryption failed:- ", value, publicKey, error);
+                return "false";
+            })
     }
     
     static decryptString(value, privateKey){
-        let buffer = Buffer.from(value, "base64");
-        let decrypted = crypto.privateDecrypt(privateKey, buffer);
-        return decrypted.toString("utf8");
+        let valueObject = JSON.parse(value);
+        let decodedEncrypted = {}
+        for (let key of Object.keys(valueObject)) {
+            decodedEncrypted[key] = Buffer.from(valueObject[key], 'hex');
+        }
+        let privateKeyBufferFromPrivateKeyHex = Buffer.from(privateKey, 'hex')
+        return eccrypto.decrypt(privateKeyBufferFromPrivateKeyHex, decodedEncrypted).
+            then(function(plaintext){
+                let decryptedString = plaintext.toString("hex");
+                return decryptedString;
+            })
+            .catch(function(error){
+                logger.error("Asymmetric string decryption failed:-", value, privateKey, error);
+            });
     }
 
     static encryptStringSymmetric(value, key){
@@ -20,7 +49,7 @@ export class Encryption{
         return crypted;
       }
        
-    static decryptStringSymmetric(value, key){
+    static decryptStringSymmetric(value, key){  
         var decipher = crypto.createDecipher('aes-256-ctr', key)
         var dec = decipher.update(value, 'hex', 'utf8')
         dec += decipher.final('utf8');

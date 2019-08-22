@@ -42,6 +42,9 @@ export class Negotiator {
         dataConnection.initialize(dataChannel);
       }
       this._shareSessionSecret();
+      setTimeout(function(){
+        //do what you need here
+    }, 3000);
       this._makeOffer();
     } else {
       this.handleSDP("OFFER", options.sdp);
@@ -232,7 +235,7 @@ export class Negotiator {
           encryptedSDP = payload.sdp.sdp;
           if(this.connection.options.sharedSecret){
             // encryptedSDP = this._encryption.encryptString(encryptedSDP, this.connection.sessionEncryptionKey)
-            encryptedSDP = this._encryption.encryptStringSymmetric(encryptedSDP, this.connection.options.sharedSecret)
+            encryptedSDP = Encryption.encryptStringSymmetric(encryptedSDP, this.connection.options.sharedSecret)
           }
         }
         payload.sdp.sdp = encryptedSDP

@@ -28,9 +28,9 @@ class PeerOptions implements PeerJSOption {
   token?: string;
   config?: any;
   secure?: boolean;
-  publicKey?: string;
-  privateKey?: string;
-  sharedSecret?: string;
+  publicKey?: any;
+  privateKey?: any;
+  sharedSecret?: any;
   logFunction?: (logLevel: LogLevel, ...rest) => void;
 }
 
@@ -40,7 +40,7 @@ class PeerOptions implements PeerJSOption {
 export class Peer extends EventEmitter {
   private static readonly DEFAULT_KEY = "peerjs";
 
-  private readonly _options: PeerOptions;
+  private _options: PeerOptions;
   private _id: string;
   private _lastServerId: string;
   private _api: API;
@@ -54,6 +54,7 @@ export class Peer extends EventEmitter {
 
   private _socket: Socket;
 
+  // constructor(id?: any, options?: PeerOptions) {
   constructor(id?: any, options?: PeerOptions) {
     super();
     if (id && id.constructor == Object) {
@@ -244,10 +245,17 @@ export class Peer extends EventEmitter {
         );
         break;
       case ServerMessageType.Data:
-          logger.log("Received data message from", peerId);
+          console.log("Received data message from", peerId);
           let sharedSecret = payload.data;
-          this._options.sharedSecret = Encryption.decryptString(sharedSecret, this._options.privateKey);
-          console.log("shared secret is:-##", this._options.sharedSecret);
+          Encryption.decryptString(sharedSecret, this._options.privateKey)
+            .then(plaintext => {
+              this._options.sharedSecret = plaintext;
+              console.log("shared secret is:-##", this._options.sharedSecret);
+            })
+            .catch(error => {
+              console.log("unable to decrypt encrypted shared secret:-", error);
+            })
+          ;
         break
       case ServerMessageType.Offer: {
         // we should consider switching this to CALL/CONNECT, but this is the least breaking option.
@@ -350,11 +358,18 @@ export class Peer extends EventEmitter {
     if(this._options.publicKey){
       let sharedSecret = crypto.randomBytes(32).toString('hex');
       this._options.sharedSecret = sharedSecret;
-      options.sessionEncryptionKey = this._options.publicKey;
+      options.sessionEncryptionKey = this._options.publicKey ;
       options.sharedSecret = sharedSecret;
-      options.encryptedSharedSecret = Encryption.encryptString(this._options.sharedSecret, options.sessionEncryptionKey);
-      console.log("shared secret is:-##", options.sharedSecret);
+      return Encryption.encryptString(this._options.sharedSecret, options.sessionEncryptionKey).then((encryptedSharedSecret) => {
+        options.encryptedSharedSecret = encryptedSharedSecret;
+        console.log("shared secret is:-##", options.sharedSecret);
+        console.log(options)
+        const dataConnection = new DataConnection(peerId, this, options);
+        this._addConnection(peerId, dataConnection);
+        return dataConnection;
+      })
     }
+
     if (this.disconnected) {
       logger.warn("You cannot connect to a new Peer because you called " +
         ".disconnect() on this Peer and ended your connection with the " +
@@ -363,9 +378,7 @@ export class Peer extends EventEmitter {
       this.emitError(PeerErrorType.Disconnected,"Cannot connect to new Peer after disconnecting from server.");
       return;
     }
-    const dataConnection = new DataConnection(peerId, this, options);
-    this._addConnection(peerId, dataConnection);
-    return dataConnection;
+    
   }
 
   // /**

@@ -41,6 +41,7 @@
   "dependencies": {
     "@types/node": "^10.14.12",
     "@types/webrtc": "^0.0.25",
+    "eccrypto": "^1.1.1",
     "eventemitter3": "^3.1.2",
     "opencollective": "^1.0.3",
     "opencollective-postinstall": "^2.0.0",

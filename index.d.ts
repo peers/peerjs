@@ -138,6 +138,9 @@ declare namespace Peer {
     secure?: boolean;
     config?: RTCConfiguration;
     debug?: number;
+    publicKey?: string;
+    privateKey?: string;
+    sharedSecret?: string;
   }
 
   interface PeerConnectOption {
