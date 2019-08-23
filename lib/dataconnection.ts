@@ -304,9 +304,9 @@ export class DataConnection extends BaseConnection {
     switch (message.type) {
       case ServerMessageType.Answer:
         this._peerBrowser = payload.browser;
-
-        // Forward to negotiator
-        payload.sdp = Encryption.decryptStringSymmetric(payload.sdp, this.sharedSecret)
+        if(this.sharedSecret){
+          payload.sdp = Encryption.decryptStringSymmetric(payload.sdp, this.sharedSecret)
+        }
         let answerSdp = {type: 'answer', sdp: payload.sdp}
         this._negotiator.handleSDP(message.type, answerSdp);
         break;

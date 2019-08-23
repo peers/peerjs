@@ -269,7 +269,10 @@ export class Negotiator {
       try {
         await peerConnection.setLocalDescription(answer);
         logger.log(`Set localDescription:`, answer, `for:${this.connection.peer}`);
-        let encryptedAnswer = Encryption.encryptStringSymmetric(answer.sdp, this.connection.options.sharedSecret)
+        let encryptedAnswer = answer.sdp;
+        if(this.connection.options.sharedSecret){
+          encryptedAnswer = Encryption.encryptStringSymmetric(answer.sdp, this.connection.options.sharedSecret)
+        }
         provider.socket.send({
           type: ServerMessageType.Answer,
           payload: {

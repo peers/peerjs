@@ -245,9 +245,11 @@ export class Peer extends EventEmitter {
         );
         break;
       case ServerMessageType.Data:
-          console.log("Received data message from", peerId);
+          logger.log("Received data message from", peerId);
           let sharedSecret = payload.data;
-          this._options.sharedSecret = Encryption.decryptString(sharedSecret, this._options.privateKey)
+          if(sharedSecret){
+            this._options.sharedSecret = Encryption.decryptString(sharedSecret, this._options.privateKey)
+          }
         break
       case ServerMessageType.Offer: {
         // we should consider switching this to CALL/CONNECT, but this is the least breaking option.
@@ -269,8 +271,10 @@ export class Peer extends EventEmitter {
           this._addConnection(peerId, connection);
           this.emit(PeerEventType.Call, connection);
         } else if (payload.type === ConnectionType.Data) {
-          console.log("payload is:-", payload)
-          payload.sdp.sdp = Encryption.decryptStringSymmetric(payload.sdp.sdp, this._options.sharedSecret)
+          logger.log("payload is:-", payload)
+          if(this._options.sharedSecret){
+            payload.sdp.sdp = Encryption.decryptStringSymmetric(payload.sdp.sdp, this._options.sharedSecret)
+          }
           connection = new DataConnection(peerId, this, {
             connectionId: connectionId,
             _payload: payload,
@@ -347,30 +351,25 @@ export class Peer extends EventEmitter {
    * complete list of options.
    */
   connect(peerId: string, options: PeerConnectOption = {}): DataConnection {
+
+    if (this.disconnected) {
+      logger.warn("You cannot connect to a new Peer because you called .disconnect() on this Peer and ended your connection with the server. You can create a new Peer to reconnect, " + 
+      "or call reconnect on this peer if you believe its ID to still be available.");
+      this.emitError(PeerErrorType.Disconnected,"Cannot connect to new Peer after disconnecting from server.");
+      return;
+    }
+
     if(this._options.publicKey){
       let sharedSecret = crypto.randomBytes(32).toString('hex');
       this._options.sharedSecret = sharedSecret;
       options.sessionEncryptionKey = this._options.publicKey ;
       options.sharedSecret = sharedSecret;
-
       options.encryptedSharedSecret = Encryption.encryptString(this._options.sharedSecret, options.sessionEncryptionKey);
-      console.log("shared secret is:-##", options.sharedSecret);
-      console.log(options)
-      const dataConnection = new DataConnection(peerId, this, options);
-      this._addConnection(peerId, dataConnection);
-      return dataConnection;
-
     }
 
-    if (this.disconnected) {
-      logger.warn("You cannot connect to a new Peer because you called " +
-        ".disconnect() on this Peer and ended your connection with the " +
-        "server. You can create a new Peer to reconnect, or call reconnect " +
-        "on this peer if you believe its ID to still be available.");
-      this.emitError(PeerErrorType.Disconnected,"Cannot connect to new Peer after disconnecting from server.");
-      return;
-    }
-    
+    const dataConnection = new DataConnection(peerId, this, options);
+    this._addConnection(peerId, dataConnection);
+    return dataConnection;    
   }
 
   // /**
@@ -402,7 +401,6 @@ export class Peer extends EventEmitter {
   /** Add a data/media connection to this peer. */
   private _addConnection(peerId: string, connection: BaseConnection): void {
     logger.log(`add connection ${connection.type}:${connection.connectionId}to peerId:${peerId}`);
-
     if (!this._connections.has(peerId)) {
       this._connections.set(peerId, []);
     }
