@@ -4,6 +4,8 @@ import logger, { LogLevel } from "./logger";
 import { Socket } from "./socket";
 import { MediaConnection } from "./mediaconnection";
 import { DataConnection } from "./dataconnection";
+let crypto = require("crypto")
+
 import {
   ConnectionType,
   PeerErrorType,
@@ -15,6 +17,7 @@ import { BaseConnection } from "./baseconnection";
 import { ServerMessage } from "./servermessage";
 import { API } from "./api";
 import { PeerConnectOption, PeerJSOption } from "..";
+import { Encryption } from "./encryption";
 
 class PeerOptions implements PeerJSOption {
   debug?: LogLevel; // 1: Errors, 2: Warnings, 3: All logs
@@ -25,6 +28,9 @@ class PeerOptions implements PeerJSOption {
   token?: string;
   config?: any;
   secure?: boolean;
+  publicKey?: any;
+  privateKey?: any;
+  sharedSecret?: any;
   logFunction?: (logLevel: LogLevel, ...rest) => void;
 }
 
@@ -34,7 +40,7 @@ class PeerOptions implements PeerJSOption {
 export class Peer extends EventEmitter {
   private static readonly DEFAULT_KEY = "peerjs";
 
-  private readonly _options: PeerOptions;
+  private _options: PeerOptions;
   private _id: string;
   private _lastServerId: string;
   private _api: API;
@@ -48,47 +54,9 @@ export class Peer extends EventEmitter {
 
   private _socket: Socket;
 
-  get id() {
-    return this._id;
-  }
-
-  get options() {
-    return this._options;
-  }
-
-  get open() {
-    return this._open;
-  }
-
-  get socket() {
-    return this._socket;
-  }
-
-  /**
-   * @deprecated 
-   * Return type will change from Object to Map<string,[]> 
-   */
-  get connections(): Object {
-    const plainConnections = Object.create(null);
-
-    for (let [k, v] of this._connections) {
-      plainConnections[k] = v;
-    }
-
-    return plainConnections;
-  }
-
-  get destroyed() {
-    return this._destroyed;
-  }
-  get disconnected() {
-    return this._disconnected;
-  }
-
+  // constructor(id?: any, options?: PeerOptions) {
   constructor(id?: any, options?: PeerOptions) {
     super();
-
-    // Deal with overloading
     if (id && id.constructor == Object) {
       options = id;
       id = undefined;
@@ -96,7 +64,6 @@ export class Peer extends EventEmitter {
       id = id.toString();
     }
 
-    // Configurize options
     options = {
       debug: 0, // 1: Errors, 2: Warnings, 3: All logs
       host: util.CLOUD_HOST,
@@ -107,6 +74,7 @@ export class Peer extends EventEmitter {
       config: util.defaultConfig,
       ...options
     };
+
     this._options = options;
 
     // Detect relative URL host.
@@ -136,11 +104,9 @@ export class Peer extends EventEmitter {
 
     // Sanity checks
     // Ensure WebRTC supported
-    if (!util.supports.audioVideo && !util.supports.data) {
-      this._delayedAbort(
-        PeerErrorType.BrowserIncompatible,
-        "The current browser does not support WebRTC"
-      );
+    // if (!util.supports.audioVideo && !util.supports.data) {
+      if (!util.supports.data) {
+        this._delayedAbort(PeerErrorType.BrowserIncompatible,"The current browser does not support WebRTC");
       return;
     }
     // Ensure alphanumeric id
@@ -161,6 +127,43 @@ export class Peer extends EventEmitter {
         .then(id => this._initialize(id))
         .catch(error => this._abort(PeerErrorType.ServerError, error));
     }
+  }
+
+  get id() {
+    return this._id;
+  }
+
+  get options() {
+    return this._options;
+  }
+
+  get open() { 
+    return this._open;
+  }
+
+  get socket() {
+    return this._socket;
+  }
+
+  /**
+   * @deprecated 
+   * Return type will change from Object to Map<string,[]> 
+   */
+  get connections(): Object {
+    const plainConnections = Object.create(null);
+
+    for (let [k, v] of this._connections) {
+      plainConnections[k] = v;
+    }
+
+    return plainConnections;
+  }
+
+  get destroyed() {
+    return this._destroyed;
+  }
+  get disconnected() {
+    return this._disconnected;
   }
 
   // Initialize the 'socket' (which is actually a mix of XHR streaming and
@@ -241,6 +244,11 @@ export class Peer extends EventEmitter {
           "Could not connect to peer " + peerId
         );
         break;
+      case ServerMessageType.Data:
+          console.log("Received data message from", peerId);
+          let sharedSecret = payload.data;
+          this._options.sharedSecret = Encryption.decryptString(sharedSecret, this._options.privateKey)
+        break
       case ServerMessageType.Offer: {
         // we should consider switching this to CALL/CONNECT, but this is the least breaking option.
         const connectionId = payload.connectionId;
@@ -261,13 +269,16 @@ export class Peer extends EventEmitter {
           this._addConnection(peerId, connection);
           this.emit(PeerEventType.Call, connection);
         } else if (payload.type === ConnectionType.Data) {
+          console.log("payload is:-", payload)
+          payload.sdp.sdp = Encryption.decryptStringSymmetric(payload.sdp.sdp, this._options.sharedSecret)
           connection = new DataConnection(peerId, this, {
             connectionId: connectionId,
             _payload: payload,
             metadata: payload.metadata,
             label: payload.label,
             serialization: payload.serialization,
-            reliable: payload.reliable
+            reliable: payload.reliable,
+            sharedSecret: this._options.sharedSecret,
           });
           this._addConnection(peerId, connection);
           this.emit(PeerEventType.Connection, connection);
@@ -335,64 +346,62 @@ export class Peer extends EventEmitter {
    * Returns a DataConnection to the specified peer. See documentation for a
    * complete list of options.
    */
-  connect(peer: string, options: PeerConnectOption = {}): DataConnection {
+  connect(peerId: string, options: PeerConnectOption = {}): DataConnection {
+    if(this._options.publicKey){
+      let sharedSecret = crypto.randomBytes(32).toString('hex');
+      this._options.sharedSecret = sharedSecret;
+      options.sessionEncryptionKey = this._options.publicKey ;
+      options.sharedSecret = sharedSecret;
+
+      options.encryptedSharedSecret = Encryption.encryptString(this._options.sharedSecret, options.sessionEncryptionKey);
+      console.log("shared secret is:-##", options.sharedSecret);
+      console.log(options)
+      const dataConnection = new DataConnection(peerId, this, options);
+      this._addConnection(peerId, dataConnection);
+      return dataConnection;
+
+    }
+
     if (this.disconnected) {
-      logger.warn(
-        "You cannot connect to a new Peer because you called " +
+      logger.warn("You cannot connect to a new Peer because you called " +
         ".disconnect() on this Peer and ended your connection with the " +
         "server. You can create a new Peer to reconnect, or call reconnect " +
-        "on this peer if you believe its ID to still be available."
-      );
-      this.emitError(
-        PeerErrorType.Disconnected,
-        "Cannot connect to new Peer after disconnecting from server."
-      );
+        "on this peer if you believe its ID to still be available.");
+      this.emitError(PeerErrorType.Disconnected,"Cannot connect to new Peer after disconnecting from server.");
       return;
     }
-
-    const dataConnection = new DataConnection(peer, this, options);
-    this._addConnection(peer, dataConnection);
-    return dataConnection;
+    
   }
 
-  /**
-   * Returns a MediaConnection to the specified peer. See documentation for a
-   * complete list of options.
-   */
-  call(peer: string, stream: MediaStream, options: any = {}): MediaConnection {
-    if (this.disconnected) {
-      logger.warn(
-        "You cannot connect to a new Peer because you called " +
-        ".disconnect() on this Peer and ended your connection with the " +
-        "server. You can create a new Peer to reconnect."
-      );
-      this.emitError(
-        PeerErrorType.Disconnected,
-        "Cannot connect to new Peer after disconnecting from server."
-      );
-      return;
-    }
-
-    if (!stream) {
-      logger.error(
-        "To call a peer, you must provide a stream from your browser's `getUserMedia`."
-      );
-      return;
-    }
-
-    options._stream = stream;
-
-    const mediaConnection = new MediaConnection(peer, this, options);
-    this._addConnection(peer, mediaConnection);
-    return mediaConnection;
-  }
+  // /**
+  //  * Returns a MediaConnection to the specified peer. See documentation for a
+  //  * complete list of options.
+  //  */
+  // call(peer: string, stream: MediaStream, options: any = {}): MediaConnection {
+  //   if (this.disconnected) {
+  //     logger.warn(
+  //       "You cannot connect to a new Peer because you called " +
+  //       ".disconnect() on this Peer and ended your connection with the " +
+  //       "server. You can create a new Peer to reconnect."
+  //     );
+  //     this.emitError(
+  //       PeerErrorType.Disconnected,
+  //       "Cannot connect to new Peer after disconnecting from server."
+  //     );
+  //     return;
+  //   }
+  //   if (!stream) {logger.error("To call a peer, you must provide a stream from your browser's `getUserMedia`.");
+  //     return;
+  //   }
+  //   options._stream = stream;
+  //   const mediaConnection = new MediaConnection(peer, this, options);
+  //   this._addConnection(peer, mediaConnection);
+  //   return mediaConnection;
+  // }
 
   /** Add a data/media connection to this peer. */
   private _addConnection(peerId: string, connection: BaseConnection): void {
-    logger.log(
-      `add connection ${connection.type}:${connection.connectionId}
-       to peerId:${peerId}`
-    );
+    logger.log(`add connection ${connection.type}:${connection.connectionId}to peerId:${peerId}`);
 
     if (!this._connections.has(peerId)) {
       this._connections.set(peerId, []);
@@ -552,15 +561,15 @@ export class Peer extends EventEmitter {
     }
   }
 
-  /**
-   * Get a list of available peer IDs. If you're running your own server, you'll
-   * want to set allow_discovery: true in the PeerServer options. If you're using
-   * the cloud server, email team@peerjs.com to get the functionality enabled for
-   * your key.
-   */
-  listAllPeers(cb = (_: any[]) => { }): void {
-    this._api.listAllPeers()
-      .then(peers => cb(peers))
-      .catch(error => this._abort(PeerErrorType.ServerError, error));
-  }
+  // /**
+  //  * Get a list of available peer IDs. If you're running your own server, you'll
+  //  * want to set allow_discovery: true in the PeerServer options. If you're using
+  //  * the cloud server, email team@peerjs.com to get the functionality enabled for
+  //  * your key.
+  //  */
+  // listAllPeers(cb = (_: any[]) => { }): void {
+  //   this._api.listAllPeers()
+  //     .then(peers => cb(peers))
+  //     .catch(error => this._abort(PeerErrorType.ServerError, error));
+  // }
 }

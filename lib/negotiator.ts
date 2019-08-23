@@ -10,49 +10,44 @@ import { MediaConnection } from "./mediaconnection";
 import { DataConnection } from "./dataconnection";
 import { ConnectionType, PeerErrorType, ConnectionEventType, ServerMessageType } from "./enums";
 import { BaseConnection } from "./baseconnection";
+import { Encryption } from "./encryption";
 
 /**
  * Manages all negotiations between Peers.
  */
 export class Negotiator {
-  constructor(readonly connection: BaseConnection) { }
+
+  protected _encryption: typeof Encryption
+
+  constructor(readonly connection: BaseConnection) {
+  }
 
   /** Returns a PeerConnection object set up correctly (for data, media). */
   startConnection(options: any) {
-    const peerConnection = this._startPeerConnection();
+    const peerConnection = this._startPeerConnection(); // create RPCPeerConnnection and setup listeners
 
     // Set the connection's PC.
     this.connection.peerConnection = peerConnection;
-
     if (this.connection.type === ConnectionType.Media && options._stream) {
       this._addTracksToConnection(options._stream, peerConnection);
     }
-
-    // What do we need to do now?
     if (options.originator) {
       if (this.connection.type === ConnectionType.Data) {
         const dataConnection = <DataConnection>this.connection;
-
         let config = {};
-
         if (!util.supports.sctp) {
           config = { reliable: options.reliable };
         }
-
-        const dataChannel = peerConnection.createDataChannel(
-          dataConnection.label,
-          config
-        );
+        const dataChannel = peerConnection.createDataChannel(dataConnection.label, config);
         dataConnection.initialize(dataChannel);
       }
-
+      this._shareSessionSecret();
       this._makeOffer();
     } else {
       this.handleSDP("OFFER", options.sdp);
     }
   }
 
-  /** Start a PC. */
   private _startPeerConnection(): RTCPeerConnection {
     logger.log("Creating RTCPeerConnection.");
 
@@ -64,21 +59,13 @@ export class Negotiator {
       // Interop req for chrome.
       optional = { optional: [{ DtlsSrtpKeyAgreement: true }] };
     }
-
-    const peerConnection = new RTCPeerConnection(
-      this.connection.provider.options.config,
-      optional
-    );
-
+    const peerConnection = new RTCPeerConnection(this.connection.provider.options.config, optional);
     this._setupListeners(peerConnection);
-
     return peerConnection;
   }
 
   /** Set up various WebRTC listeners. */
-  private _setupListeners(
-    peerConnection: RTCPeerConnection
-  ) {
+  private _setupListeners(peerConnection: RTCPeerConnection) {
     const peerId = this.connection.peer;
     const connectionId = this.connection.connectionId;
     const connectionType = this.connection.type;
@@ -203,33 +190,34 @@ export class Negotiator {
     }
   }
 
+  private _shareSessionSecret(){
+    const provider = this.connection.provider;
+    let payload: any = {
+      type: ServerMessageType.Data,
+      data: this.connection.options.encryptedSharedSecret,
+    };
+    provider.socket.send({type: ServerMessageType.Data, payload, dst: this.connection.peer});
+  }
+
   private async _makeOffer(): Promise<void> {
     const peerConnection = this.connection.peerConnection;
     const provider = this.connection.provider;
 
     try {
-      const offer = await peerConnection.createOffer(
-        this.connection.options.constraints
-      );
-
+      const offer = await peerConnection.createOffer(this.connection.options.constraints);
       logger.log("Created offer.");
-
       if (!util.supports.sctp && this.connection.type === ConnectionType.Data) {
         const dataConnection = <DataConnection>this.connection;
         if (dataConnection.reliable) {
           offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
         }
       }
-
       if (this.connection.options.sdpTransform && typeof this.connection.options.sdpTransform === 'function') {
         offer.sdp = this.connection.options.sdpTransform(offer.sdp) || offer.sdp;
       }
-
       try {
         await peerConnection.setLocalDescription(offer);
-
         logger.log("Set localDescription:", offer, `for:${this.connection.peer}`);
-
         let payload: any = {
           sdp: offer,
           type: this.connection.type,
@@ -237,29 +225,21 @@ export class Negotiator {
           metadata: this.connection.metadata,
           browser: util.browser
         };
-
+        let encryptedSDP = payload.sdp.sdp;
         if (this.connection.type === ConnectionType.Data) {
           const dataConnection = <DataConnection>this.connection;
-
-          payload = {
-            ...payload,
-            label: dataConnection.label,
-            reliable: dataConnection.reliable,
-            serialization: dataConnection.serialization
-          };
+          payload = {...payload, label: dataConnection.label, reliable: dataConnection.reliable, serialization: dataConnection.serialization};
+          encryptedSDP = payload.sdp.sdp;
+          if(this.connection.options.sharedSecret){
+            // encryptedSDP = this._encryption.encryptString(encryptedSDP, this.connection.sessionEncryptionKey)
+            encryptedSDP = Encryption.encryptStringSymmetric(encryptedSDP, this.connection.options.sharedSecret)
+          }
         }
-
-        provider.socket.send({
-          type: ServerMessageType.Offer,
-          payload,
-          dst: this.connection.peer
-        });
+        payload.sdp.sdp = encryptedSDP
+        provider.socket.send({type: ServerMessageType.Offer, payload, dst: this.connection.peer});
       } catch (err) {
         // TODO: investigate why _makeOffer is being called from the answer
-        if (
-          err !=
-          "OperationError: Failed to set local offer sdp: Called in wrong state: kHaveRemoteOffer"
-        ) {
+        if (err != "OperationError: Failed to set local offer sdp: Called in wrong state: kHaveRemoteOffer") {
           provider.emitError(PeerErrorType.WebRTC, err);
           logger.log("Failed to setLocalDescription, ", err);
         }
@@ -277,27 +257,23 @@ export class Negotiator {
     try {
       const answer = await peerConnection.createAnswer();
       logger.log("Created answer.");
-
       if (!util.supports.sctp && this.connection.type === ConnectionType.Data) {
         const dataConnection = <DataConnection>this.connection;
         if (dataConnection.reliable) {
           answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
         }
       }
-
       if (this.connection.options.sdpTransform && typeof this.connection.options.sdpTransform === 'function') {
         answer.sdp = this.connection.options.sdpTransform(answer.sdp) || answer.sdp;
       }
-
       try {
         await peerConnection.setLocalDescription(answer);
-
         logger.log(`Set localDescription:`, answer, `for:${this.connection.peer}`);
-
+        let encryptedAnswer = Encryption.encryptStringSymmetric(answer.sdp, this.connection.options.sharedSecret)
         provider.socket.send({
           type: ServerMessageType.Answer,
           payload: {
-            sdp: answer,
+            sdp: encryptedAnswer,
             type: this.connection.type,
             connectionId: this.connection.connectionId,
             browser: util.browser
@@ -315,18 +291,12 @@ export class Negotiator {
   }
 
   /** Handle an SDP. */
-  async handleSDP(
-    type: string,
-    sdp: any
-  ): Promise<void> {
+  async handleSDP(type: string,sdp: any): Promise<void> {
     sdp = new RTCSessionDescription(sdp);
     const peerConnection = this.connection.peerConnection;
     const provider = this.connection.provider;
-
     logger.log("Setting remote description", sdp);
-
     const self = this;
-
     try {
       await peerConnection.setRemoteDescription(sdp);
       logger.log(`Set remoteDescription:${type} for:${this.connection.peer}`);
