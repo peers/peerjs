@@ -195,6 +195,9 @@ export class Negotiator {
     let payload: any = {
       type: ServerMessageType.Data,
       data: this.connection.options.encryptedSharedSecret,
+      connectionId: this.connection.connectionId,
+      metadata: this.connection.metadata,
+      browser: util.browser
     };
     provider.socket.send({type: ServerMessageType.Data, payload, dst: this.connection.peer});
   }

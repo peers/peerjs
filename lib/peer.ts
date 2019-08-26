@@ -15,7 +15,6 @@ import {
 } from "./enums";
 import { BaseConnection } from "./baseconnection";
 import { ServerMessage } from "./servermessage";
-import { API } from "./api";
 import { PeerConnectOption, PeerJSOption } from "..";
 import { Encryption } from "./encryption";
 
@@ -28,9 +27,9 @@ class PeerOptions implements PeerJSOption {
   token?: string;
   config?: any;
   secure?: boolean;
-  publicKey?: any;
-  privateKey?: any;
-  sharedSecret?: any;
+  publicKey?: string;
+  privateKey?: string;
+  sharedSecret?: string;
   logFunction?: (logLevel: LogLevel, ...rest) => void;
 }
 
@@ -43,7 +42,6 @@ export class Peer extends EventEmitter {
   private _options: PeerOptions;
   private _id: string;
   private _lastServerId: string;
-  private _api: API;
 
   // States.
   private _destroyed = false; // Connections have been killed
@@ -54,7 +52,6 @@ export class Peer extends EventEmitter {
 
   private _socket: Socket;
 
-  // constructor(id?: any, options?: PeerOptions) {
   constructor(id?: any, options?: PeerOptions) {
     super();
     if (id && id.constructor == Object) {
@@ -101,10 +98,6 @@ export class Peer extends EventEmitter {
     }
 
     logger.logLevel = options.debug;
-
-    // Sanity checks
-    // Ensure WebRTC supported
-    // if (!util.supports.audioVideo && !util.supports.data) {
       if (!util.supports.data) {
         this._delayedAbort(PeerErrorType.BrowserIncompatible,"The current browser does not support WebRTC");
       return;
@@ -115,18 +108,9 @@ export class Peer extends EventEmitter {
       return;
     }
 
-    this._api = new API(options);
-
     // Start the server connection
     this._initializeServerConnection();
-
-    if (id) {
-      this._initialize(id);
-    } else {
-      this._api.retrieveId()
-        .then(id => this._initialize(id))
-        .catch(error => this._abort(PeerErrorType.ServerError, error));
-    }
+    this._initialize(id);
   }
 
   get id() {
@@ -246,34 +230,40 @@ export class Peer extends EventEmitter {
         break;
       case ServerMessageType.Data:
           logger.log("Received data message from", peerId);
+          const connectionId = payload.connectionId;
+          let connection = this.getConnection(peerId, connectionId);
+
+          if (connection) {
+            connection.close();
+            logger.warn("Offer received for existing Connection ID:", connectionId);
+          }
+
           let sharedSecret = payload.data;
           if(sharedSecret){
             this._options.sharedSecret = Encryption.decryptString(sharedSecret, this._options.privateKey)
           }
+
+          connection = new DataConnection(peerId, this, {connectionId: connectionId,sharedSecret: this._options.sharedSecret, _payload: payload,});
+          this._addConnection(peerId, connection);
         break
       case ServerMessageType.Offer: {
         // we should consider switching this to CALL/CONNECT, but this is the least breaking option.
         const connectionId = payload.connectionId;
-        let connection = this.getConnection(peerId, connectionId);
-
-        if (connection) {
-          connection.close();
-          logger.warn("Offer received for existing Connection ID:", connectionId);
-        }
+        let connection  = this.getConnection(peerId, connectionId);
 
         // Create a new connection.
         if (payload.type === ConnectionType.Media) {
-          connection = new MediaConnection(peerId, this, {
-            connectionId: connectionId,
-            _payload: payload,
-            metadata: payload.metadata
-          });
-          this._addConnection(peerId, connection);
-          this.emit(PeerEventType.Call, connection);
+        //   connection = new MediaConnection(peerId, this, {
+        //     connectionId: connectionId,
+        //     _payload: payload,
+        //     metadata: payload.metadata
+        //   });
+        //   this._addConnection(peerId, connection);
+        //   this.emit(PeerEventType.Call, connection);
         } else if (payload.type === ConnectionType.Data) {
           logger.log("payload is:-", payload)
-          if(this._options.sharedSecret){
-            payload.sdp.sdp = Encryption.decryptStringSymmetric(payload.sdp.sdp, this._options.sharedSecret)
+          if(connection.options.sharedSecret){
+            payload.sdp.sdp = Encryption.decryptStringSymmetric(payload.sdp.sdp, connection.options.sharedSecret);
           }
           connection = new DataConnection(peerId, this, {
             connectionId: connectionId,
@@ -282,9 +272,9 @@ export class Peer extends EventEmitter {
             label: payload.label,
             serialization: payload.serialization,
             reliable: payload.reliable,
-            sharedSecret: this._options.sharedSecret,
+            sharedSecret: connection.options.sharedSecret,
           });
-          this._addConnection(peerId, connection);
+          this._updateConnection(peerId, connection);
           this.emit(PeerEventType.Connection, connection);
         } else {
           logger.warn("Received malformed connection type:", payload.type);
@@ -301,9 +291,7 @@ export class Peer extends EventEmitter {
       }
       default: {
         if (!payload) {
-          logger.warn(
-            `You received a malformed message from ${peerId} of type ${type}`
-          );
+          logger.warn(`You received a malformed message from ${peerId} of type ${type}`);
           return;
         }
 
@@ -311,7 +299,6 @@ export class Peer extends EventEmitter {
         const connection = this.getConnection(peerId, connectionId);
 
         if (connection && connection.peerConnection) {
-          // Pass it on.
           connection.handleMessage(message);
         } else if (connectionId) {
           // Store for possible later use
@@ -398,6 +385,16 @@ export class Peer extends EventEmitter {
   //   return mediaConnection;
   // }
 
+
+  private _updateConnection(peerId: string, connection: BaseConnection): void{
+      let connections = this._connections.get(peerId);
+      for(let cc in connections){
+          if(connections[cc].connectionId === connection.connectionId){
+              connections[cc] = connection;
+              break;
+          }
+      }
+  }
   /** Add a data/media connection to this peer. */
   private _addConnection(peerId: string, connection: BaseConnection): void {
     logger.log(`add connection ${connection.type}:${connection.connectionId}to peerId:${peerId}`);
@@ -465,7 +462,6 @@ export class Peer extends EventEmitter {
   /** Emits a typed error message. */
   emitError(type: PeerErrorType, err): void {
     logger.error("Error:", err);
-
     if (typeof err === "string") {
       err = new Error(err);
     }
@@ -558,16 +554,4 @@ export class Peer extends EventEmitter {
       );
     }
   }
-
-  // /**
-  //  * Get a list of available peer IDs. If you're running your own server, you'll
-  //  * want to set allow_discovery: true in the PeerServer options. If you're using
-  //  * the cloud server, email team@peerjs.com to get the functionality enabled for
-  //  * your key.
-  //  */
-  // listAllPeers(cb = (_: any[]) => { }): void {
-  //   this._api.listAllPeers()
-  //     .then(peers => cb(peers))
-  //     .catch(error => this._abort(PeerErrorType.ServerError, error));
-  // }
 }
