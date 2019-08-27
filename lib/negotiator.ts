@@ -41,7 +41,6 @@ export class Negotiator {
         const dataChannel = peerConnection.createDataChannel(dataConnection.label, config);
         dataConnection.initialize(dataChannel);
       }
-      this._shareSessionSecret();
       this._makeOffer();
     } else {
       this.handleSDP("OFFER", options.sdp);
@@ -190,17 +189,6 @@ export class Negotiator {
     }
   }
 
-  private _shareSessionSecret(){
-    const provider = this.connection.provider;
-    let payload: any = {
-      type: ServerMessageType.Data,
-      data: this.connection.options.encryptedSharedSecret,
-      connectionId: this.connection.connectionId,
-      metadata: this.connection.metadata,
-      browser: util.browser
-    };
-    provider.socket.send({type: ServerMessageType.Data, payload, dst: this.connection.peer});
-  }
 
   private async _makeOffer(): Promise<void> {
     const peerConnection = this.connection.peerConnection;
@@ -228,15 +216,13 @@ export class Negotiator {
           metadata: this.connection.metadata,
           browser: util.browser
         };
-        let encryptedSDP = payload.sdp.sdp;
+        // Encrypt the SDP using encryptionToken before pushing out the offer
+        let encryptedSDP
         if (this.connection.type === ConnectionType.Data) {
           const dataConnection = <DataConnection>this.connection;
           payload = {...payload, label: dataConnection.label, reliable: dataConnection.reliable, serialization: dataConnection.serialization};
-          encryptedSDP = payload.sdp.sdp;
-          if(this.connection.options.sharedSecret){
-            // encryptedSDP = this._encryption.encryptString(encryptedSDP, this.connection.sessionEncryptionKey)
-            encryptedSDP = Encryption.encryptStringSymmetric(encryptedSDP, this.connection.options.sharedSecret)
-          }
+          if(!this.connection.options.encryptionToken) throw (`Missing encryptionToken`)
+          encryptedSDP = Encryption.encryptStringSymmetric(payload.sdp.sdp, this.connection.options.encryptionToken)
         }
         payload.sdp.sdp = encryptedSDP
         provider.socket.send({type: ServerMessageType.Offer, payload, dst: this.connection.peer});
@@ -273,9 +259,9 @@ export class Negotiator {
         await peerConnection.setLocalDescription(answer);
         logger.log(`Set localDescription:`, answer, `for:${this.connection.peer}`);
         let encryptedAnswer = answer.sdp;
-        if(this.connection.options.sharedSecret){
-          encryptedAnswer = Encryption.encryptStringSymmetric(answer.sdp, this.connection.options.sharedSecret)
-        }
+        if(!this.connection.options.encryptionToken) throw (`Missing encryptionToken`)
+        // Encrypt the Answer with encryptionToken before handing over to the initiator
+        encryptedAnswer = Encryption.encryptStringSymmetric(answer.sdp, this.connection.options.encryptionToken)
         provider.socket.send({
           type: ServerMessageType.Answer,
           payload: {
