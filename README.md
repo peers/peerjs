@@ -77,6 +77,12 @@ peer.on('call', (call) => {
 npm test
 ```
 
+## FAQ
+
+Q. I have a message ```Critical dependency: the request of a dependency is an expression``` in browser's console
+A. The message occurs when you use PeerJS with Webpack. It is not critical! It relates to Parcel https://github.com/parcel-bundler/parcel/issues/2883 We'll resolve it when updated to Parcel V2.
+
+
 ## Links
 
 ### [Documentation / API Reference](https://peerjs.com/docs.html)
