@@ -1,3 +1,5 @@
+import { IEncryptionPayload } from "./lib/dataconnection";
+
 // Type definitions for the PeerJS class module
 // Original definitions by Toshiya Nakakura <https://github.com/nakakura>
 // at https://github.com/DefinitelyTyped/DefinitelyTyped
@@ -141,6 +143,7 @@ declare namespace Peer {
     publicKey?: string;
     privateKey?: string;
     sharedSecret?: string;
+    decryptionPayload?: IDecryptionPayload;
   }
 
   interface PeerConnectOption {
@@ -148,9 +151,11 @@ declare namespace Peer {
     metadata?: any;
     serialization?: string;
     reliable?: boolean;
-    sessionEncryptionKey?: string;
-    encryptedSharedSecret?: string;
-    sharedSecret?: string;
+    encryptionPayload?: {
+      encryptionToken?: string;
+      ephemeralPublicKey?: string;
+      ivHex?: string;
+    }
   }
 
   interface CallOption {

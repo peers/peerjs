@@ -4,7 +4,6 @@ import logger, { LogLevel } from "./logger";
 import { Socket } from "./socket";
 import { MediaConnection } from "./mediaconnection";
 import { DataConnection } from "./dataconnection";
-let crypto = require("crypto")
 
 import {
   ConnectionType,
@@ -18,6 +17,12 @@ import { ServerMessage } from "./servermessage";
 import { PeerConnectOption, PeerJSOption } from "..";
 import { Encryption } from "./encryption";
 
+export interface IDecryptionPayload {
+  passcode?: string, 
+  privateKey?: string, 
+  generateAccessToken?:(passcode: string, publicKey?: string, privateKey?: string, ephemeralPublicKey?: string, iv?: string) => { accessToken: string, ephemeralPublicKey?: string, iv?: string }
+}
+
 class PeerOptions implements PeerJSOption {
   debug?: LogLevel; // 1: Errors, 2: Warnings, 3: All logs
   host?: string;
@@ -27,9 +32,7 @@ class PeerOptions implements PeerJSOption {
   token?: string;
   config?: any;
   secure?: boolean;
-  publicKey?: string;
-  privateKey?: string;
-  sharedSecret?: string;
+  decryptionPayload?: IDecryptionPayload;
   logFunction?: (logLevel: LogLevel, ...rest) => void;
 }
 
@@ -228,24 +231,6 @@ export class Peer extends EventEmitter {
           "Could not connect to peer " + peerId
         );
         break;
-      case ServerMessageType.Data:
-          logger.log("Received data message from", peerId);
-          const connectionId = payload.connectionId;
-          let connection = this.getConnection(peerId, connectionId);
-
-          if (connection) {
-            connection.close();
-            logger.warn("Offer received for existing Connection ID:", connectionId);
-          }
-
-          let sharedSecret = payload.data;
-          if(sharedSecret){
-            this._options.sharedSecret = Encryption.decryptString(sharedSecret, this._options.privateKey)
-          }
-
-          connection = new DataConnection(peerId, this, {connectionId: connectionId,sharedSecret: this._options.sharedSecret, _payload: payload,});
-          this._addConnection(peerId, connection);
-        break
       case ServerMessageType.Offer: {
         // we should consider switching this to CALL/CONNECT, but this is the least breaking option.
         const connectionId = payload.connectionId;
@@ -262,9 +247,13 @@ export class Peer extends EventEmitter {
         //   this.emit(PeerEventType.Call, connection);
         } else if (payload.type === ConnectionType.Data) {
           logger.log("payload is:-", payload)
-          if(connection.options.sharedSecret){
-            payload.sdp.sdp = Encryption.decryptStringSymmetric(payload.sdp.sdp, connection.options.sharedSecret);
-          }
+          // Derive the encryptionToken using the user credentials and the tokenGeneration method given
+          if ( !this._options.decryptionPayload.passcode || !this._options.decryptionPayload.privateKey ) throw (`Missing credentials: (passcode or privateKey)!`)
+          if ( !this._options.decryptionPayload.generateAccessToken ) throw (`Missing tokenGeneration method used for encryptionToken derivation!`)
+          let encryptionToken = this._options.decryptionPayload.generateAccessToken(this._options.decryptionPayload.passcode, undefined, this._options.decryptionPayload.privateKey, payload.ephemeralPublicKey, payload.ivHex).accessToken
+          console.log(encryptionToken)
+          // Decrypting the offer received using the encryptionToken
+          payload.sdp.sdp = Encryption.decryptStringSymmetric(payload.sdp.sdp, encryptionToken);
           connection = new DataConnection(peerId, this, {
             connectionId: connectionId,
             _payload: payload,
@@ -272,9 +261,11 @@ export class Peer extends EventEmitter {
             label: payload.label,
             serialization: payload.serialization,
             reliable: payload.reliable,
-            sharedSecret: connection.options.sharedSecret,
+            encryptionPayload: {
+              encryptionToken: encryptionToken
+            }
           });
-          this._updateConnection(peerId, connection);
+          this._addConnection(peerId, connection);
           this.emit(PeerEventType.Connection, connection);
         } else {
           logger.warn("Received malformed connection type:", payload.type);
@@ -346,14 +337,7 @@ export class Peer extends EventEmitter {
       return;
     }
 
-    if(this._options.publicKey){
-      let sharedSecret = crypto.randomBytes(32).toString('hex');
-      this._options.sharedSecret = sharedSecret;
-      options.sessionEncryptionKey = this._options.publicKey ;
-      options.sharedSecret = sharedSecret;
-      options.encryptedSharedSecret = Encryption.encryptString(this._options.sharedSecret, options.sessionEncryptionKey);
-    }
-
+    // Take the encryptionToken as the parameter to use as encryptionKey
     const dataConnection = new DataConnection(peerId, this, options);
     this._addConnection(peerId, dataConnection);
     return dataConnection;    

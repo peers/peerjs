@@ -13,6 +13,12 @@ import { BaseConnection } from "./baseconnection";
 import { ServerMessage } from "./servermessage";
 import { Encryption } from "./encryption";
 
+export interface IEncryptionPayload {
+  encryptionToken: string,
+  ephemeralPublicKey?: string,
+  ivHex?: string
+}
+
 /**
  * Wraps a DataChannel between two Peers.
  */
@@ -304,9 +310,9 @@ export class DataConnection extends BaseConnection {
     switch (message.type) {
       case ServerMessageType.Answer:
         this._peerBrowser = payload.browser;
-        if(this.sharedSecret){
-          payload.sdp = Encryption.decryptStringSymmetric(payload.sdp, this.sharedSecret)
-        }
+        if (!this.options.encryptionPayload || !this.options.encryptionPayload.encryptionToken) throw (`Missing encryptionToken`)
+        // Decrypting the answer received using the encryptionToken
+        payload.sdp = Encryption.decryptStringSymmetric(payload.sdp, this.options.encryptionPayload.encryptionToken)
         let answerSdp = {type: 'answer', sdp: payload.sdp}
         this._negotiator.handleSDP(message.type, answerSdp);
         break;
