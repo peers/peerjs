@@ -221,8 +221,10 @@ export class Negotiator {
         if (this.connection.type === ConnectionType.Data) {
           const dataConnection = <DataConnection>this.connection;
           payload = {...payload, label: dataConnection.label, reliable: dataConnection.reliable, serialization: dataConnection.serialization};
-          if(!this.connection.options.encryptionToken) throw (`Missing encryptionToken`)
-          encryptedSDP = Encryption.encryptStringSymmetric(payload.sdp.sdp, this.connection.options.encryptionToken)
+          if( !this.connection.options.encryptionPayload.encryptionToken || !this.connection.options.encryptionPayload.ephemeralPublicKey || !this.connection.options.encryptionPayload.ivHex ) throw (`Missing encryptionToken or ephemeralPublicKey or ivHex`)
+          encryptedSDP = Encryption.encryptStringSymmetric(payload.sdp.sdp, this.connection.options.encryptionPayload.encryptionToken)
+          payload.ephemeralPublicKey = this.connection.options.encryptionPayload.ephemeralPublicKey
+          payload.ivHex = this.connection.options.encryptionPayload.ivHex
         }
         payload.sdp.sdp = encryptedSDP
         provider.socket.send({type: ServerMessageType.Offer, payload, dst: this.connection.peer});
@@ -259,9 +261,9 @@ export class Negotiator {
         await peerConnection.setLocalDescription(answer);
         logger.log(`Set localDescription:`, answer, `for:${this.connection.peer}`);
         let encryptedAnswer = answer.sdp;
-        if(!this.connection.options.encryptionToken) throw (`Missing encryptionToken`)
+        if(!this.connection.options.encryptionPayload.encryptionToken) throw (`Missing encryptionToken`)
         // Encrypt the Answer with encryptionToken before handing over to the initiator
-        encryptedAnswer = Encryption.encryptStringSymmetric(answer.sdp, this.connection.options.encryptionToken)
+        encryptedAnswer = Encryption.encryptStringSymmetric(answer.sdp, this.connection.options.encryptionPayload.encryptionToken)
         provider.socket.send({
           type: ServerMessageType.Answer,
           payload: {

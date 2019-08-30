@@ -4,7 +4,6 @@ import logger, { LogLevel } from "./logger";
 import { Socket } from "./socket";
 import { MediaConnection } from "./mediaconnection";
 import { DataConnection } from "./dataconnection";
-let crypto = require("crypto")
 
 import {
   ConnectionType,
@@ -18,6 +17,12 @@ import { ServerMessage } from "./servermessage";
 import { PeerConnectOption, PeerJSOption } from "..";
 import { Encryption } from "./encryption";
 
+export interface IDecryptionPayload {
+  passcode?: string, 
+  privateKey?: string, 
+  generateAccessToken?:(passcode: string, publicKey?: string, privateKey?: string, ephemeralPublicKey?: string, iv?: string) => { accessToken: string, ephemeralPublicKey?: string, iv?: string }
+}
+
 class PeerOptions implements PeerJSOption {
   debug?: LogLevel; // 1: Errors, 2: Warnings, 3: All logs
   host?: string;
@@ -27,7 +32,7 @@ class PeerOptions implements PeerJSOption {
   token?: string;
   config?: any;
   secure?: boolean;
-  encryptionToken?: string;
+  decryptionPayload?: IDecryptionPayload;
   logFunction?: (logLevel: LogLevel, ...rest) => void;
 }
 
@@ -242,8 +247,13 @@ export class Peer extends EventEmitter {
         //   this.emit(PeerEventType.Call, connection);
         } else if (payload.type === ConnectionType.Data) {
           logger.log("payload is:-", payload)
+          // Derive the encryptionToken using the user credentials and the tokenGeneration method given
+          if ( !this._options.decryptionPayload.passcode || !this._options.decryptionPayload.privateKey ) throw (`Missing credentials: (passcode or privateKey)!`)
+          if ( !this._options.decryptionPayload.generateAccessToken ) throw (`Missing tokenGeneration method used for encryptionToken derivation!`)
+          let encryptionToken = this._options.decryptionPayload.generateAccessToken(this._options.decryptionPayload.passcode, undefined, this._options.decryptionPayload.privateKey, payload.ephemeralPublicKey, payload.ivHex).accessToken
+          console.log(encryptionToken)
           // Decrypting the offer received using the encryptionToken
-          payload.sdp.sdp = Encryption.decryptStringSymmetric(payload.sdp.sdp, this._options.encryptionToken);
+          payload.sdp.sdp = Encryption.decryptStringSymmetric(payload.sdp.sdp, encryptionToken);
           connection = new DataConnection(peerId, this, {
             connectionId: connectionId,
             _payload: payload,
@@ -251,7 +261,9 @@ export class Peer extends EventEmitter {
             label: payload.label,
             serialization: payload.serialization,
             reliable: payload.reliable,
-            encryptionToken: this._options.encryptionToken,
+            encryptionPayload: {
+              encryptionToken: encryptionToken
+            }
           });
           this._addConnection(peerId, connection);
           this.emit(PeerEventType.Connection, connection);

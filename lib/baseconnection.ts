@@ -6,8 +6,6 @@ import { ConnectionType } from "./enums";
 export abstract class BaseConnection extends EventEmitter {
   protected _open = false;
 
-  readonly sessionEncryptionKey: string;
-  readonly sharedSecret: string;
   readonly metadata: any;
   connectionId: string;
 
@@ -21,11 +19,7 @@ export abstract class BaseConnection extends EventEmitter {
 
   constructor(readonly peer: string, public provider: Peer, readonly options: any) {
     super();
-    this.metadata = options.metadata;  
-    if (this.options.sessionEncryptionKey){
-      this.sessionEncryptionKey = this.options.sessionEncryptionKey;
-      this.sharedSecret = this.options.sharedSecret;
-    }
+    this.metadata = options.metadata;
   }
 
   abstract close(): void;
