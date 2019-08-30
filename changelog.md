@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+<a name="1.0.4"></a>
+
+## 1.0.4 (2019-08-31)
+
+- fixed: 'close' event for DataConnection #568
+
 <a name="1.0.3"></a>
 
 ## 1.0.3 (2019-08-21)
