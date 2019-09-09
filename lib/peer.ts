@@ -441,20 +441,20 @@ export class Peer extends EventEmitter {
   }
 
   /**
-   * Destroys the Peer and emits an error message.
+   * Emits an error message and destroys the Peer.
    * The Peer is not destroyed if it's in a disconnected state, in which case
    * it retains its disconnected state and its existing connections.
    */
   private _abort(type: PeerErrorType, message): void {
     logger.error("Aborting!");
 
+    this.emitError(type, message);
+
     if (!this._lastServerId) {
       this.destroy();
     } else {
       this.disconnect();
     }
-
-    this.emitError(type, message);
   }
 
   /** Emits a typed error message. */
