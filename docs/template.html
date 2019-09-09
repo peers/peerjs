@@ -15,21 +15,18 @@
     </h1>
     <p>
       <br>PeerJS simplifies peer-to-peer data, video, and audio calls.</p>
-    <p>This guide will show you the basic concepts of the PeerJS API. If you learn better from seeing a working app,
-      <a href="/examples">see the examples</a> page.</P>
+    <p>This guide will show you the basic concepts of the PeerJS API.</p>
     <h2>Setup</h2>
     <h3>1. Include the Javascript client</h3>
     <p>Add the PeerJS client library to your webpage.</p>
-    <pre>&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/0.3.9/peer.min.js"&gt;&lt;/script&gt;</pre>
+    <pre>&lt;script src="https://unpkg.com/peerjs@1.0.4/dist/peerjs.min.js"&gt;&lt;/script&gt;</pre>
     <p>If you prefer, you can host it yourself:
-      <a download href="https://cdnjs.cloudflare.com/ajax/libs/peerjs/0.3.9/peer.min.js">peer.min.js</a>, or
+      <a download href="https://unpkg.com/peerjs@1.0.4/dist/peerjs.min.js">peerjs.min.js</a>, or
       <a href="https://github.com/peers/peerjs">fork us on Github</a>.</p>
     <h3>2. Create the Peer object</h3>
     <p>The Peer object is where we create and receive connections.</p>
-    <pre>var peer = new Peer({key: 'lwjd5qra8257b9'});</pre>
-    <p>The 'key' we're passing in to the Peer constructor is a PeerServer cloud API key. You can use ours for now, but
-      you should
-      <a href="https://peerjs.com/peerserver">sign up for your own free key</a>. PeerJS uses PeerServer for session
+    <pre>var peer = new Peer();</pre>
+    <p>PeerJS uses PeerServer for session
       metadata and candidate signaling. You can also
       <a href="https://github.com/peers/peerjs-server">run your own PeerServer</a> if you don't like the cloud.</p>
     <p>We're now ready to start making connections!</p>
@@ -152,10 +149,7 @@ conn.send({
       NAT
       traversal is impossible and no connection can be made. A workaround is to proxy through the connection through a
       TURN
-      server. The PeerServer cloud service does not provide a TURN server. You'll have to find your own. You can pass a
-      TURN
-      server into the
-      <code>Peer</code> object options. This will allow your PeerJS app to work seamlessly for this situation</p>
+      server. The PeerServer cloud service provides a free TURN server. This will allow your PeerJS app to work seamlessly for this situation</p>
     <h3>How do I use a TURN server?</h3>
     <p>When creating your Peer object, pass in the ICE servers as the config key of the options hash.</p>
     <pre>
@@ -166,11 +160,6 @@ var peer = new Peer({
   ]} /* Sample servers, please use appropriate ones */
 });
 </pre>
-    <h3>What is the current state of browser compatibility?</h3>
-
-    <p>We keep an frequently-updated catalogue of WebRTC compatibility information and caveats
-      <a href="/status">here</a>.</p>
-
     <h3>What if my peer has not yet connected to the server when I attempt to connect to it?</h3>
 
     <p>When you try to connect to a peer, PeerServer will hold a connection offer for up to 5 seconds before rejecting
