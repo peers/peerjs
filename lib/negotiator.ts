@@ -1,5 +1,4 @@
 import * as Reliable from "reliable";
-import { webRTCAdapter as _ } from './adapter';
 import { util } from "./util";
 import logger from "./logger";
 import { MediaConnection } from "./mediaconnection";

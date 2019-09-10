@@ -1,3 +1,3 @@
-import webRTCAdapter from "webrtc-adapter/out/adapter_no_edge";
+import webRTCAdapter from "webrtc-adapter";
 
 export { webRTCAdapter };
