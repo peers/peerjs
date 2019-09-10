@@ -21,29 +21,29 @@ class Logger {
 
     set logLevel(logLevel: LogLevel) { this._logLevel = logLevel; }
 
-    log(...args) {
+    log(...args: any[]) {
         if (this._logLevel >= LogLevel.All) {
             this._print(LogLevel.All, ...args);
         }
     }
 
-    warn(...args) {
+    warn(...args: any[]) {
         if (this._logLevel >= LogLevel.Warnings) {
             this._print(LogLevel.Warnings, ...args);
         }
     }
 
-    error(...args) {
+    error(...args: any[]) {
         if (this._logLevel >= LogLevel.Errors) {
             this._print(LogLevel.Errors, ...args);
         }
     }
 
-    setLogFunction(fn: (logLevel: LogLevel, ..._) => void): void {
+    setLogFunction(fn: (logLevel: LogLevel, ..._: any[]) => void): void {
         this._print = fn;
     }
 
-    private _print(logLevel: LogLevel, ...rest): void {
+    private _print(logLevel: LogLevel, ...rest: any[]): void {
         const copy = [LOG_PREFIX, ...rest];
 
         for (let i in copy) {

@@ -1,11 +1,7 @@
 import * as Reliable from "reliable";
+import { adapter as _ } from './adapter';
 import { util } from "./util";
 import logger from "./logger";
-import {
-  RTCPeerConnection,
-  RTCSessionDescription,
-  RTCIceCandidate
-} from "./adapter";
 import { MediaConnection } from "./mediaconnection";
 import { DataConnection } from "./dataconnection";
 import { ConnectionType, PeerErrorType, ConnectionEventType, ServerMessageType } from "./enums";
@@ -56,19 +52,7 @@ export class Negotiator {
   private _startPeerConnection(): RTCPeerConnection {
     logger.log("Creating RTCPeerConnection.");
 
-    let optional = {};
-
-    if (this.connection.type === ConnectionType.Data && !util.supports.sctp) {
-      optional = { optional: [{ RtpDataChannels: true }] };
-    } else if (this.connection.type === ConnectionType.Media) {
-      // Interop req for chrome.
-      optional = { optional: [{ DtlsSrtpKeyAgreement: true }] };
-    }
-
-    const peerConnection = new RTCPeerConnection(
-      this.connection.provider.options.config,
-      optional
-    );
+    const peerConnection = new RTCPeerConnection(this.connection.provider.options.config);
 
     this._setupListeners(peerConnection);
 

@@ -19,34 +19,27 @@
     "branch": "master"
   },
   "devDependencies": {
-    "@types/chai": "^4.1.7",
+    "@types/chai": "^4.2.2",
     "@types/mocha": "^5.2.7",
     "chai": "^4.2.0",
-    "grunt": "^1.0.4",
-    "grunt-browserify": "^5.3.0",
-    "grunt-cli": "^1.3.1",
-    "grunt-contrib-concat": "^0.5.0",
-    "grunt-contrib-copy": "^1.0.0",
-    "grunt-contrib-uglify": "^4.0.1",
-    "grunt-ts": "^6.0.0-beta.21",
-    "jsdom": "14.0.0",
-    "jsdom-global": "3.0.2",
-    "mocha": "^6.1.4",
-    "mock-socket": "^8.0.5",
+    "jsdom": "^15.1.1",
+    "jsdom-global": "^3.0.2",
+    "mocha": "^6.2.0",
+    "mock-socket": "^9.0.0",
     "parcel-bundler": "^1.12.3",
-    "standard": "^12.0.1",
+    "standard": "^14.1.0",
     "ts-node": "^8.3.0",
-    "typescript": "^3.5.3"
+    "typescript": "^3.6.2"
   },
   "dependencies": {
-    "@types/node": "^10.14.12",
+    "@types/node": "^10.14.17",
     "@types/webrtc": "^0.0.25",
     "eventemitter3": "^3.1.2",
-    "peerjs-js-binarypack": "1.0.0",
     "opencollective": "^1.0.3",
     "opencollective-postinstall": "^2.0.0",
+    "peerjs-js-binarypack": "1.0.0",
     "reliable": "git+https://github.com/michelle/reliable.git",
-    "webrtc-adapter": "^7.2.6"
+    "webrtc-adapter": "^7.3.0"
   },
   "collective": {
     "type": "opencollective",

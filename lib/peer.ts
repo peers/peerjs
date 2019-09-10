@@ -26,7 +26,7 @@ class PeerOptions implements PeerJSOption {
   config?: any;
   secure?: boolean;
   pingInterval?: number;
-  logFunction?: (logLevel: LogLevel, ...rest) => void;
+  logFunction?: (logLevel: LogLevel, ...rest: any[]) => void;
 }
 
 /**
@@ -86,15 +86,16 @@ export class Peer extends EventEmitter {
     return this._disconnected;
   }
 
-  constructor(id?: any, options?: PeerOptions) {
+  constructor(id?: string | PeerOptions, options?: PeerOptions) {
     super();
+
+    let userId: string | undefined;
 
     // Deal with overloading
     if (id && id.constructor == Object) {
-      options = id;
-      id = undefined;
+      options = id as PeerOptions;
     } else if (id) {
-      id = id.toString();
+      userId = id.toString();
     }
 
     // Configurize options
@@ -111,29 +112,32 @@ export class Peer extends EventEmitter {
     this._options = options;
 
     // Detect relative URL host.
-    if (options.host === "/") {
-      options.host = window.location.hostname;
+    if (this._options.host === "/") {
+      this._options.host = window.location.hostname;
     }
+
     // Set path correctly.
-    if (options.path[0] !== "/") {
-      options.path = "/" + options.path;
-    }
-    if (options.path[options.path.length - 1] !== "/") {
-      options.path += "/";
+    if (this._options.path) {
+      if (this._options.path[0] !== "/") {
+        this._options.path = "/" + this._options.path;
+      }
+      if (this._options.path[this._options.path.length - 1] !== "/") {
+        this._options.path += "/";
+      }
     }
 
     // Set whether we use SSL to same as current host
-    if (options.secure === undefined && options.host !== util.CLOUD_HOST) {
-      options.secure = util.isSecure();
-    } else if (options.host == util.CLOUD_HOST) {
-      options.secure = true;
+    if (this._options.secure === undefined && this._options.host !== util.CLOUD_HOST) {
+      this._options.secure = util.isSecure();
+    } else if (this._options.host == util.CLOUD_HOST) {
+      this._options.secure = true;
     }
     // Set a custom log function if present
-    if (options.logFunction) {
-      logger.setLogFunction(options.logFunction);
+    if (this._options.logFunction) {
+      logger.setLogFunction(this._options.logFunction);
     }
 
-    logger.logLevel = options.debug;
+    logger.logLevel = this._options.debug || 0;
 
     // Sanity checks
     // Ensure WebRTC supported
@@ -145,8 +149,8 @@ export class Peer extends EventEmitter {
       return;
     }
     // Ensure alphanumeric id
-    if (!util.validateId(id)) {
-      this._delayedAbort(PeerErrorType.InvalidID, `ID "${id}" is invalid`);
+    if (!!userId && !util.validateId(userId)) {
+      this._delayedAbort(PeerErrorType.InvalidID, `ID "${userId}" is invalid`);
       return;
     }
 
@@ -155,8 +159,8 @@ export class Peer extends EventEmitter {
     // Start the server connection
     this._initializeServerConnection();
 
-    if (id) {
-      this._initialize(id);
+    if (userId) {
+      this._initialize(userId);
     } else {
       this._api.retrieveId()
         .then(id => this._initialize(id))

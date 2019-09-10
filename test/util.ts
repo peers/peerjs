@@ -1,4 +1,4 @@
-import "./setup"
+import "./setup";
 import { expect } from "chai";
 import { util } from "../lib/util";
 

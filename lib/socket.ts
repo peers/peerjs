@@ -8,10 +8,10 @@ import { SocketEventType, ServerMessageType } from "./enums";
  */
 export class Socket extends EventEmitter {
   private _disconnected = false;
-  private _id: string;
+  private _id?: string;
   private _messagesQueue: Array<any> = [];
   private _wsUrl: string;
-  private _socket: WebSocket;
+  private _socket?: WebSocket;
   private _wsPingTimer: any;
 
   constructor(
@@ -60,7 +60,7 @@ export class Socket extends EventEmitter {
     };
 
     this._socket.onclose = (event) => {
-      logger.log("Socket closed.", event);;
+      logger.log("Socket closed.", event);
 
       this._disconnected = true;
       clearTimeout(this._wsPingTimer);
@@ -82,7 +82,9 @@ export class Socket extends EventEmitter {
   }
 
   private _scheduleHeartbeat(): void {
-    this._wsPingTimer = setTimeout(() => { this._sendHeartbeat() }, this.pingInterval);
+    this._wsPingTimer = setTimeout(() => {
+      this._sendHeartbeat();
+    }, this.pingInterval);
   }
 
   private _sendHeartbeat(): void {
@@ -93,14 +95,14 @@ export class Socket extends EventEmitter {
 
     const message = JSON.stringify({ type: ServerMessageType.Heartbeat });
 
-    this._socket.send(message);
+    this._socket!.send(message);
 
     this._scheduleHeartbeat();
   }
 
   /** Is the websocket currently open? */
   private _wsOpen(): boolean {
-    return !!this._socket && this._socket.readyState == 1;
+    return !!this._socket && this._socket.readyState === 1;
   }
 
   /** Send queued messages. */
@@ -139,7 +141,7 @@ export class Socket extends EventEmitter {
 
     const message = JSON.stringify(data);
 
-    this._socket.send(message);
+    this._socket!.send(message);
   }
 
   close(): void {

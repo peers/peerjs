@@ -1,5 +1,5 @@
 import * as BinaryPack from "js-binarypack";
-import { RTCPeerConnection } from "./adapter";
+import { adapter as _ } from './adapter';
 
 const DEFAULT_CONFIG = {
   iceServers: [
@@ -51,15 +51,13 @@ export class util {
 
     let binaryBlob = false;
     let sctp = false;
-    // @ts-ignore
+
     const onnegotiationneeded = !!window.webkitRTCPeerConnection;
 
     let pc, dc;
 
     try {
-      pc = new RTCPeerConnection(DEFAULT_CONFIG, {
-        optional: [{ RtpDataChannels: true }]
-      });
+      pc = new RTCPeerConnection(DEFAULT_CONFIG);
     } catch (e) {
       data = false;
       audioVideo = false;
@@ -83,7 +81,7 @@ export class util {
       // Reliable test.
       // Unfortunately Chrome is a bit unreliable about whether or not they
       // support reliable.
-      const reliablePC = new RTCPeerConnection(DEFAULT_CONFIG, {});
+      const reliablePC = new RTCPeerConnection(DEFAULT_CONFIG);
       try {
         const reliableDC = reliablePC.createDataChannel(
           "_PEERJSRELIABLETEST",
@@ -158,29 +156,31 @@ export class util {
     return chunks;
   }
 
-  static blobToArrayBuffer(blob: Blob, cb: (arg: any) => void): void {
+  static blobToArrayBuffer(blob: Blob, cb: (arg: string | ArrayBuffer | null) => void): void {
     const fr = new FileReader();
 
     fr.onload = function (evt) {
-      // @ts-ignore
-      cb(evt.target.result);
+      if (evt.target) {
+        cb(evt.target.result);
+      }
     };
 
     fr.readAsArrayBuffer(blob);
   }
 
-  static blobToBinaryString(blob: Blob, cb: (arg: any) => void): void {
+  static blobToBinaryString(blob: Blob, cb: (arg: string | ArrayBuffer | null) => void): void {
     const fr = new FileReader();
 
     fr.onload = function (evt) {
-      // @ts-ignore
-      cb(evt.target.result);
+      if (evt.target) {
+        cb(evt.target.result);
+      }
     };
 
     fr.readAsBinaryString(blob);
   }
 
-  static binaryStringToArrayBuffer(binary): ArrayBuffer | SharedArrayBuffer {
+  static binaryStringToArrayBuffer(binary: string): ArrayBuffer | SharedArrayBuffer {
     let byteArray = new Uint8Array(binary.length);
 
     for (let i = 0; i < binary.length; i++) {

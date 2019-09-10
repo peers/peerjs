@@ -20,3 +20,4 @@ npm-debug.log
 test/output
 .tscache
 test/public
+.vscode/

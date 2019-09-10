@@ -29,7 +29,7 @@ export class API {
       const response = await fetch(url);
 
       if (response.status !== 200) {
-        throw new Error(`Error. Status:${response.status}`)
+        throw new Error(`Error. Status:${response.status}`);
       }
 
       return response.text();
@@ -77,7 +77,7 @@ export class API {
             helpfulError);
         }
 
-        throw new Error(`Error. Status:${response.status}`)
+        throw new Error(`Error. Status:${response.status}`);
       }
 
       return response.json();
