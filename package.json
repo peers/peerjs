@@ -18,6 +18,7 @@
   "release": {
     "branch": "master"
   },
+  "types": "./index.d.ts",
   "devDependencies": {
     "@types/chai": "^4.2.2",
     "@types/mocha": "^5.2.7",

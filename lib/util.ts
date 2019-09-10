@@ -1,5 +1,6 @@
 import * as BinaryPack from "js-binarypack";
-import { adapter as _ } from './adapter';
+import { Supports } from './supports';
+import { UtilSupportsObj } from '..';
 
 const DEFAULT_CONFIG = {
   iceServers: [
@@ -9,124 +10,88 @@ const DEFAULT_CONFIG = {
   sdpSemantics: "unified-plan"
 };
 
-export class util {
-  static noop(): void { }
+export const util = new class {
+  noop(): void { }
 
-  static readonly CLOUD_HOST = "0.peerjs.com";
-  static readonly CLOUD_PORT = 443;
+  readonly CLOUD_HOST = "0.peerjs.com";
+  readonly CLOUD_PORT = 443;
 
   // Browsers that need chunking:
-  static readonly chunkedBrowsers = { Chrome: 1 };
-  static readonly chunkedMTU = 16300; // The original 60000 bytes setting does not work when sending data from Firefox to Chrome, which is "cut off" after 16384 bytes and delivered individually.
+  readonly chunkedBrowsers = { Chrome: 1, chrome: 1 };
+  readonly chunkedMTU = 16300; // The original 60000 bytes setting does not work when sending data from Firefox to Chrome, which is "cut off" after 16384 bytes and delivered individually.
 
   // Returns browser-agnostic default config
-  static readonly defaultConfig = DEFAULT_CONFIG;
+  readonly defaultConfig = DEFAULT_CONFIG;
 
-  // Returns the current browser.
-  static readonly browser: string = (function (global) {
-    // @ts-ignore
-    if (global.mozRTCPeerConnection) {
-      return "Firefox";
-    }
-    // @ts-ignore
-    if (global.webkitRTCPeerConnection) {
-      return "Chrome";
-    }
-
-    if (global.RTCPeerConnection) {
-      return "Supported";
-    }
-
-    return "Unsupported";
-  })(window);
+  readonly browser = Supports.getBrowser();
+  readonly browserVersion = Supports.getVersion();
 
   // Lists which features are supported
-  static readonly supports = (function () {
-    if (typeof RTCPeerConnection === "undefined") {
-      return {};
-    }
+  readonly supports = (function () {
+    const supported: UtilSupportsObj = {
+      browser: Supports.isBrowserSupported(),
+      webRTC: Supports.isWebRTCSupported(),
+      audioVideo: false,
+      data: false,
+      binaryBlob: false,
+      reliable: false,
+      sctp: false,
+    };
 
-    let data = true;
-    let audioVideo = true;
+    if (!supported.webRTC) return supported;
 
-    let binaryBlob = false;
-    let sctp = false;
-
-    const onnegotiationneeded = !!window.webkitRTCPeerConnection;
-
-    let pc, dc;
+    let pc: RTCPeerConnection;
 
     try {
       pc = new RTCPeerConnection(DEFAULT_CONFIG);
-    } catch (e) {
-      data = false;
-      audioVideo = false;
-    }
 
-    if (data) {
+      supported.audioVideo = true;
+
+      let dc: RTCDataChannel;
+
       try {
         dc = pc.createDataChannel("_PEERJSTEST");
+        supported.data = true;
+        supported.reliable = !!dc.ordered;
+        supported.sctp = !!pc.sctp;
+
+        // Binary test
+        try {
+          dc.binaryType = "blob";
+          supported.binaryBlob = !Supports.isIOS;
+        } catch (e) {
+        }
       } catch (e) {
-        data = false;
+      } finally {
+        if (dc) {
+          dc.close();
+        }
+      }
+    } catch (e) {
+    } finally {
+      if (pc) {
+        pc.close();
       }
     }
 
-    if (data) {
-      // Binary test
-      try {
-        dc.binaryType = "blob";
-        binaryBlob = true;
-      } catch (e) { }
-
-      // Reliable test.
-      // Unfortunately Chrome is a bit unreliable about whether or not they
-      // support reliable.
-      const reliablePC = new RTCPeerConnection(DEFAULT_CONFIG);
-      try {
-        const reliableDC = reliablePC.createDataChannel(
-          "_PEERJSRELIABLETEST",
-          {}
-        );
-        sctp = reliableDC.ordered;
-      } catch (e) { }
-      reliablePC.close();
-    }
-
-    // FIXME: not really the best check...
-    if (audioVideo) {
-      audioVideo = !!pc.addStream;
-    }
-
-    if (pc) {
-      pc.close();
-    }
-
-    return {
-      audioVideo: audioVideo,
-      data: data,
-      binaryBlob: binaryBlob,
-      binary: sctp, // deprecated; sctp implies binary support.
-      reliable: sctp, // deprecated; sctp implies reliable data.
-      sctp: sctp,
-      onnegotiationneeded: onnegotiationneeded
-    };
+    return supported;
   })();
 
   // Ensure alphanumeric ids
-  static validateId(id: string): boolean {
+  validateId(id: string): boolean {
     // Allow empty ids
     return !id || /^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.test(id);
   }
 
-  static pack = BinaryPack.pack;
-  static unpack = BinaryPack.unpack;
+  pack = BinaryPack.pack;
+  unpack = BinaryPack.unpack;
 
   // Binary stuff
 
-  private static _dataCount = 1;
+  private _dataCount = 1;
 
   // chunks a blob.
-  static chunk(bl: Blob): any[] {
+  chunk(bl: Blob): any[] {
     const chunks = [];
     const size = bl.size;
     const total = Math.ceil(size / util.chunkedMTU);
@@ -156,7 +121,7 @@ export class util {
     return chunks;
   }
 
-  static blobToArrayBuffer(blob: Blob, cb: (arg: string | ArrayBuffer | null) => void): void {
+  blobToArrayBuffer(blob: Blob, cb: (arg: string | ArrayBuffer | null) => void): void {
     const fr = new FileReader();
 
     fr.onload = function (evt) {
@@ -168,7 +133,7 @@ export class util {
     fr.readAsArrayBuffer(blob);
   }
 
-  static blobToBinaryString(blob: Blob, cb: (arg: string | ArrayBuffer | null) => void): void {
+  blobToBinaryString(blob: Blob, cb: (arg: string | ArrayBuffer | null) => void): void {
     const fr = new FileReader();
 
     fr.onload = function (evt) {
@@ -180,7 +145,7 @@ export class util {
     fr.readAsBinaryString(blob);
   }
 
-  static binaryStringToArrayBuffer(binary: string): ArrayBuffer | SharedArrayBuffer {
+  binaryStringToArrayBuffer(binary: string): ArrayBuffer | SharedArrayBuffer {
     let byteArray = new Uint8Array(binary.length);
 
     for (let i = 0; i < binary.length; i++) {
@@ -190,13 +155,13 @@ export class util {
     return byteArray.buffer;
   }
 
-  static randomToken(): string {
+  randomToken(): string {
     return Math.random()
       .toString(36)
       .substr(2);
   }
 
-  static isSecure(): boolean {
+  isSecure(): boolean {
     return location.protocol === "https:";
   }
 }

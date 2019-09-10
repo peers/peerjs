@@ -72,7 +72,7 @@ export class DataConnection extends BaseConnection {
   }
 
   private _configureDataChannel(): void {
-    if (util.supports.sctp) {
+    if (!util.supports.binaryBlob || util.supports.reliable) {
       this.dataChannel.binaryType = "arraybuffer";
     }
 
@@ -83,7 +83,7 @@ export class DataConnection extends BaseConnection {
     };
 
     // Use the Reliable shim for non Firefox browsers
-    if (!util.supports.sctp && this.reliable) {
+    if (!util.supports.reliable && this.reliable) {
       const isLoggingEnable = logger.logLevel > LogLevel.Disabled;
       this._reliable = new Reliable(this.dataChannel, isLoggingEnable);
     }

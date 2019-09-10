@@ -1,5 +1,5 @@
 import * as Reliable from "reliable";
-import { adapter as _ } from './adapter';
+import { webRTCAdapter as _ } from './adapter';
 import { util } from "./util";
 import logger from "./logger";
 import { MediaConnection } from "./mediaconnection";
@@ -72,18 +72,19 @@ export class Negotiator {
     logger.log("Listening for ICE candidates.");
 
     peerConnection.onicecandidate = (evt) => {
-      if (evt.candidate) {
-        logger.log("Received ICE candidates for:", peerId);
-        provider.socket.send({
-          type: ServerMessageType.Candidate,
-          payload: {
-            candidate: evt.candidate,
-            type: connectionType,
-            connectionId: connectionId
-          },
-          dst: peerId
-        });
-      }
+      if (!evt.candidate || !evt.candidate.candidate) return;
+
+      logger.log(`Received ICE candidates for ${peerId}:`, evt.candidate);
+
+      provider.socket.send({
+        type: ServerMessageType.Candidate,
+        payload: {
+          candidate: evt.candidate,
+          type: connectionType,
+          connectionId: connectionId
+        },
+        dst: peerId
+      });
     };
 
     peerConnection.oniceconnectionstatechange = () => {
@@ -330,6 +331,8 @@ export class Negotiator {
 
   /** Handle a candidate. */
   async handleCandidate(ice: any): Promise<void> {
+    logger.log(`handleCandidate:`, ice);
+
     const candidate = ice.candidate;
     const sdpMLineIndex = ice.sdpMLineIndex;
     const sdpMid = ice.sdpMid;
