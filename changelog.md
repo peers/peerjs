@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+<a name="1.1.0"></a>
+
+## 1.1.0 (vNEXT)
+
+- remove deprecated `RtpDataChannels` and `DtlsSrtpKeyAgreement` options
+- remove grunt from deps, upgrade deps versions
+
+- add TURN server to default config
+
+- fixed: emit error message, then destory/disconnect when error occured
+
 <a name="1.0.4"></a>
 
 ## 1.0.4 (2019-08-31)
