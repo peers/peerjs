@@ -2,7 +2,10 @@ import * as BinaryPack from "js-binarypack";
 import { RTCPeerConnection } from "./adapter";
 
 const DEFAULT_CONFIG = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "turn:0.peerjs.com:3478", username: "peerjs", credential: "peerjsp" }
+  ],
   sdpSemantics: "unified-plan"
 };
 
