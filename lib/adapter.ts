@@ -1,3 +1,3 @@
-export {webRTCAdapter} from "webrtc-adapter";
+import webRTCAdapter from "webrtc-adapter";
 
-// export { webRTCAdapter };
+export { webRTCAdapter };
