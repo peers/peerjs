@@ -51,6 +51,7 @@ export class Socket extends EventEmitter {
 
       try {
         data = JSON.parse(event.data);
+        logger.log("Server message received:", data);
       } catch (e) {
         logger.log("Invalid server message", event.data);
         return;
