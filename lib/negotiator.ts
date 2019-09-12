@@ -1,4 +1,3 @@
-import * as Reliable from "reliable";
 import { util } from "./util";
 import logger from "./logger";
 import { MediaConnection } from "./mediaconnection";
@@ -28,11 +27,7 @@ export class Negotiator {
       if (this.connection.type === ConnectionType.Data) {
         const dataConnection = <DataConnection>this.connection;
 
-        let config = {};
-
-        if (!util.supports.sctp) {
-          config = { reliable: options.reliable };
-        }
+        const config: RTCDataChannelInit = { ordered: !!options.reliable };
 
         const dataChannel = peerConnection.createDataChannel(
           dataConnection.label,
@@ -203,13 +198,6 @@ export class Negotiator {
 
       logger.log("Created offer.");
 
-      if (!util.supports.sctp && this.connection.type === ConnectionType.Data) {
-        const dataConnection = <DataConnection>this.connection;
-        if (dataConnection.reliable) {
-          offer.sdp = Reliable.higherBandwidthSDP(offer.sdp);
-        }
-      }
-
       if (this.connection.options.sdpTransform && typeof this.connection.options.sdpTransform === 'function') {
         offer.sdp = this.connection.options.sdpTransform(offer.sdp) || offer.sdp;
       }
@@ -266,13 +254,6 @@ export class Negotiator {
     try {
       const answer = await peerConnection.createAnswer();
       logger.log("Created answer.");
-
-      if (!util.supports.sctp && this.connection.type === ConnectionType.Data) {
-        const dataConnection = <DataConnection>this.connection;
-        if (dataConnection.reliable) {
-          answer.sdp = Reliable.higherBandwidthSDP(answer.sdp);
-        }
-      }
 
       if (this.connection.options.sdpTransform && typeof this.connection.options.sdpTransform === 'function') {
         answer.sdp = this.connection.options.sdpTransform(answer.sdp) || answer.sdp;

@@ -6,12 +6,15 @@ All notable changes to this project will be documented in this file.
 
 ## 1.1.0 (vNEXT)
 
-- remove deprecated `RtpDataChannels` and `DtlsSrtpKeyAgreement` options
-- remove grunt from deps, upgrade deps versions
+- removed: deprecated `RtpDataChannels` and `DtlsSrtpKeyAgreement` options
+- removed: grunt from deps, upgrade deps versions
+- removed: Reliable dep because modern browsers supports `RTCDataChannel.ordered` property
 
-- add TURN server to default config
+- added: TURN server to default config
 
 - fixed: emit error message, then destory/disconnect when error occured
+- fixed: use `peerjs-js-binarypack` instead of `js-binarypack`
+- fixed: sending large files via DataConnection #121
 
 <a name="1.0.4"></a>
 

@@ -1,4 +1,4 @@
-import * as BinaryPack from "js-binarypack";
+import * as BinaryPack from "peerjs-js-binarypack";
 import { Supports } from './supports';
 import { UtilSupportsObj } from '..';
 
@@ -35,7 +35,6 @@ export const util = new class {
       data: false,
       binaryBlob: false,
       reliable: false,
-      sctp: false,
     };
 
     if (!supported.webRTC) return supported;
@@ -50,10 +49,9 @@ export const util = new class {
       let dc: RTCDataChannel;
 
       try {
-        dc = pc.createDataChannel("_PEERJSTEST");
+        dc = pc.createDataChannel("_PEERJSTEST", { ordered: true });
         supported.data = true;
         supported.reliable = !!dc.ordered;
-        supported.sctp = !!pc.sctp;
 
         // Binary test
         try {
@@ -88,26 +86,25 @@ export const util = new class {
 
   // Binary stuff
 
-  private _dataCount = 1;
+  private _dataCount: number = 1;
 
-  // chunks a blob.
-  chunk(bl: Blob): any[] {
+  chunk(blob: Blob): { __peerData: number, n: number, total: number, data: Blob }[] {
     const chunks = [];
-    const size = bl.size;
+    const size = blob.size;
     const total = Math.ceil(size / util.chunkedMTU);
 
-    let index;
-    let start = (index = 0);
+    let index = 0;
+    let start = 0;
 
     while (start < size) {
       const end = Math.min(size, start + util.chunkedMTU);
-      const b = bl.slice(start, end);
+      const b = blob.slice(start, end);
 
       const chunk = {
         __peerData: this._dataCount,
         n: index,
         data: b,
-        total: total
+        total,
       };
 
       chunks.push(chunk);
@@ -121,32 +118,22 @@ export const util = new class {
     return chunks;
   }
 
-  blobToArrayBuffer(blob: Blob, cb: (arg: string | ArrayBuffer | null) => void): void {
+  blobToArrayBuffer(blob: Blob, cb: (arg: ArrayBuffer | null) => void): FileReader {
     const fr = new FileReader();
 
     fr.onload = function (evt) {
       if (evt.target) {
-        cb(evt.target.result);
+        cb(evt.target.result as ArrayBuffer);
       }
     };
 
     fr.readAsArrayBuffer(blob);
-  }
 
-  blobToBinaryString(blob: Blob, cb: (arg: string | ArrayBuffer | null) => void): void {
-    const fr = new FileReader();
-
-    fr.onload = function (evt) {
-      if (evt.target) {
-        cb(evt.target.result);
-      }
-    };
-
-    fr.readAsBinaryString(blob);
+    return fr;
   }
 
   binaryStringToArrayBuffer(binary: string): ArrayBuffer | SharedArrayBuffer {
-    let byteArray = new Uint8Array(binary.length);
+    const byteArray = new Uint8Array(binary.length);
 
     for (let i = 0; i < binary.length; i++) {
       byteArray[i] = binary.charCodeAt(i) & 0xff;

@@ -199,7 +199,6 @@ declare namespace Peer {
     data: boolean;
     binaryBlob: boolean;
     reliable: boolean;
-    sctp: boolean;
   }
 
   interface util {
