@@ -1,6 +1,6 @@
 {
   "name": "peerjs",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "PeerJS client",
   "main": "./dist/peerjs.min.js",
   "repository": {
@@ -10,7 +10,8 @@
   "author": "Michelle Bu, Eric Zhang, Jairo Caro-Accino, Carlos Caballero",
   "license": "MIT",
   "scripts": {
-    "build": "parcel build lib/exports.ts -d dist --out-file peerjs.min.js",
+    "build": "parcel build lib/exports.ts --out-file peerjs.min.js",
+    "build-nonminified": "parcel build lib/exports.ts --out-file peerjs.js --no-minify",
     "prepublish": "npm run build",
     "postinstall": "opencollective-postinstall",
     "test": "mocha -r ts-node/register -r jsdom-global/register test/**/*.ts"

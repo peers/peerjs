@@ -1,10 +1,10 @@
 # Change Log
 
-All notable changes to this project will be documented in this file.
+All notable changes will be documented in this file.
 
 <a name="1.1.0"></a>
 
-## 1.1.0 (vNEXT)
+## 1.1.0 (2019-09-16)
 
 - removed: deprecated `RtpDataChannels` and `DtlsSrtpKeyAgreement` options
 - removed: grunt from deps, upgrade deps versions
