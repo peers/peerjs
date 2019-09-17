@@ -9,18 +9,18 @@ on:
       - master
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
-        with:
-          node-version: 10.16.2
-      - run: npm ci
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v1
+#       - uses: actions/setup-node@v1
+#         with:
+#           node-version: 10.16.2
+#       - run: npm ci
 #       - run: npm test
 
   publish-npm:
-    needs: build
+#     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -28,6 +28,7 @@ jobs:
         with:
           node-version: 10.16.2
           registry-url: https://registry.npmjs.org/
+          access: public
       - run: npm ci
       - run: npm publish
         env:
