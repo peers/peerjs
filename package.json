@@ -1,6 +1,6 @@
 {
   "name": "@cruxpay/peerjs",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "PeerJS client",
   "main": "./dist/peerjs.min.js",
   "repository": {
