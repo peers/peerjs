@@ -48,7 +48,7 @@
     "opencollective": "^1.0.3",
     "opencollective-postinstall": "^2.0.0",
     "peerjs-js-binarypack": "1.0.0",
-    "reliable": "git+https://github.com/michelle/reliable.git",
+    "reliable": "https://github.com/michelle/reliable.git",
     "webrtc-adapter": "^7.2.6"
   },
   "collective": {
