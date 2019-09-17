@@ -1,5 +1,5 @@
 {
-  "name": "peerjs",
+  "name": "@cruxpay/peerjs",
   "version": "1.0.2",
   "description": "PeerJS client",
   "main": "./dist/peerjs.min.js",
