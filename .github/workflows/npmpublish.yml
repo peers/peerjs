@@ -28,6 +28,7 @@ jobs:
         with:
           node-version: 10.16.2
           registry-url: https://registry.npmjs.org/
+      - run: npm ci
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
