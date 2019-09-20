@@ -8689,10 +8689,6 @@ function (_super) {
     _this.serialization = _this.options.serialization || enums_1.SerializationType.Binary;
     _this.reliable = !!_this.options.reliable;
 
-    if (_this.options._payload) {
-      _this._peerBrowser = _this.options._payload.browser;
-    }
-
     _this._encodingQueue.on('done', function (ab) {
       _this._bufferedSend(ab);
     });
@@ -8998,8 +8994,6 @@ function (_super) {
 
     switch (message.type) {
       case enums_1.ServerMessageType.Answer:
-        this._peerBrowser = payload.browser; // Forward to negotiator
-
         this._negotiator.handleSDP(message.type, payload.sdp);
 
         break;
@@ -9656,9 +9650,9 @@ function (_super) {
     switch (type) {
       case enums_1.ServerMessageType.Open:
         // The connection to the server is open.
-        this.emit(enums_1.PeerEventType.Open, this.id);
         this._lastServerId = this.id;
         this._open = true;
+        this.emit(enums_1.PeerEventType.Open, this.id);
         break;
 
       case enums_1.ServerMessageType.Error:
@@ -9950,13 +9944,16 @@ function (_super) {
 
   Peer.prototype.emitError = function (type, err) {
     logger_1.default.error("Error:", err);
+    var error;
 
     if (typeof err === "string") {
-      err = new Error(err);
+      error = new Error(err);
+    } else {
+      error = err;
     }
 
-    err.type = type;
-    this.emit(enums_1.PeerEventType.Error, err);
+    error.type = type;
+    this.emit(enums_1.PeerEventType.Error, error);
   };
   /**
    * Destroys the Peer: closes all active connections as well as the connection
