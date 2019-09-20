@@ -10,7 +10,7 @@ describe("Peer", function () {
             const peer = new Peer();
 
             expect(peer.connections).to.deep.eq({});
-            expect(peer.id).to.be.undefined;
+            expect(peer.id).to.be.null;
             expect(peer.disconnected).to.be.false;
             expect(peer.destroyed).to.be.false;
 
@@ -75,12 +75,11 @@ describe("Peer", function () {
 
             peer1.destroy();
 
-            setTimeout(() => {
-                expect(peer1.disconnected).to.be.true;
-                expect(peer1.open).to.be.false;
+            expect(peer1.disconnected).to.be.true;
+            expect(peer1.destroyed).to.be.true;
+            expect(peer1.open).to.be.false;
 
-                done();
-            }, 0);
+            done();
         });
 
         after(function () {

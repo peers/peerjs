@@ -11,7 +11,7 @@ export class Socket extends EventEmitter {
   private _id?: string;
   private _messagesQueue: Array<object> = [];
   private _socket?: WebSocket;
-  private _wsPingTimer?: NodeJS.Timeout;
+  private _wsPingTimer?: any;
   private readonly _baseUrl: string;
 
   constructor(

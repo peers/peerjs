@@ -453,13 +453,17 @@ export class Peer extends EventEmitter {
   emitError(type: PeerErrorType, err: string | Error): void {
     logger.error("Error:", err);
 
+    let error: Error & { type?: PeerErrorType };
+
     if (typeof err === "string") {
-      err = new Error(err);
+      error = new Error(err);
+    } else {
+      error = err as Error;
     }
 
-    err.type = type;
+    error.type = type;
 
-    this.emit(PeerEventType.Error, err);
+    this.emit(PeerEventType.Error, error);
   }
 
   /**

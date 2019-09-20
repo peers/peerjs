@@ -39,7 +39,6 @@ export class DataConnection extends BaseConnection {
     }
   } = {};
 
-  private _peerBrowser: any;
   private _dc: RTCDataChannel;
   private _encodingQueue = new EncodingQueue();
 
@@ -58,10 +57,6 @@ export class DataConnection extends BaseConnection {
     this.label = this.options.label || this.connectionId;
     this.serialization = this.options.serialization || SerializationType.Binary;
     this.reliable = !!this.options.reliable;
-
-    if (this.options._payload) {
-      this._peerBrowser = this.options._payload.browser;
-    }
 
     this._encodingQueue.on('done', (ab: ArrayBuffer) => {
       this._bufferedSend(ab);
@@ -319,9 +314,6 @@ export class DataConnection extends BaseConnection {
 
     switch (message.type) {
       case ServerMessageType.Answer:
-        this._peerBrowser = payload.browser;
-
-        // Forward to negotiator
         this._negotiator.handleSDP(message.type, payload.sdp);
         break;
       case ServerMessageType.Candidate:
