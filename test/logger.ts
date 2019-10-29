@@ -2,6 +2,12 @@ import { expect } from "chai";
 import Logger, { LogLevel } from "../lib/logger";
 
 describe("Logger", function () {
+    let oldLoggerPrint;
+    before(() => {
+        //@ts-ignore
+        oldLoggerPrint = Logger._print;
+    });
+
     it("should be disabled by default", function () {
         expect(Logger.logLevel).to.eq(LogLevel.Disabled);
     });
@@ -42,4 +48,8 @@ describe("Logger", function () {
 
         expect(checkedLevels).to.deep.eq([LogLevel.All, LogLevel.Warnings, LogLevel.Errors]);
     });
+
+    after(() => {
+        Logger.setLogFunction(oldLoggerPrint);
+    })
 });
