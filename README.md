@@ -83,6 +83,10 @@ npm test
 | --------- | --------- | --------- |
 | last 4 versions| last 4 versions| 12.1+
 
+##Safari
+
+1. Safari supports only string data when sending via DataConnection. Use JSON serialization type if you want to communicate with Safari. By default, DataConnection uses Binary serialization type.
+
 ## FAQ
 
 Q. I have a message ```Critical dependency: the request of a dependency is an expression``` in browser's console
