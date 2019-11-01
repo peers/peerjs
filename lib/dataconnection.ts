@@ -11,11 +11,12 @@ import { Peer } from "./peer";
 import { BaseConnection } from "./baseconnection";
 import { ServerMessage } from "./servermessage";
 import { EncodingQueue } from './encodingQueue';
+import { DataConnection as IDataConnection } from '../index';
 
 /**
  * Wraps a DataChannel between two Peers.
  */
-export class DataConnection extends BaseConnection {
+export class DataConnection extends BaseConnection implements IDataConnection {
   private static readonly ID_PREFIX = "dc_";
   private static readonly MAX_BUFFERED_AMOUNT = 8 * 1024 * 1024;
 
@@ -23,6 +24,8 @@ export class DataConnection extends BaseConnection {
   readonly label: string;
   readonly serialization: SerializationType;
   readonly reliable: boolean;
+  stringify: (data: any) => string = JSON.stringify;
+  parse: (data: string) => any = JSON.parse;
 
   get type() {
     return ConnectionType.Data;
@@ -129,7 +132,7 @@ export class DataConnection extends BaseConnection {
         deserializedData = util.unpack(ab);
       }
     } else if (this.serialization === SerializationType.JSON) {
-      deserializedData = JSON.parse(data as string);
+      deserializedData = this.parse(data as string);
     }
 
     // Check if we've chunked--if so, piece things back together.
@@ -208,7 +211,7 @@ export class DataConnection extends BaseConnection {
   }
 
   /** Allows user to send data. */
-  send(data: any, chunked: boolean): void {
+  send(data: any, chunked?: boolean): void {
     if (!this.open) {
       super.emit(
         ConnectionEventType.Error,
@@ -220,7 +223,7 @@ export class DataConnection extends BaseConnection {
     }
 
     if (this.serialization === SerializationType.JSON) {
-      this._bufferedSend(JSON.stringify(data));
+      this._bufferedSend(this.stringify(data));
     } else if (
       this.serialization === SerializationType.Binary ||
       this.serialization === SerializationType.BinaryUTF8

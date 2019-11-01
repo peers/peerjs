@@ -8679,6 +8679,8 @@ function (_super) {
   function DataConnection(peerId, provider, options) {
     var _this = _super.call(this, peerId, provider, options) || this;
 
+    _this.jsonStringify = JSON.stringify;
+    _this.jsonParse = JSON.parse;
     _this._buffer = [];
     _this._bufferSize = 0;
     _this._buffering = false;
@@ -8790,7 +8792,7 @@ function (_super) {
         deserializedData = util_1.util.unpack(ab);
       }
     } else if (this.serialization === enums_1.SerializationType.JSON) {
-      deserializedData = JSON.parse(data);
+      deserializedData = this.jsonParse(data);
     } // Check if we've chunked--if so, piece things back together.
     // We're guaranteed that this isn't 0.
 
@@ -8884,7 +8886,7 @@ function (_super) {
     }
 
     if (this.serialization === enums_1.SerializationType.JSON) {
-      this._bufferedSend(JSON.stringify(data));
+      this._bufferedSend(this.jsonStringify(data));
     } else if (this.serialization === enums_1.SerializationType.Binary || this.serialization === enums_1.SerializationType.BinaryUTF8) {
       var blob = util_1.util.pack(data);
 

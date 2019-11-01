@@ -175,6 +175,8 @@ declare namespace Peer {
     serialization: string;
     type: string;
     bufferSize: number;
+    stringify: (data: any) => string;
+    parse: (data: string) => any;
   }
 
   interface MediaConnection {
