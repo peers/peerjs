@@ -24,8 +24,8 @@ export class DataConnection extends BaseConnection implements IDataConnection {
   readonly label: string;
   readonly serialization: SerializationType;
   readonly reliable: boolean;
-  jsonStringify: (data: any) => string = JSON.stringify;
-  jsonParse: (data: string) => any = JSON.parse;
+  stringify: (data: any) => string = JSON.stringify;
+  parse: (data: string) => any = JSON.parse;
 
   get type() {
     return ConnectionType.Data;
@@ -132,7 +132,7 @@ export class DataConnection extends BaseConnection implements IDataConnection {
         deserializedData = util.unpack(ab);
       }
     } else if (this.serialization === SerializationType.JSON) {
-      deserializedData = this.jsonParse(data as string);
+      deserializedData = this.parse(data as string);
     }
 
     // Check if we've chunked--if so, piece things back together.
@@ -223,7 +223,7 @@ export class DataConnection extends BaseConnection implements IDataConnection {
     }
 
     if (this.serialization === SerializationType.JSON) {
-      this._bufferedSend(this.jsonStringify(data));
+      this._bufferedSend(this.stringify(data));
     } else if (
       this.serialization === SerializationType.Binary ||
       this.serialization === SerializationType.BinaryUTF8
