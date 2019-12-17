@@ -41,6 +41,9 @@ peer.on('connection', (conn) => {
     // Will print 'hi!'
     console.log(data);
   });
+  conn.on('open', () => {
+    conn.send('hello!');
+  });
 });
 ```
 
