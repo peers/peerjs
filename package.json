@@ -28,10 +28,10 @@
     "jsdom-global": "^3.0.2",
     "mocha": "^6.2.0",
     "mock-socket": "8.0.5",
-    "parcel-bundler": "^1.12.3",
+    "parcel-bundler": "^1.12.4",
     "standard": "^14.1.0",
     "ts-node": "^8.3.0",
-    "typescript": "^3.6.2"
+    "typescript": "^3.7.4"
   },
   "dependencies": {
     "@types/node": "^10.14.17",
