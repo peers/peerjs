@@ -5,7 +5,7 @@ lib-cov
 *.dat
 *.out
 *.pid
-*.gz
+*.[t]gz
 
 pids
 logs

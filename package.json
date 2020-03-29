@@ -3,16 +3,34 @@
   "version": "1.2.0",
   "description": "PeerJS client",
   "main": "./dist/peerjs.min.js",
+  "homepage": "https://github.com/peers/peerjs#readme",
+  "keywords": [
+    "peerjs",
+    "webrtc",
+    "p2p",
+    "rtc"
+  ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/peers/peerjs.git"
+    "url": "git+https://github.com/peers/peerjs.git"
   },
+  "bugs": {
+    "url": "https://github.com/peers/peerjs/issues"
+  },
+  "files": [
+    "dist/*.js",
+    "lib/",
+    "index.d.ts"
+  ],
   "author": "Michelle Bu, Eric Zhang, Jairo Caro-Accino, Carlos Caballero",
+  "maintainers": [
+    "Alex Sosnovskiy <devbyru@gmail.com> (https://github.com/afrokick)"
+  ],
   "license": "MIT",
   "scripts": {
     "build": "parcel build lib/exports.ts --out-file peerjs.min.js",
     "build-nonminified": "parcel build lib/exports.ts --out-file peerjs.js --no-minify",
-    "prepublish": "npm run build",
+    "prepublishOnly": "npm run build",
     "postinstall": "opencollective-postinstall",
     "test": "mocha -r ts-node/register -r jsdom-global/register test/**/*.ts"
   },
