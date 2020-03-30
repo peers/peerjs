@@ -284,8 +284,9 @@ export class Peer extends EventEmitter {
         break;
       }
       default: {
+        this.emit(PeerEventType.Message, message);
+
         if (!payload) {
-          logger.warn(`You received a malformed message from ${peerId} of type ${type}`);
           return;
         }
 
@@ -298,8 +299,6 @@ export class Peer extends EventEmitter {
         } else if (connectionId) {
           // Store for possible later use
           this._storeMessage(connectionId, message);
-        } else {
-          logger.warn("You received an unrecognized message:", message);
         }
         break;
       }

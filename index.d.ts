@@ -80,6 +80,12 @@ declare class Peer {
    */
   on(event: "error", cb: (err: any) => void): void;
   /**
+   * Emitted when a message is received from the signalling server.
+   * @param event Event name
+   * @param cb Callback Function
+   */
+  on(event: "message", cb: (data: any) => void): void;
+  /**
    * Remove event listeners.(EventEmitter3)
    * @param {String} event The event we want to remove.
    * @param {Function} fn The listener that we need to find.
