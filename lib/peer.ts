@@ -299,8 +299,6 @@ export class Peer extends EventEmitter {
         } else if (connectionId) {
           // Store for possible later use
           this._storeMessage(connectionId, message);
-        } else {
-          logger.warn("You received an unrecognized message:", message);
         }
         break;
       }
