@@ -7803,12 +7803,7 @@ function () {
           break;
 
         case "disconnected":
-          logger_1.default.log("iceConnectionState is disconnected, closing connections to " + peerId);
-
-          _this.connection.emit(enums_1.ConnectionEventType.Error, new Error("Connection to " + peerId + " disconnected."));
-
-          _this.connection.close();
-
+          logger_1.default.log("iceConnectionState changed to disconnected on the connection with " + peerId);
           break;
 
         case "completed":

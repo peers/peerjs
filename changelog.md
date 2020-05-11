@@ -4,6 +4,8 @@ All notable changes will be documented in this file.
 
 ## vNEXT
 
+- changed: don't close the Connection if `iceConnectionState` changed to `disconnected`
+
 <a name="1.2.0"></a>
 
 ## 1.2.0 (2019-12-24)
