@@ -103,7 +103,7 @@ A. The message occurs when you use PeerJS with Webpack. It is not critical! It r
 
 ### [PeerServer](https://github.com/peers/peerjs-server)
 
-### [Discuss PeerJS on our Google Group](https://groups.google.com/forum/?fromgroups#!forum/peerjs)
+### [Discuss PeerJS on our Telegram Channel](https://t.me/joinchat/ENhPuhTvhm8WlIxTjQf7Og)
 
 ### [Changelog](https://github.com/peers/peerjs/blob/master/changelog.md)
 
