@@ -22,20 +22,20 @@ declare class Peer {
   constructor(options: Peer.PeerJSOption);
 
   /**
-   *
+   * Connects to the remote peer specified by id and returns a data connection.
    * @param id The brokering ID of the remote peer (their peer.id).
    * @param options for specifying details about Peer Connection
    */
   connect(id: string, options?: Peer.PeerConnectOption): Peer.DataConnection;
   /**
-   * Connects to the remote peer specified by id and returns a data connection.
+   * Calls the remote peer specified by id and returns a media connection.
    * @param id The brokering ID of the remote peer (their peer.id).
    * @param stream The caller's media stream
    * @param options Metadata associated with the connection, passed in by whoever initiated the connection.
    */
   call(id: string, stream: MediaStream, options?: Peer.CallOption): Peer.MediaConnection;
   /**
-   * Calls the remote peer specified by id and returns a media connection.
+   * Set listeners for peer events.
    * @param event Event name
    * @param cb Callback Function
    */
