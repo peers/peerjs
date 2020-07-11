@@ -4,6 +4,13 @@ All notable changes will be documented in this file.
 
 ## vNEXT
 
+<a name="1.3.1"></a>
+
+- fixed: map file resolving
+- removed: @types/webrtc because it contains in ts dom lib.
+
+## 1.3.1 (2020-07-11)
+
 <a name="1.3.0"></a>
 
 ## 1.3.0 (2020-07-03)
