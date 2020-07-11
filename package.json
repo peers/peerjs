@@ -52,7 +52,6 @@
   },
   "dependencies": {
     "@types/node": "^10.14.17",
-    "@types/webrtc": "^0.0.25",
     "eventemitter3": "^3.1.2",
     "peerjs-js-binarypack": "1.0.1",
     "webrtc-adapter": "^7.3.0"
