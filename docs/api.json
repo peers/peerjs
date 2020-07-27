@@ -516,8 +516,8 @@
       {
         "name": ".browser",
         "type": "string",
-        "snippet": "if (util.browser === 'Firefox') { /* OK to peer with Firefox peers. */ }",
-        "description": "The current browser. This property can be useful in determining whether or not two peers can connect. For example, as of now data connections are not yet interoperable between major browsers. <code>util.browser</code> can currently have the values 'Firefox', 'Chrome', 'Unsupported', or 'Supported' (unknown WebRTC-compatible browser)."
+        "snippet": "if (util.browser === 'firefox') { /* OK to peer with Firefox peers. */ }",
+        "description": "The current browser. This property can be useful in determining whether or not two peers can connect. For example, as of now data connections are not yet interoperable between major browsers. <code>util.browser</code> can currently have the values <code>'firefox'</code>, <code>'chrome'</code>, <code>'safari'</code>, <code>'edge'</code>, <code>'Not a supported browser.'</code>, or <code>'Not a browser.'</code> (unknown WebRTC-compatible agent)."
       },
       {
         "name": ".supports",
