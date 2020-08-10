@@ -113,8 +113,8 @@ A. The message occurs when you use PeerJS with Webpack. It is not critical! It r
 
 ## Contributors
 
-This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
-<a href="graphs/contributors"><img src="https://opencollective.com/peer/contributors.svg?width=890&button=false" /></a>
+This project exists thanks to all the people who contribute.
+<a href="https://github.com/peers/peerjs/graphs/contributors"><img src="https://opencollective.com/peer/contributors.svg?width=890&button=false" /></a>
 
 ## Backers
 
