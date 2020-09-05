@@ -37,6 +37,14 @@ export const util = new class {
       reliable: false,
     };
 
+    if (typeof window === 'undefined') {
+      supported.audioVideo = true;
+      supported.data = true;
+      supported.binaryBlob = true;
+      supported.reliable = true;
+      return supported;
+    }
+
     if (!supported.webRTC) return supported;
 
     let pc: RTCPeerConnection;

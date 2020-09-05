@@ -1,8 +1,8 @@
 import { webRTCAdapter } from './adapter';
 
 export const Supports = new class {
-  readonly isIOS = ['iPad', 'iPhone', 'iPod'].includes(navigator.platform);
-  readonly supportedBrowsers = ['firefox', 'chrome', 'safari'];
+  readonly isIOS = ['iPad', 'iPhone', 'iPod'].includes(typeof navigator !== 'undefined' ? navigator.platform : undefined);
+  readonly supportedBrowsers = ['firefox', 'chrome', 'safari', 'node'];
 
   readonly minFirefoxVersion = 59;
   readonly minChromeVersion = 72;
@@ -20,6 +20,7 @@ export const Supports = new class {
 
     if (!validBrowser) return false;
 
+    if (browser === 'node') return true;
     if (browser === 'chrome') return version >= this.minChromeVersion;
     if (browser === 'firefox') return version >= this.minFirefoxVersion;
     if (browser === 'safari') return !this.isIOS && version >= this.minSafariVersion;
@@ -28,11 +29,11 @@ export const Supports = new class {
   }
 
   getBrowser(): string {
-    return webRTCAdapter.browserDetails.browser;
+    return webRTCAdapter.browserDetails?.browser || 'node';
   }
 
   getVersion(): number {
-    return webRTCAdapter.browserDetails.version || 0;
+    return webRTCAdapter.browserDetails?.version || 0;
   }
 
   isUnifiedPlanSupported(): boolean {
