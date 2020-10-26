@@ -49,7 +49,7 @@
           {
             "name": "config",
             "type": "object",
-            "description": "Configuration hash passed to RTCPeerConnection. This hash contains any custom ICE/TURN server configuration. Defaults to <code>{ 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }], 'sdpSemantics': 'unified-plan' }</code>"
+            "description": "Configuration hash passed to RTCPeerConnection. This hash contains any custom ICE/TURN server configuration. Defaults to <code>{ 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }, { 'urls': 'turn:0.peerjs.com:3478', username: 'peerjs', credential: 'peerjsp' }], 'sdpSemantics': 'unified-plan' }</code>"
           },
           {
             "name": "debug",
