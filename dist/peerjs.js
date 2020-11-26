@@ -10113,8 +10113,30 @@ function (_super) {
 }(eventemitter3_1.EventEmitter);
 
 exports.Peer = Peer;
-},{"eventemitter3":"JJlS","./util":"BHXf","./logger":"WOs9","./socket":"wJlv","./mediaconnection":"dbHP","./dataconnection":"GBTQ","./enums":"ZRYf","./api":"in7L"}],"iTK6":[function(require,module,exports) {
+},{"eventemitter3":"JJlS","./util":"BHXf","./logger":"WOs9","./socket":"wJlv","./mediaconnection":"dbHP","./dataconnection":"GBTQ","./enums":"ZRYf","./api":"in7L"}],"E3PO":[function(require,module,exports) {
 "use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var ServerMessage =
+/** @class */
+function () {
+  function ServerMessage() {}
+
+  return ServerMessage;
+}();
+
+exports.ServerMessage = ServerMessage;
+},{}],"iTK6":[function(require,module,exports) {
+"use strict";
+
+var __importDefault = this && this.__importDefault || function (mod) {
+  return mod && mod.__esModule ? mod : {
+    "default": mod
+  };
+};
 
 Object.defineProperty(exports, "__esModule", {
   value: true
@@ -10124,14 +10146,47 @@ var util_1 = require("./util");
 
 var peer_1 = require("./peer");
 
+var adapter_1 = require("./adapter");
+
+var api_1 = require("./api");
+
+var baseconnection_1 = require("./baseconnection");
+
+var dataconnection_1 = require("./dataconnection");
+
+var encodingQueue_1 = require("./encodingQueue");
+
+var logger_1 = __importDefault(require("./logger"));
+
+var mediaconnection_1 = require("./mediaconnection");
+
+var negotiator_1 = require("./negotiator");
+
+var servermessage_1 = require("./servermessage");
+
+var socket_1 = require("./socket");
+
+var supports_1 = require("./supports");
+
 exports.peerjs = {
   Peer: peer_1.Peer,
-  util: util_1.util
+  util: util_1.util,
+  webRTCAdapter: adapter_1.webRTCAdapter,
+  API: api_1.API,
+  BaseConnection: baseconnection_1.BaseConnection,
+  DataConnection: dataconnection_1.DataConnection,
+  EncodingQueue: encodingQueue_1.EncodingQueue,
+  Logger: logger_1.default,
+  MediaConnection: mediaconnection_1.MediaConnection,
+  Negatiator: negotiator_1.Negatiator,
+  ServerMessage: servermessage_1.ServerMessage,
+  Socket: socket_1.Socket,
+  Supports: supports_1.Supports
 };
 exports.default = peer_1.Peer;
 window.peerjs = exports.peerjs;
 /** @deprecated Should use peerjs namespace */
 
 window.Peer = peer_1.Peer;
-},{"./util":"BHXf","./peer":"Hxpd"}]},{},["iTK6"], null)
+},{"./util":"BHXf","./peer":"Hxpd","./adapter":"sXtV","./api":"in7L","./baseconnection":"tQFK","./dataconnection":"GBTQ","./encodingQueue":"GGp6","./logger":"WOs9","./mediaconnection":"dbHP","./negotiator":"HCdX","./servermessage":"E3PO","./socket":"wJlv","./supports":"I31f"}]},{},["iTK6"], null)
 //# sourceMappingURL=/peerjs.js.map
