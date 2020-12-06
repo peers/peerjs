@@ -157,7 +157,7 @@ export class Socket extends EventEmitter {
   }
 
   private _cleanup(): void {
-    if (!!this._socket) {
+    if (this._socket) {
       this._socket.onopen = this._socket.onmessage = this._socket.onclose = null;
       this._socket.close();
       this._socket = undefined;
