@@ -10,7 +10,7 @@ export const Supports = new class {
 
   isWebRTCSupported(): boolean {
     return typeof RTCPeerConnection !== 'undefined';
-  };
+  }
 
   isBrowserSupported(): boolean {
     const browser = this.getBrowser();
