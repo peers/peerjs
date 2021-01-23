@@ -18,6 +18,7 @@ Here's an example application that uses both media and data connections: https:/
 
   with npm:
         `npm install peerjs`
+        
   with yarn:
         `npm install peerjs`
     and the usage:
