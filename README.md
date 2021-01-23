@@ -21,9 +21,8 @@ Here's an example application that uses both media and data connections: https:/
         
   with yarn:
         `yarn peerjs`
-        
-    and the usage:
   ```js
+  // The usage -
   import Peer from 'peerjs';
   ```
 
