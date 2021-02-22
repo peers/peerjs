@@ -1,0 +1,14 @@
+version = 1
+
+test_patterns = ["test/**"]
+
+[[analyzers]]
+name = "javascript"
+enabled = true
+
+  [analyzers.meta]
+  environment = [
+    "nodejs",
+    "mocha"
+  ]
+  dialect = "typescript"
