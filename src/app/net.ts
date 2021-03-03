@@ -1,4 +1,4 @@
-import Peer from '../exports';
+import Peer from '../../exports';
 import { RelayConfig, NetEvents } from './types';
 
 // Peer-to-Peer networking

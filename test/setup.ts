@@ -1,5 +1,5 @@
-import "./faker";
-import { util } from '../lib/util';
+import './faker';
+import { util } from '../src/peer/util';
 
 //enable support for WebRTC
 util.supports.audioVideo = true;

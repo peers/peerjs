@@ -17,14 +17,14 @@ $ npm install
 
 ``` bash
 $ npm run dev
-# parcel build app/index.ts --out-file ./dist/kwatafana.min.js --no-minify
+# parcel build src/app/index.ts --out-file ./dist/kwatafana.min.js --no-minify
 ```
 
 ### Build UI in release mode
 
 ``` bash
 $ npm run rel
-# parcel build app/index.ts --out-file ./dist/kwatafana.min.js
+# parcel build src/app/index.ts --out-file ./dist/kwatafana.min.js
 ```
 
 ### Export as a library
