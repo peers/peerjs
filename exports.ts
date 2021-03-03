@@ -1,9 +1,9 @@
-import { util } from "./util";
-import { Peer } from "./peer";
+import { util } from './peer/util';
+import { Peer } from './peer/peer';
 
 export const peerjs = {
   Peer,
-  util
+  util,
 };
 
 export default Peer;
