@@ -1,6 +1,6 @@
 import { util } from './src/peer/util';
 import { Peer } from './src/peer/peer';
-import Net from './src/app/net';
+import Net from './src/net/index';
 
 export const peerjs = {
   Peer,

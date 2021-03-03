@@ -1,13 +1,10 @@
-import Net from './net';
-import { NetEvents } from './types';
-const RELAYS = [{ host: 'localhost', port: 9000, path: '/k' }];
-const PEER_ID = document.getElementById('PEER_ID');
+import { NetEvents } from '../net/types';
 
 interface DOMElementsType {
   peerId: HTMLElement;
 }
 
-class Kwatafana {
+export default class App {
   domElements: DOMElementsType;
 
   constructor(domElements: DOMElementsType) {
@@ -23,11 +20,4 @@ class Kwatafana {
         console.log('Unknown event');
     }
   }
-}
-
-main(document, console);
-
-function main(document: Document, console: Console) {
-  const app = new Kwatafana({ peerId: PEER_ID });
-  const net = new Net(app.emit, RELAYS);
 }

@@ -30,9 +30,9 @@
     "license": "MIT",
     "scripts": {
         "export": "parcel build exports.ts --out-file ./dist/kwatafana.min.js",
-        "dev": "parcel build src/app/index.ts --out-file ./dist/kwatafana.min.js --no-minify",
-	"rel": "parcel build src/app/index.ts --out-file ./dist/kwatafana.min.js",
-        "build-nonminified": "parcel build peer/exports.ts --out-file ./dist/kwatafana.js --no-minify",
+        "dev": "parcel build src/app/desk.ts --out-file ./dist/kwatafana.min.js --no-minify",
+	"rel": "parcel build src/app/desk.ts --out-file ./dist/kwatafana.min.js",
+        "build-nonminified": "parcel build exports.ts --out-file ./dist/kwatafana.js --no-minify",
         "prepublishOnly": "npm run build",
         "start": "~/nwjs/nw dist/",
         "test": "mocha -r ts-node/register -r jsdom-global/register test/**/*.ts"
