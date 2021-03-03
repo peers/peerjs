@@ -1,25 +1,11 @@
 # Kwatafana P2P
 
-Peer-to-Peer functionality forked from 
+Peer-to-Peer functionality extended from 
 [Peerjs](https://github.com/peers/peerjs).
 
 ## Setup
 
-
-**Include the library**
-
-  with npm:
-        `npm install peerjs`
-        
-  with yarn:
-        `yarn add peerjs`
-  ```js
-  // The usage -
-  import Peer from 'peerjs';
-  ```
-
-
-**Create a Peer**  
+**Create a Peer**
 ```javascript
 const peer = new Peer('pick-an-id'); 
 // You can pick your own id or omit the id if you want to get a random one from the server.
