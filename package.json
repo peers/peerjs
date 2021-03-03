@@ -29,9 +29,9 @@
     ],
     "license": "MIT",
     "scripts": {
-        "build": "parcel build exports.ts --out-file ./dist/kwatafana.min.js",
-        "build-dev": "parcel build app/index.ts --out-file ./dist/kwatafana.min.js",
-	"build-app": "parcel build app/index.ts --out-file ./dist/kwatafana.min.js --no-minify",
+        "export": "parcel build exports.ts --out-file ./dist/kwatafana.min.js",
+        "dev": "parcel build app/index.ts --out-file ./dist/kwatafana.min.js --no-minify",
+	"rel": "parcel build app/index.ts --out-file ./dist/kwatafana.min.js",
         "build-nonminified": "parcel build peer/exports.ts --out-file ./dist/kwatafana.js --no-minify",
         "prepublishOnly": "npm run build",
         "start": "~/nwjs/nw dist/",
