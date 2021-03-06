@@ -266,7 +266,8 @@ export class Peer extends EventEmitter {
             metadata: payload.metadata,
             label: payload.label,
             serialization: payload.serialization,
-            reliable: payload.reliable
+            reliable: payload.reliable,
+            heartbeatInterval: payload.heartbeatInterval,
           });
           this._addConnection(peerId, connection);
           this.emit(PeerEventType.Connection, connection);
