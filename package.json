@@ -39,9 +39,9 @@
   },
   "types": "./index.d.ts",
   "devDependencies": {
-    "@types/chai": "^4.2.11",
+    "@types/chai": "^4.2.15",
     "@types/mocha": "^7.0.2",
-    "chai": "^4.2.0",
+    "chai": "^4.3.3",
     "jsdom": "^16.2.2",
     "jsdom-global": "^3.0.2",
     "mocha": "^7.1.2",
@@ -49,10 +49,10 @@
     "parcel-bundler": "^1.12.4",
     "standard": "^14.1.0",
     "ts-node": "^8.10.1",
-    "typescript": "^3.8.3"
+    "typescript": "^4.2.3"
   },
   "dependencies": {
-    "@types/node": "^10.14.17",
+    "@types/node": "^10.14.33",
     "eventemitter3": "^3.1.2",
     "peerjs-js-binarypack": "1.0.1",
     "webrtc-adapter": "^7.7.1"
