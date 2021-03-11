@@ -55,7 +55,7 @@
     "@types/node": "^10.14.17",
     "eventemitter3": "^3.1.2",
     "peerjs-js-binarypack": "1.0.1",
-    "webrtc-adapter": "^7.3.0"
+    "webrtc-adapter": "^7.7.1"
   },
   "collective": {
     "type": "opencollective",
