@@ -260,7 +260,7 @@ var peer = new Peer({
                   href="#peer-options-config">config</a><span class="tag type object">object</span></span>
               <p class="description">Configuration hash passed to RTCPeerConnection. This hash contains any custom
                 ICE/TURN server configuration. Defaults to
-                <code>{ 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }], 'sdpSemantics': 'unified-plan' }</code>
+                <code>{ 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }, { 'urls': 'turn:0.peerjs.com:3478', username: 'peerjs', credential: 'peerjsp' }], 'sdpSemantics': 'unified-plan' }</code>
               </p>
             </div>
             <div class="child " id="peer-options-debug"><span class="name"><a href="#peer-options-debug">debug</a><span
