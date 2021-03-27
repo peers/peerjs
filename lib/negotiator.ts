@@ -4,6 +4,7 @@ import { MediaConnection } from "./mediaconnection";
 import { DataConnection } from "./dataconnection";
 import { ConnectionType, PeerErrorType, ConnectionEventType, ServerMessageType } from "./enums";
 import { BaseConnection } from "./baseconnection";
+import { webRTCAdapter } from './adapter';
 
 /**
  * Manages all negotiations between Peers.
@@ -284,7 +285,7 @@ export class Negotiator {
     type: string,
     sdp: any
   ): Promise<void> {
-    sdp = new RTCSessionDescription(sdp);
+    sdp = this._removeExtmapAllowMixed(sdp); // Fix #817
     const peerConnection = this.connection.peerConnection;
     const provider = this.connection.provider;
 
@@ -327,6 +328,17 @@ export class Negotiator {
       provider.emitError(PeerErrorType.WebRTC, err);
       logger.log("Failed to handleCandidate, ", err);
     }
+  }
+
+  private _removeExtmapAllowMixed(sdp: any): RTCSessionDescription {
+    const { browserDetails } = webRTCAdapter;
+    if (browserDetails.browser === 'safari' && !!sdp && !!sdp.sdp && sdp.sdp.indexOf('\na=extmap-allow-mixed') !== -1) {
+      const _sdp = sdp.sdp.split('\n').filter(function (line) {
+        return line.trim() !== 'a=extmap-allow-mixed';
+      }).join('\n');
+      sdp.sdp = _sdp;
+    }
+    return new RTCSessionDescription(sdp);
   }
 
   private _addTracksToConnection(

@@ -7868,6 +7868,8 @@ var util_1 = require("./util");
 var logger_1 = __importDefault(require("./logger"));
 
 var enums_1 = require("./enums");
+
+var adapter_1 = require("./adapter");
 /**
  * Manages all negotiations between Peers.
  */
@@ -8222,7 +8224,8 @@ function () {
       return __generator(this, function (_a) {
         switch (_a.label) {
           case 0:
-            sdp = new RTCSessionDescription(sdp);
+            sdp = this._removeExtmapAllowMixed(sdp); // Fix #817
+
             peerConnection = this.connection.peerConnection;
             provider = this.connection.provider;
             logger_1.default.log("Setting remote description", sdp);
@@ -8326,6 +8329,20 @@ function () {
     });
   };
 
+  Negotiator.prototype._removeExtmapAllowMixed = function (sdp) {
+    var browserDetails = adapter_1.webRTCAdapter.browserDetails;
+
+    if (browserDetails.browser === 'safari' && !!sdp && !!sdp.sdp && sdp.sdp.indexOf('\na=extmap-allow-mixed') !== -1) {
+      var _sdp = sdp.sdp.split('\n').filter(function (line) {
+        return line.trim() !== 'a=extmap-allow-mixed';
+      }).join('\n');
+
+      sdp.sdp = _sdp;
+    }
+
+    return new RTCSessionDescription(sdp);
+  };
+
   Negotiator.prototype._addTracksToConnection = function (stream, peerConnection) {
     logger_1.default.log("add tracks from stream " + stream.id + " to peer connection");
 
@@ -8347,7 +8364,7 @@ function () {
 }();
 
 exports.Negotiator = Negotiator;
-},{"./util":"BHXf","./logger":"WOs9","./enums":"ZRYf"}],"tQFK":[function(require,module,exports) {
+},{"./util":"BHXf","./logger":"WOs9","./enums":"ZRYf","./adapter":"sXtV"}],"tQFK":[function(require,module,exports) {
 "use strict";
 
 var __extends = this && this.__extends || function () {
