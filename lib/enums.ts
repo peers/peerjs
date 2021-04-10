@@ -39,7 +39,8 @@ export enum PeerErrorType {
 export enum SerializationType {
   Binary = "binary",
   BinaryUTF8 = "binary-utf8",
-  JSON = "json"
+  JSON = "json",
+  Raw = "raw"
 }
 
 export enum SocketEventType {

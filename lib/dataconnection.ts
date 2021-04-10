@@ -111,8 +111,10 @@ export class DataConnection extends BaseConnection implements IDataConnection {
   private _handleDataMessage({ data }: { data: Blob | ArrayBuffer | string }): void {
     const datatype = data.constructor;
 
+    const isRawSerialization = this.serialization === SerializationType.Raw
     const isBinarySerialization = this.serialization === SerializationType.Binary ||
-      this.serialization === SerializationType.BinaryUTF8;
+      this.serialization === SerializationType.BinaryUTF8 ||
+      isRawSerialization;
 
     let deserializedData: any = data;
 
@@ -120,16 +122,21 @@ export class DataConnection extends BaseConnection implements IDataConnection {
       if (datatype === Blob) {
         // Datatype should never be blob
         util.blobToArrayBuffer(data as Blob, (ab) => {
+          if (isRawSerialization) {
+            this.emit(ConnectionEventType.Data, ab);
+            return
+          }
           const unpackedData = util.unpack(ab);
           this.emit(ConnectionEventType.Data, unpackedData);
         });
         return;
       } else if (datatype === ArrayBuffer) {
-        deserializedData = util.unpack(data as ArrayBuffer);
+        const ab: ArrayBuffer = data as ArrayBuffer;
+        deserializedData = isRawSerialization ? ab : util.unpack(ab)
       } else if (datatype === String) {
         // String fallback for binary data for browsers that don't support binary yet
         const ab = util.binaryStringToArrayBuffer(data as string);
-        deserializedData = util.unpack(ab);
+        deserializedData = isRawSerialization ? ab : util.unpack(ab);
       }
     } else if (this.serialization === SerializationType.JSON) {
       deserializedData = this.parse(data as string);
@@ -226,9 +233,12 @@ export class DataConnection extends BaseConnection implements IDataConnection {
       this._bufferedSend(this.stringify(data));
     } else if (
       this.serialization === SerializationType.Binary ||
-      this.serialization === SerializationType.BinaryUTF8
+      this.serialization === SerializationType.BinaryUTF8 ||
+      this.serialization === SerializationType.Raw
     ) {
-      const blob = util.pack(data);
+
+      const blob = this.serialization === SerializationType.Raw ?
+        data : util.pack(data);
 
       if (!chunked && blob.size > util.chunkedMTU) {
         this._sendChunks(blob);
