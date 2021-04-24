@@ -85,7 +85,7 @@ export class Negotiator {
       switch (peerConnection.iceConnectionState) {
         case "failed":
           logger.log(
-            "iceConnectionState is failed, closing connections to " +
+            "iceConnectionState is failed, closing connection to " +
             peerId
           );
           this.connection.emit(
@@ -96,7 +96,7 @@ export class Negotiator {
           break;
         case "closed":
           logger.log(
-            "iceConnectionState is closed, closing connections to " +
+            "iceConnectionState is closed, closing connection to " +
             peerId
           );
           this.connection.emit(
@@ -109,6 +109,10 @@ export class Negotiator {
           logger.log(
             "iceConnectionState changed to disconnected on the connection with " +
             peerId
+          );
+          this.connection.emit(
+            ConnectionEventType.Error,
+            new Error("Connection state to " + peerId + " is disconnected.")
           );
           break;
         case "completed":
