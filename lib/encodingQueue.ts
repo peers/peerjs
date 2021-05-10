@@ -2,30 +2,12 @@ import { EventEmitter } from "eventemitter3";
 import logger from "./logger";
 
 export class EncodingQueue extends EventEmitter {
-  readonly fileReader: FileReader = new FileReader();
-
   private _queue: Blob[] = [];
   private _processing: boolean = false;
+  private _abort: boolean: false;
 
   constructor() {
     super();
-
-    this.fileReader.onload = (evt) => {
-      this._processing = false;
-
-      if (evt.target) {
-        this.emit('done', evt.target.result as ArrayBuffer);
-      }
-
-      this.doNextTask();
-    };
-
-    this.fileReader.onerror = (evt) => {
-      logger.error(`EncodingQueue error:`, evt);
-      this._processing = false;
-      this.destroy();
-      this.emit('error', evt);
-    }
   }
 
   get queue(): Blob[] {
@@ -49,16 +31,29 @@ export class EncodingQueue extends EventEmitter {
   }
 
   destroy(): void {
-    this.fileReader.abort();
+    this._abort = true;
     this._queue = [];
   }
 
-  private doNextTask(): void {
+  private async doNextTask(): void {
     if (this.size === 0) return;
     if (this.processing) return;
 
     this._processing = true;
 
-    this.fileReader.readAsArrayBuffer(this.queue.shift());
+    const blob = this.queue.shift();
+
+    try {
+      const arrayBuffer = await blob.arrayBuffer();
+      this._processing = false;
+      if (this._abort) return;
+      this.emit('done', arrayBuffer);
+      this.doNextTask();
+    } catch (e) {
+      logger.error(`EncodingQueue error:`, e);
+      this._processing = false;
+      this.destroy();
+      this.emit('error', e);
+    }
   }
 }
