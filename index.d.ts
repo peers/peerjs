@@ -145,6 +145,7 @@ declare namespace Peer {
     metadata?: any;
     serialization?: string;
     reliable?: boolean;
+    heartbeatInterval?: number;
   }
 
   interface CallOption {

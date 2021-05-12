@@ -5,7 +5,8 @@ import {
   ConnectionType,
   ConnectionEventType,
   SerializationType,
-  ServerMessageType
+  ServerMessageType,
+  SocketSpecialMessagePrefix
 } from "./enums";
 import { Peer } from "./peer";
 import { BaseConnection } from "./baseconnection";
@@ -24,6 +25,7 @@ export class DataConnection extends BaseConnection implements IDataConnection {
   readonly label: string;
   readonly serialization: SerializationType;
   readonly reliable: boolean;
+  readonly heartbeatInterval: number;
   stringify: (data: any) => string = JSON.stringify;
   parse: (data: string) => any = JSON.parse;
 
@@ -44,6 +46,8 @@ export class DataConnection extends BaseConnection implements IDataConnection {
 
   private _dc: RTCDataChannel;
   private _encodingQueue = new EncodingQueue();
+  private _heartbeatSendTimer?: number;
+  private _heartbeatReceiveTimer?: number;
 
   get dataChannel(): RTCDataChannel {
     return this._dc;
@@ -60,6 +64,7 @@ export class DataConnection extends BaseConnection implements IDataConnection {
     this.label = this.options.label || this.connectionId;
     this.serialization = this.options.serialization || SerializationType.Binary;
     this.reliable = !!this.options.reliable;
+    this.heartbeatInterval = this.options.heartbeatInterval || 0;
 
     this._encodingQueue.on('done', (ab: ArrayBuffer) => {
       this._bufferedSend(ab);
@@ -94,6 +99,9 @@ export class DataConnection extends BaseConnection implements IDataConnection {
       logger.log(`DC#${this.connectionId} dc connection success`);
       this._open = true;
       this.emit(ConnectionEventType.Open);
+      if (this.heartbeatInterval > 0) {
+        this._enabledHeartbeat()
+      }
     };
 
     this.dataChannel.onmessage = (e) => {
@@ -133,6 +141,11 @@ export class DataConnection extends BaseConnection implements IDataConnection {
       }
     } else if (this.serialization === SerializationType.JSON) {
       deserializedData = this.parse(data as string);
+    }
+
+    if (this.heartbeatInterval > 0 && deserializedData === `${SocketSpecialMessagePrefix.Heartbeat}${this.connectionId}`) {
+      this._restartHeartbeatReceiveTimeout()
+      return;
     }
 
     // Check if we've chunked--if so, piece things back together.
@@ -200,6 +213,8 @@ export class DataConnection extends BaseConnection implements IDataConnection {
       this._encodingQueue.removeAllListeners();
       this._encodingQueue = null;
     }
+
+    this._disableHeartbeat();
 
     if (!this.open) {
       return;
@@ -309,6 +324,35 @@ export class DataConnection extends BaseConnection implements IDataConnection {
 
     for (let blob of blobs) {
       this.send(blob, true);
+    }
+  }
+
+  private _enabledHeartbeat() {
+    logger.log(`DC#${this.connectionId} Heartbeat Timer enabled`);
+    this._heartbeatSendTimer = window.setInterval(() => {
+      this.send(`${SocketSpecialMessagePrefix.Heartbeat}${this.connectionId}`)
+    }, this.heartbeatInterval)
+
+    this._restartHeartbeatReceiveTimeout();
+  }
+
+  private _restartHeartbeatReceiveTimeout() {
+    if (this._heartbeatReceiveTimer != null) {
+      window.clearTimeout(this._heartbeatReceiveTimer);
+    }
+    this._heartbeatReceiveTimer = window.setTimeout(() => {
+      logger.log(`DC#${this.connectionId} Disconnected due to heartbeat timeout`);
+      this.close();
+    }, this.heartbeatInterval * 2)
+  }
+
+  private _disableHeartbeat() {
+    if (this._heartbeatReceiveTimer != null) {
+      window.clearTimeout(this._heartbeatReceiveTimer);
+    }
+
+    if (this._heartbeatSendTimer != null) {
+      window.clearTimeout(this._heartbeatSendTimer);
     }
   }
 
