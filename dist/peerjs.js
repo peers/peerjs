@@ -10069,6 +10069,10 @@ function (_super) {
 
       if (index !== -1) {
         connections.splice(index, 1);
+
+        if (connections.length <= 0) {
+          this._connections.delete(connection.peer);
+        }
       }
     } //remove from lost messages
 
