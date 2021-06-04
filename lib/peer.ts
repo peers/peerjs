@@ -491,6 +491,9 @@ export class Peer extends EventEmitter<PeerEvents> {
 
 			if (index !== -1) {
 				connections.splice(index, 1);
+				if (connections.length <= 0) {
+					this._connections.delete(connection.peer);
+				}
 			}
 		}
 
