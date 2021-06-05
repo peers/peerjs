@@ -113,6 +113,7 @@ export class Negotiator {
 						"iceConnectionState changed to disconnected on the connection with " +
 							peerId,
 					);
+					this.connection.close();
 					break;
 				case "completed":
 					peerConnection.onicecandidate = util.noop;
