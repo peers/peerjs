@@ -7968,6 +7968,9 @@ function () {
 
         case "disconnected":
           logger_1.default.log("iceConnectionState changed to disconnected on the connection with " + peerId);
+
+          _this.connection.close();
+
           break;
 
         case "completed":
