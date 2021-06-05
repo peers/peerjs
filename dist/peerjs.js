@@ -7968,6 +7968,9 @@ function () {
 
         case "disconnected":
           logger_1.default.log("iceConnectionState changed to disconnected on the connection with " + peerId);
+
+          _this.connection.close();
+
           break;
 
         case "completed":
@@ -10069,6 +10072,10 @@ function (_super) {
 
       if (index !== -1) {
         connections.splice(index, 1);
+
+        if (connections.length <= 0) {
+          this._connections.delete(connection.peer);
+        }
       }
     } //remove from lost messages
 
