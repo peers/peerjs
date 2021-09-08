@@ -1,6 +1,6 @@
 {
   "name": "peerjs",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "PeerJS client",
   "main": "./dist/peerjs.min.js",
   "homepage": "https://github.com/peers/peerjs#readme",
@@ -29,9 +29,9 @@
   ],
   "license": "MIT",
   "scripts": {
-    "build": "parcel build lib/exports.ts --out-file peerjs.min.js",
-    "build-nonminified": "parcel build lib/exports.ts --out-file peerjs.js --no-minify",
-    "prepublishOnly": "npm run build",
+    "build": "node esbuild.js",
+    "build-nonminified": "node esbuild.js nonminified",
+    "prepublishOnly": "node esbuild.js",
     "test": "mocha -r ts-node/register -r jsdom-global/register test/**/*.ts"
   },
   "release": {
@@ -41,18 +41,18 @@
   "devDependencies": {
     "@types/chai": "^4.2.15",
     "@types/mocha": "^7.0.2",
+    "@types/node": "^10.14.33",
     "chai": "^4.3.3",
+    "esbuild": "^0.12.25",
     "jsdom": "^16.2.2",
     "jsdom-global": "^3.0.2",
     "mocha": "^7.1.2",
     "mock-socket": "8.0.5",
-    "parcel-bundler": "^1.12.4",
     "standard": "^14.1.0",
     "ts-node": "^8.10.1",
     "typescript": "^4.2.3"
   },
   "dependencies": {
-    "@types/node": "^10.14.33",
     "eventemitter3": "^3.1.2",
     "peerjs-js-binarypack": "1.0.1",
     "webrtc-adapter": "^7.7.1"
