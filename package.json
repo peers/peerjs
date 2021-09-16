@@ -29,8 +29,6 @@
   ],
   "license": "MIT",
   "scripts": {
-    "oldbuild": "parcel build lib/exports.ts --out-file peerjs.min.js",
-    "oldbuild-nonminified": "parcel build lib/exports.ts --out-file peerjs.js --no-minify",
     "build": "MINIFY=yes webpack build",
     "build-nonminified": "MINIFY=no webpack build",
     "prepublishOnly": "npm run build",

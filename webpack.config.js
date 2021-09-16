@@ -22,5 +22,9 @@ module.exports = {
     output: {
         filename: minify ? 'peerjs.min.js' : 'peerjs.js',
         path: path.resolve(__dirname, 'dist'),
+        library: {
+            name: 'peerjs',
+            type: 'umd'
+        }
     },
 }
