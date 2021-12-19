@@ -136,6 +136,7 @@ declare namespace Peer {
     port?: number;
     path?: string;
     secure?: boolean;
+    token?: string;
     config?: RTCConfiguration;
     debug?: number;
   }
