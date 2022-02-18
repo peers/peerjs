@@ -39,8 +39,8 @@ export const Supports = new class {
     const browser = this.getBrowser();
     const version = webRTCAdapter.browserDetails.version || 0;
 
-    if (browser === 'chrome' && version < 72) return false;
-    if (browser === 'firefox' && version >= 59) return true;
+    if (browser === 'chrome' && version < this.minChromeVersion) return false;
+    if (browser === 'firefox' && version >= this.minFirefoxVersion) return true;
     if (!window.RTCRtpTransceiver || !('currentDirection' in RTCRtpTransceiver.prototype)) return false;
 
     let tempPc: RTCPeerConnection;
