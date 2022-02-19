@@ -1,5 +1,5 @@
 import { EventEmitter } from 'eventemitter3';
-import { util } from './util';
+import { Utils } from './utils';
 import logger, { LogLevel } from './logger';
 import { Socket } from './socket';
 import { MediaConnection } from './mediaconnection';
@@ -95,12 +95,12 @@ export class Peer extends EventEmitter {
     // Configurize options
     options = {
       debug: 0, // 1: Errors, 2: Warnings, 3: All logs
-      host: util.CLOUD_HOST,
-      port: util.CLOUD_PORT,
+      host: Utils.CLOUD_HOST,
+      port: Utils.CLOUD_PORT,
       path: '/',
       key: Peer.DEFAULT_KEY,
-      token: util.randomToken(),
-      config: util.defaultConfig,
+      token: Utils.randomToken(),
+      config: Utils.defaultConfig,
       ...options,
     };
     this._options = options;
@@ -121,9 +121,9 @@ export class Peer extends EventEmitter {
     }
 
     // Set whether we use SSL to same as current host
-    if (this._options.secure === undefined && this._options.host !== util.CLOUD_HOST) {
-      this._options.secure = util.isSecure();
-    } else if (this._options.host == util.CLOUD_HOST) {
+    if (this._options.secure === undefined && this._options.host !== Utils.CLOUD_HOST) {
+      this._options.secure = Utils.isSecure();
+    } else if (this._options.host == Utils.CLOUD_HOST) {
       this._options.secure = true;
     }
     // Set a custom log function if present
@@ -138,13 +138,13 @@ export class Peer extends EventEmitter {
 
     // Sanity checks
     // Ensure WebRTC supported
-    if (!util.supports.audioVideo && !util.supports.data) {
+    if (!Utils.supports.audioVideo && !Utils.supports.data) {
       this._delayedAbort(PeerErrorType.BrowserIncompatible, 'The current browser does not support WebRTC');
       return;
     }
 
     // Ensure alphanumeric id
-    if (!!userId && !util.validateId(userId)) {
+    if (!!userId && !Utils.validateId(userId)) {
       this._delayedAbort(PeerErrorType.InvalidID, `ID "${userId}" is invalid`);
       return;
     }

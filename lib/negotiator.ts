@@ -1,9 +1,10 @@
-import { util } from './util';
 import logger from './logger';
 import type { MediaConnection } from './mediaconnection';
 import type { DataConnection } from './dataconnection';
 import { ConnectionType, PeerErrorType, ConnectionEventType, ServerMessageType } from './enums';
 import { BaseConnection } from './baseconnection';
+
+function noop(): void {}
 
 /**
  * Manages all negotiations between Peers.
@@ -95,7 +96,7 @@ export class Negotiator {
           logger.log('iceConnectionState changed to disconnected on the connection with ' + peerId);
           break;
         case 'completed':
-          peerConnection.onicecandidate = util.noop;
+          peerConnection.onicecandidate = noop;
           break;
       }
 

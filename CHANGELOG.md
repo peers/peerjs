@@ -78,6 +78,8 @@ Parcel 1 was a good choice years ago, but now esbuild seems like simple and good
 
 - update `devDependencies`
 - apply `Prettier` for the code style
+- rename `util` to `Utils`
+- remove `peerjs` export.
 
 <a name="1.3.2"></a>
 

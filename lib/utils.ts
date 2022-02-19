@@ -1,6 +1,6 @@
 import * as BinaryPack from 'peerjs-js-binarypack';
 import { Supports } from './supports';
-import type { UtilSupportsObj } from '..';
+import type { Features } from '..';
 
 const DEFAULT_CONFIG = {
   iceServers: [
@@ -10,22 +10,18 @@ const DEFAULT_CONFIG = {
   sdpSemantics: 'unified-plan',
 };
 
-export const util = new (class {
-  noop(): void {}
-
+export const Utils = new (class {
   readonly CLOUD_HOST = '0.peerjs.com';
   readonly CLOUD_PORT = 443;
 
-  // Browsers that need chunking:
-  readonly chunkedBrowsers = { Chrome: 1, chrome: 1 };
   readonly chunkedMTU = 16300; // The original 60000 bytes setting does not work when sending data from Firefox to Chrome, which is "cut off" after 16384 bytes and delivered individually.
 
   // Returns browser-agnostic default config
   readonly defaultConfig = DEFAULT_CONFIG;
 
   // Lists which features are supported
-  readonly supports = (function () {
-    const supported: UtilSupportsObj = {
+  readonly supports: Features = (function () {
+    const supported: Features = {
       webRTC: Supports.isWebRTCSupported(),
       audioVideo: true,
       data: false,
@@ -83,13 +79,13 @@ export const util = new (class {
   chunk(blob: Blob): { __peerData: number; n: number; total: number; data: Blob }[] {
     const chunks = [];
     const size = blob.size;
-    const total = Math.ceil(size / util.chunkedMTU);
+    const total = Math.ceil(size / Utils.chunkedMTU);
 
     let index = 0;
     let start = 0;
 
     while (start < size) {
-      const end = Math.min(size, start + util.chunkedMTU);
+      const end = Math.min(size, start + Utils.chunkedMTU);
       const b = blob.slice(start, end);
 
       const chunk = {

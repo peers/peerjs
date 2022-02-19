@@ -1,4 +1,4 @@
-import { util } from './util';
+import { Utils } from './utils';
 import logger from './logger';
 
 export class API {
@@ -31,7 +31,7 @@ export class API {
 
       let pathError = '';
 
-      if (this._options.path === '/' && this._options.host !== util.CLOUD_HOST) {
+      if (this._options.path === '/' && this._options.host !== Utils.CLOUD_HOST) {
         pathError =
           ' If you passed in a `path` to your self-hosted PeerServer, ' +
           "you'll also need to pass in that same path when creating a new " +
@@ -53,7 +53,7 @@ export class API {
         if (response.status === 401) {
           let helpfulError = '';
 
-          if (this._options.host === util.CLOUD_HOST) {
+          if (this._options.host === Utils.CLOUD_HOST) {
             helpfulError =
               "It looks like you're using the cloud server. You can email " +
               'team@peerjs.com to enable peer listing for your API key.';

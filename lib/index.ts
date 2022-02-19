@@ -1,15 +1,11 @@
-import { util } from './util';
+import { Utils } from './utils';
 import { Peer } from './peer';
 
-export const peerjs = {
-  Peer,
-  util,
-};
+export { Peer, Utils };
 
 export default Peer;
 
-if (typeof window !== 'undefined') {
-  (window as any).peerjs = peerjs;
-  /** @deprecated Should use peerjs namespace */
-  (window as any).Peer = Peer;
+if (typeof window === 'object') {
+  // @ts-expect-error
+  window.Peer = Peer;
 }

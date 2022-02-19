@@ -1,4 +1,4 @@
-import { util } from './util';
+import { Utils } from './utils';
 import logger from './logger';
 import { Negotiator } from './negotiator';
 import { ConnectionType, ConnectionEventType, ServerMessageType } from './enums';
@@ -32,7 +32,7 @@ export class MediaConnection extends BaseConnection {
     super(peerId, provider, options);
 
     this._localStream = this.options._stream;
-    this.connectionId = this.options.connectionId || MediaConnection.ID_PREFIX + util.randomToken();
+    this.connectionId = this.options.connectionId || MediaConnection.ID_PREFIX + Utils.randomToken();
 
     this._negotiator = new Negotiator(this);
 

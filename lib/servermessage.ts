@@ -1,6 +1,6 @@
 import type { ServerMessageType } from './enums';
 
-export class ServerMessage {
+export interface ServerMessage {
   type: ServerMessageType;
   payload: any;
   src: string;

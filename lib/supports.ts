@@ -4,7 +4,11 @@ export const Supports = new (class {
   }
 
   isUnifiedPlanSupported(): boolean {
-    if (!window.RTCRtpTransceiver || !('currentDirection' in RTCRtpTransceiver.prototype)) return false;
+    if (
+      (typeof window !== 'undefined' && !window.RTCRtpTransceiver) ||
+      !('currentDirection' in RTCRtpTransceiver.prototype)
+    )
+      return false;
 
     let tempPc: RTCPeerConnection;
     let supported = false;
