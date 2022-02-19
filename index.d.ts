@@ -45,40 +45,37 @@ declare class Peer {
    * @param event Event name
    * @param cb id is the brokering ID of the peer
    */
-  on(event: "open", cb: (id: string) => void): void;
+  on(event: 'open', cb: (id: string) => void): void;
   /**
    * Emitted when a new data connection is established from a remote peer.
    * @param event Event name
    * @param cb Callback Function
    */
-  on(
-    event: "connection",
-    cb: (dataConnection: Peer.DataConnection) => void
-  ): void;
+  on(event: 'connection', cb: (dataConnection: Peer.DataConnection) => void): void;
   /**
    * Emitted when a remote peer attempts to call you.
    * @param event Event name
    * @param cb Callback Function
    */
-  on(event: "call", cb: (mediaConnection: Peer.MediaConnection) => void): void;
+  on(event: 'call', cb: (mediaConnection: Peer.MediaConnection) => void): void;
   /**
    * Emitted when the peer is destroyed and can no longer accept or create any new connections.
    * @param event Event name
    * @param cb Callback Function
    */
-  on(event: "close", cb: () => void): void;
+  on(event: 'close', cb: () => void): void;
   /**
    * Emitted when the peer is disconnected from the signalling server
    * @param event Event name
    * @param cb Callback Function
    */
-  on(event: "disconnected", cb: () => void): void;
+  on(event: 'disconnected', cb: () => void): void;
   /**
    * Errors on the peer are almost always fatal and will destroy the peer.
    * @param event Event name
    * @param cb Callback Function
    */
-  on(event: "error", cb: (err: any) => void): void;
+  on(event: 'error', cb: (err: any) => void): void;
   /**
    * Remove event listeners.(EventEmitter3)
    * @param {String} event The event we want to remove.
@@ -161,10 +158,10 @@ declare namespace Peer {
     send(data: any): void;
     close(): void;
     on(event: string, cb: () => void): void;
-    on(event: "data", cb: (data: any) => void): void;
-    on(event: "open", cb: () => void): void;
-    on(event: "close", cb: () => void): void;
-    on(event: "error", cb: (err: any) => void): void;
+    on(event: 'data', cb: (data: any) => void): void;
+    on(event: 'open', cb: () => void): void;
+    on(event: 'close', cb: () => void): void;
+    on(event: 'error', cb: (err: any) => void): void;
     off(event: string, fn: Function, once?: boolean): void;
     dataChannel: RTCDataChannel;
     label: string;
@@ -184,9 +181,9 @@ declare namespace Peer {
     answer(stream?: MediaStream, options?: AnswerOption): void;
     close(): void;
     on(event: string, cb: () => void): void;
-    on(event: "stream", cb: (stream: MediaStream) => void): void;
-    on(event: "close", cb: () => void): void;
-    on(event: "error", cb: (err: any) => void): void;
+    on(event: 'stream', cb: (stream: MediaStream) => void): void;
+    on(event: 'close', cb: () => void): void;
+    on(event: 'error', cb: (err: any) => void): void;
     off(event: string, fn: Function, once?: boolean): void;
     open: boolean;
     metadata: any;
@@ -195,8 +192,7 @@ declare namespace Peer {
     type: string;
   }
 
-  interface UtilSupportsObj {
-    browser: boolean,
+  interface Features {
     webRTC: boolean;
     audioVideo: boolean;
     data: boolean;
@@ -204,8 +200,7 @@ declare namespace Peer {
     reliable: boolean;
   }
 
-  interface util {
-    browser: string;
-    supports: UtilSupportsObj;
+  interface Utils {
+    readonly features: Features;
   }
 }

@@ -21,3 +21,4 @@ test/output
 .tscache
 test/public
 .vscode/
+dist

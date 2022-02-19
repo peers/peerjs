@@ -1,6 +1,8 @@
-import "./faker";
-import { util } from '../lib/util';
+import './faker';
+import { Utils } from '../lib';
 
 //enable support for WebRTC
-util.supports.audioVideo = true;
-util.randomToken = () => 'testToken';
+// @ts-ignore
+Utils.supports.audioVideo = true;
+
+Utils.randomToken = () => 'testToken';

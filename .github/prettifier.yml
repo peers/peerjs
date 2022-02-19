@@ -1,0 +1,17 @@
+# Template for commit messages from Prettifier.
+# Placeholders are:
+# - {{commitSha}}: the SHA of your commit that Prettifier formats
+commitMessage: 'AutoFormat {{commitSha}}'
+
+fixByCommit: true
+
+fixByPullRequest: false
+
+prettified-message: >
+  I have adjusted the formatting of this pull request for you.
+
+  To stop seeing this message, please install Prettier on your machine and run
+  `meteor npm run format` to format your changes before submitting them.
+
+# Whether to only check branches that have an active pull request.
+pulls-only: true

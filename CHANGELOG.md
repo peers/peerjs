@@ -2,9 +2,84 @@
 
 All notable changes will be documented in this file.
 
-## vNEXT
+## vNext
 
 ...
+
+<a name="2.0.0"></a>
+
+## v2.0.0 (upcoming)
+
+The main goals of the second version:
+
+- modernize the code base: use `es6` and latest tools;
+- target to the latest browsers API(you can use webrtc adapter to shim old browsers);
+- shrink the package size.
+
+### Breaking changes
+
+#### Drop ES5 supports
+
+If you need to support es5, you can recompile the lib from the sources or use the latest version from the v1 branch like `npm i peerjs@1`.
+
+#### Remove `webrtc-adapter` package from `dependencies`
+
+The modern browsers mostly works good without any additional libs like webrtc-adapter.
+
+You can increase cross browsers support by manually add `webrtc-adapter` package to your project:
+
+`npm install webrtc-adapter`
+
+Then import it as soon as possible. For example, you have an entry point for your application in the file `index.tsx`. So, lets add the import:
+
+```
+import 'webrtc-adapter'; // as soon as possible
+
+//
+//... your startup code
+//
+
+```
+
+See more: https://github.com/webrtcHacks/adapter
+
+#### Remove browser detection features from the library.
+
+The `browser` field was removed from the `util` class
+and the `OFFER` packet.
+
+#### The `main` field of `package.json` now points to the non minified version.
+
+Today, most projects use bundlers with a minification step. Sometimes, double minification can lead to issues.
+
+If you want to use the minified version, use it directly from the `dist` folder like:
+
+```
+import Peer from 'peerjs/dist/peerjs.min.js';
+
+...
+```
+
+#### Remove `dist` folder from git
+
+Please, try to host the package by yourself. It is more securely and you don't depend on third party.
+
+In any case, you can use a CDN like `unpkg.com`:
+
+```html
+<script src="https://unpkg.com/peerjs@2.0.0/dist/peerjs.min.js"></script>
+```
+
+#### Use `ESBuild` as bundler.
+
+Parcel 1 was a good choice years ago, but now esbuild seems like simple and good solution!
+
+### Another changes
+
+- update `devDependencies`
+- apply `Prettier` for the code style
+- rename `util` to `Utils`
+- remove `peerjs` export.
 
 <a name="1.3.2"></a>
 
@@ -61,7 +136,7 @@ All notable changes will be documented in this file.
 ## 1.0.3 (2019-08-21)
 
 - add pingInterval option
-  
+
 <a name="1.0.2"></a>
 
 ## 1.0.2 (2019-07-20)
@@ -97,6 +172,7 @@ Almost all project was refactored!!!
 - changed: fetch api instead of xhr
 
 ### Features
+
 - added: heartbeat #502
 
 ### Bug Fixes

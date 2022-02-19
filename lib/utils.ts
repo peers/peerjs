@@ -1,37 +1,29 @@
-import * as BinaryPack from "peerjs-js-binarypack";
+import * as BinaryPack from 'peerjs-js-binarypack';
 import { Supports } from './supports';
-import { UtilSupportsObj } from '..';
+import type { Features } from '..';
 
 const DEFAULT_CONFIG = {
   iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "turn:0.peerjs.com:3478", username: "peerjs", credential: "peerjsp" }
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'turn:0.peerjs.com:3478', username: 'peerjs', credential: 'peerjsp' },
   ],
-  sdpSemantics: "unified-plan"
+  sdpSemantics: 'unified-plan',
 };
 
-export const util = new class {
-  noop(): void { }
-
-  readonly CLOUD_HOST = "0.peerjs.com";
+export const Utils = new (class {
+  readonly CLOUD_HOST = '0.peerjs.com';
   readonly CLOUD_PORT = 443;
 
-  // Browsers that need chunking:
-  readonly chunkedBrowsers = { Chrome: 1, chrome: 1 };
   readonly chunkedMTU = 16300; // The original 60000 bytes setting does not work when sending data from Firefox to Chrome, which is "cut off" after 16384 bytes and delivered individually.
 
   // Returns browser-agnostic default config
   readonly defaultConfig = DEFAULT_CONFIG;
 
-  readonly browser = Supports.getBrowser();
-  readonly browserVersion = Supports.getVersion();
-
   // Lists which features are supported
-  readonly supports = (function () {
-    const supported: UtilSupportsObj = {
-      browser: Supports.isBrowserSupported(),
+  readonly supports: Features = (function () {
+    const supported: Features = {
       webRTC: Supports.isWebRTCSupported(),
-      audioVideo: false,
+      audioVideo: true,
       data: false,
       binaryBlob: false,
       reliable: false,
@@ -43,22 +35,18 @@ export const util = new class {
 
     try {
       pc = new RTCPeerConnection(DEFAULT_CONFIG);
-
-      supported.audioVideo = true;
-
       let dc: RTCDataChannel;
 
       try {
-        dc = pc.createDataChannel("_PEERJSTEST", { ordered: true });
+        dc = pc.createDataChannel('_PEERJSTEST', { ordered: true });
         supported.data = true;
         supported.reliable = !!dc.ordered;
 
         // Binary test
         try {
-          dc.binaryType = "blob";
-          supported.binaryBlob = !Supports.isIOS;
-        } catch (e) {
-        }
+          dc.binaryType = 'blob';
+          supported.binaryBlob = true; //not works for iOS?
+        } catch (e) {}
       } catch (e) {
       } finally {
         if (dc) {
@@ -88,16 +76,16 @@ export const util = new class {
 
   private _dataCount: number = 1;
 
-  chunk(blob: Blob): { __peerData: number, n: number, total: number, data: Blob }[] {
+  chunk(blob: Blob): { __peerData: number; n: number; total: number; data: Blob }[] {
     const chunks = [];
     const size = blob.size;
-    const total = Math.ceil(size / util.chunkedMTU);
+    const total = Math.ceil(size / Utils.chunkedMTU);
 
     let index = 0;
     let start = 0;
 
     while (start < size) {
-      const end = Math.min(size, start + util.chunkedMTU);
+      const end = Math.min(size, start + Utils.chunkedMTU);
       const b = blob.slice(start, end);
 
       const chunk = {
@@ -143,12 +131,10 @@ export const util = new class {
   }
 
   randomToken(): string {
-    return Math.random()
-      .toString(36)
-      .substr(2);
+    return Math.random().toString(36).substr(2);
   }
 
   isSecure(): boolean {
-    return location.protocol === "https:";
+    return location.protocol === 'https:';
   }
-}
+})();

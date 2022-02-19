@@ -1,7 +1,7 @@
-import { EventEmitter } from "eventemitter3";
-import { Peer } from "./peer";
-import { ServerMessage } from "./servermessage";
-import { ConnectionType } from "./enums";
+import { EventEmitter } from 'eventemitter3';
+import type { Peer } from './peer';
+import type { ServerMessage } from './servermessage';
+import type { ConnectionType } from './enums';
 
 export abstract class BaseConnection extends EventEmitter {
   protected _open = false;
@@ -17,11 +17,7 @@ export abstract class BaseConnection extends EventEmitter {
     return this._open;
   }
 
-  constructor(
-    readonly peer: string,
-    public provider: Peer,
-    readonly options: any
-  ) {
+  constructor(readonly peer: string, public provider: Peer, readonly options: any) {
     super();
 
     this.metadata = options.metadata;
