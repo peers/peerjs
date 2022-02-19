@@ -1,9 +1,9 @@
-import { EventEmitter } from "eventemitter3";
-import logger from "./logger";
-import { SocketEventType, ServerMessageType } from "./enums";
+import { EventEmitter } from 'eventemitter3';
+import logger from './logger';
+import { SocketEventType, ServerMessageType } from './enums';
 
 /**
- * An abstraction on top of WebSockets to provide fastest
+ * An abstraction on top of WebSockets to provide the fastest
  * possible connection for peers.
  */
 export class Socket extends EventEmitter {
@@ -20,13 +20,13 @@ export class Socket extends EventEmitter {
     port: number,
     path: string,
     key: string,
-    private readonly pingInterval: number = 5000,
+    private readonly pingInterval: number = 5000
   ) {
     super();
 
-    const wsProtocol = secure ? "wss://" : "ws://";
+    const wsProtocol = secure ? 'wss://' : 'ws://';
 
-    this._baseUrl = wsProtocol + host + ":" + port + path + "peerjs?key=" + key;
+    this._baseUrl = wsProtocol + host + ':' + port + path + 'peerjs?key=' + key;
   }
 
   start(id: string, token: string): void {
@@ -41,26 +41,26 @@ export class Socket extends EventEmitter {
     this._socket = new WebSocket(wsUrl);
     this._disconnected = false;
 
-    this._socket.onmessage = (event) => {
+    this._socket.onmessage = event => {
       let data;
 
       try {
         data = JSON.parse(event.data);
-        logger.log("Server message received:", data);
+        logger.log('Server message received:', data);
       } catch (e) {
-        logger.log("Invalid server message", event.data);
+        logger.log('Invalid server message', event.data);
         return;
       }
 
       this.emit(SocketEventType.Message, data);
     };
 
-    this._socket.onclose = (event) => {
+    this._socket.onclose = event => {
       if (this._disconnected) {
         return;
       }
 
-      logger.log("Socket closed.", event);
+      logger.log('Socket closed.', event);
 
       this._cleanup();
       this._disconnected = true;
@@ -77,7 +77,7 @@ export class Socket extends EventEmitter {
 
       this._sendQueuedMessages();
 
-      logger.log("Socket open");
+      logger.log('Socket open');
 
       this._scheduleHeartbeat();
     };
@@ -133,7 +133,7 @@ export class Socket extends EventEmitter {
     }
 
     if (!data.type) {
-      this.emit(SocketEventType.Error, "Invalid message");
+      this.emit(SocketEventType.Error, 'Invalid message');
       return;
     }
 

@@ -1,5 +1,5 @@
-import { EventEmitter } from "eventemitter3";
-import logger from "./logger";
+import { EventEmitter } from 'eventemitter3';
+import logger from './logger';
 
 export class EncodingQueue extends EventEmitter {
   readonly fileReader: FileReader = new FileReader();
@@ -10,7 +10,7 @@ export class EncodingQueue extends EventEmitter {
   constructor() {
     super();
 
-    this.fileReader.onload = (evt) => {
+    this.fileReader.onload = evt => {
       this._processing = false;
 
       if (evt.target) {
@@ -20,12 +20,12 @@ export class EncodingQueue extends EventEmitter {
       this.doNextTask();
     };
 
-    this.fileReader.onerror = (evt) => {
+    this.fileReader.onerror = evt => {
       logger.error(`EncodingQueue error:`, evt);
       this._processing = false;
       this.destroy();
       this.emit('error', evt);
-    }
+    };
   }
 
   get queue(): Blob[] {

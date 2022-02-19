@@ -1,17 +1,17 @@
-import { util } from "./util";
-import logger from "./logger";
-import { Negotiator } from "./negotiator";
-import { ConnectionType, ConnectionEventType, ServerMessageType } from "./enums";
-import { Peer } from "./peer";
-import { BaseConnection } from "./baseconnection";
-import { ServerMessage } from "./servermessage";
-import { AnswerOption } from "..";
+import { util } from './util';
+import logger from './logger';
+import { Negotiator } from './negotiator';
+import { ConnectionType, ConnectionEventType, ServerMessageType } from './enums';
+import type { Peer } from './peer';
+import { BaseConnection } from './baseconnection';
+import type { ServerMessage } from './servermessage';
+import type { AnswerOption } from '..';
 
 /**
  * Wraps the streaming interface between two Peers.
  */
 export class MediaConnection extends BaseConnection {
-  private static readonly ID_PREFIX = "mc_";
+  private static readonly ID_PREFIX = 'mc_';
 
   private _negotiator: Negotiator;
   private _localStream: MediaStream;
@@ -21,29 +21,31 @@ export class MediaConnection extends BaseConnection {
     return ConnectionType.Media;
   }
 
-  get localStream(): MediaStream { return this._localStream; }
-  get remoteStream(): MediaStream { return this._remoteStream; }
+  get localStream(): MediaStream {
+    return this._localStream;
+  }
+  get remoteStream(): MediaStream {
+    return this._remoteStream;
+  }
 
   constructor(peerId: string, provider: Peer, options: any) {
     super(peerId, provider, options);
 
     this._localStream = this.options._stream;
-    this.connectionId =
-      this.options.connectionId ||
-      MediaConnection.ID_PREFIX + util.randomToken();
+    this.connectionId = this.options.connectionId || MediaConnection.ID_PREFIX + util.randomToken();
 
     this._negotiator = new Negotiator(this);
 
     if (this._localStream) {
       this._negotiator.startConnection({
         _stream: this._localStream,
-        originator: true
+        originator: true,
       });
     }
   }
 
   addStream(remoteStream) {
-    logger.log("Receiving stream", remoteStream);
+    logger.log('Receiving stream', remoteStream);
 
     this._remoteStream = remoteStream;
     super.emit(ConnectionEventType.Stream, remoteStream); // Should we call this `open`?
@@ -70,9 +72,7 @@ export class MediaConnection extends BaseConnection {
 
   answer(stream: MediaStream, options: AnswerOption = {}): void {
     if (this._localStream) {
-      logger.warn(
-        "Local stream already exists on this MediaConnection. Are you answering a call twice?"
-      );
+      logger.warn('Local stream already exists on this MediaConnection. Are you answering a call twice?');
       return;
     }
 

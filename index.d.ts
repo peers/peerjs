@@ -196,7 +196,6 @@ declare namespace Peer {
   }
 
   interface UtilSupportsObj {
-    browser: boolean,
     webRTC: boolean;
     audioVideo: boolean;
     data: boolean;
@@ -205,7 +204,6 @@ declare namespace Peer {
   }
 
   interface util {
-    browser: string;
     supports: UtilSupportsObj;
   }
 }
