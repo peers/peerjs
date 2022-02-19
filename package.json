@@ -31,8 +31,9 @@
     "dev": "",
     "esbuild": "esbuild lib/index.ts --bundle --sourcemap --target=es6",
     "build": "npm run esbuild -- --outfile=dist/peerjs.js && npm run esbuild -- --minify --outfile=dist/peerjs.min.js",
-    "prepublishOnly": "npm run test && npm run build",
-    "test": "mocha -r ts-node/register -r jsdom-global/register test/**/*.ts"
+    "prepublishOnly": "npm run tsc-check && npm run test && npm run build",
+    "test": "mocha -r ts-node/register -r jsdom-global/register test/**/*.ts",
+    "tsc-check": "tsc --noEmit"
   },
   "release": {
     "branch": "master"

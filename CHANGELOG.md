@@ -12,8 +12,9 @@ All notable changes will be documented in this file.
 
 The main goals of the second version:
 
-- modernize the code base: use `es6` and latest tools
-- target to the latest browsers API(you can use webrtc adapter to shim old browsers)
+- modernize the code base: use `es6` and latest tools;
+- target to the latest browsers API(you can use webrtc adapter to shim old browsers);
+- shrink the package size.
 
 ### Breaking changes
 
@@ -57,6 +58,16 @@ If you want to use the minified version, use it directly from the `dist` folder 
 import Peer from 'peerjs/dist/peerjs.min.js';
 
 ...
+```
+
+#### Remove `dist` folder from git
+
+Please, try to host the package by yourself. It is more securely and you don't depend on third party.
+
+In any case, you can use a CDN like `unpkg.com`:
+
+```html
+<script src="https://unpkg.com/peerjs@2.0.0/dist/peerjs.min.js"></script>
 ```
 
 #### Use `ESBuild` as bundler.
