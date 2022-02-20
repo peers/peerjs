@@ -2,7 +2,9 @@
   "name": "peerjs",
   "version": "1.3.2",
   "description": "PeerJS client",
-  "main": "./dist/peerjs.js",
+  "main": "./dist/peerjs.cjs.js",
+  "module": "./dist/peerjs.esm.js",
+  "browser": "./dist/peerjs.js",
   "homepage": "https://github.com/peers/peerjs#readme",
   "keywords": [
     "peerjs",
@@ -29,8 +31,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "",
-    "esbuild": "esbuild lib/index.ts --bundle --sourcemap --target=es6",
-    "build": "npm run esbuild -- --outfile=dist/peerjs.js && npm run esbuild -- --minify --outfile=dist/peerjs.min.js",
+    "esbuild": "esbuild lib/index.ts --bundle --target=es6 --global-name=Peer",
+    "build": "npm run esbuild -- --outfile=dist/peerjs.js --sourcemap && npm run esbuild -- --minify --outfile=dist/peerjs.min.js --sourcemap && npm run esbuild -- --outfile=dist/peerjs.esm.js --format=esm && npm run esbuild -- --outfile=dist/peerjs.cjs.js --format=cjs",
     "prepublishOnly": "npm run tsc-check && npm run test && npm run build",
     "test": "mocha -r ts-node/register -r jsdom-global/register test/**/*.ts",
     "tsc-check": "tsc --noEmit"

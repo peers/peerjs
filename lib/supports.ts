@@ -1,20 +1,21 @@
-export const Supports = new (class {
-  isWebRTCSupported(): boolean {
-    return typeof RTCPeerConnection !== 'undefined';
-  }
+export const Supports = {
+  isUnifiedPlanSupported(webRtc: any): boolean {
+    if (!webRtc && typeof window !== 'undefined') {
+      webRtc = window;
+    }
 
-  isUnifiedPlanSupported(): boolean {
     if (
-      (typeof window !== 'undefined' && !window.RTCRtpTransceiver) ||
-      !('currentDirection' in RTCRtpTransceiver.prototype)
-    )
+      typeof webRtc.RTCRtpTransceiver === 'undefined' ||
+      !('currentDirection' in webRtc.RTCRtpTransceiver.prototype)
+    ) {
       return false;
+    }
 
     let tempPc: RTCPeerConnection;
     let supported = false;
 
     try {
-      tempPc = new RTCPeerConnection();
+      tempPc = new webRtc.RTCPeerConnection();
       tempPc.addTransceiver('audio');
       supported = true;
     } catch (e) {
@@ -25,11 +26,5 @@ export const Supports = new (class {
     }
 
     return supported;
-  }
-
-  toString(): string {
-    return `Supports:
-isWebRTCSupported:${this.isWebRTCSupported()}
-isUnifiedPlanSupported:${this.isUnifiedPlanSupported()}`;
-  }
-})();
+  },
+} as const;

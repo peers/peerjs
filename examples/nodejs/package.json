@@ -1,0 +1,19 @@
+{
+  "name": "peerjs-nodejs-example",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "author": "Alex So",
+  "license": "MIT",
+  "dependencies": {
+    "filereader": "^0.10.3",
+    "node-fetch": "^2.6.7",
+    "peerjs": "file:../../",
+    "wrtc": "^0.4.7",
+    "ws": "^8.5.0"
+  }
+}

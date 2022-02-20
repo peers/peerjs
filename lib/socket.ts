@@ -1,6 +1,7 @@
 import { EventEmitter } from 'eventemitter3';
 import logger from './logger';
 import { SocketEventType, ServerMessageType } from './enums';
+import type { PeerJSOption } from '../index';
 
 /**
  * An abstraction on top of WebSockets to provide the fastest
@@ -14,19 +15,18 @@ export class Socket extends EventEmitter {
   private _wsPingTimer?: any;
   private readonly _baseUrl: string;
 
-  constructor(
-    secure: any,
-    host: string,
-    port: number,
-    path: string,
-    key: string,
-    private readonly pingInterval: number = 5000
-  ) {
+  private readonly pingInterval: number;
+  private readonly WebSocketConstructor: typeof WebSocket;
+
+  constructor({ secure, host, port, path, key, pingInterval = 5000, polyfills }: PeerJSOption) {
     super();
+
+    this.pingInterval = pingInterval;
 
     const wsProtocol = secure ? 'wss://' : 'ws://';
 
     this._baseUrl = wsProtocol + host + ':' + port + path + 'peerjs?key=' + key;
+    this.WebSocketConstructor = polyfills?.WebSocket ?? window.WebSocket;
   }
 
   start(id: string, token: string): void {
@@ -38,7 +38,7 @@ export class Socket extends EventEmitter {
       return;
     }
 
-    this._socket = new WebSocket(wsUrl);
+    this._socket = new this.WebSocketConstructor(wsUrl);
     this._disconnected = false;
 
     this._socket.onmessage = event => {
