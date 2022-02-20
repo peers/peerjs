@@ -139,6 +139,10 @@ https://github.com/peers/peerjs/issues/594#issuecomment-1046147052
 
 https://github.com/peers/peerjs/issues/599#issuecomment-559981544
 
+- How to change the codecs/quality of streams?
+
+You should modify the sdp message: https://github.com/peers/peerjs/issues/901#issuecomment-1046230997
+
 ## Links
 
 ### [Documentation / API Reference](https://peerjs.com/docs.html)
