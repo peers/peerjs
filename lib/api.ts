@@ -1,8 +1,13 @@
 import { Utils } from './utils';
 import logger from './logger';
+import { PeerJSOption } from '..';
 
 export class API {
-  constructor(private readonly _options: any) {}
+  private readonly fetch: typeof fetch;
+
+  constructor(private readonly _options: PeerJSOption) {
+    this.fetch = _options.polyfills?.fetch ?? window.fetch;
+  }
 
   private _buildUrl(method: string): string {
     const protocol = this._options.secure ? 'https://' : 'http://';
@@ -19,7 +24,7 @@ export class API {
     const url = this._buildUrl('id');
 
     try {
-      const response = await fetch(url);
+      const response = await this.fetch(url);
 
       if (response.status !== 200) {
         throw new Error(`Error. Status:${response.status}`);
@@ -47,7 +52,7 @@ export class API {
     const url = this._buildUrl('peers');
 
     try {
-      const response = await fetch(url);
+      const response = await this.fetch(url);
 
       if (response.status !== 200) {
         if (response.status === 401) {

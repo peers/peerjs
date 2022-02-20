@@ -2,12 +2,10 @@ import { EventEmitter } from 'eventemitter3';
 import logger from './logger';
 
 export class EncodingQueue extends EventEmitter {
-  readonly fileReader: FileReader = new FileReader();
-
   private _queue: Blob[] = [];
   private _processing: boolean = false;
 
-  constructor() {
+  constructor(private readonly fileReader: FileReader) {
     super();
 
     this.fileReader.onload = evt => {

@@ -5,12 +5,15 @@ import { ConnectionType, PeerErrorType, ConnectionEventType, ServerMessageType }
 import { BaseConnection } from './baseconnection';
 
 function noop(): void {}
-
 /**
  * Manages all negotiations between Peers.
  */
 export class Negotiator {
   constructor(readonly connection: BaseConnection) {}
+
+  private get webRtc() {
+    return this.connection.provider.options.polyfills?.WebRTC ?? window;
+  }
 
   /** Returns a PeerConnection object set up correctly (for data, media). */
   startConnection(options: any) {
@@ -44,7 +47,9 @@ export class Negotiator {
   private _startPeerConnection(): RTCPeerConnection {
     logger.log('Creating RTCPeerConnection.');
 
-    const peerConnection = new RTCPeerConnection(this.connection.provider.options.config);
+    const ctr: typeof RTCPeerConnection = this.webRtc.RTCPeerConnection;
+
+    const peerConnection = new ctr(this.connection.provider.options.config);
 
     this._setupListeners(peerConnection);
 
@@ -111,7 +116,7 @@ export class Negotiator {
       logger.log('Received data channel');
 
       const dataChannel = evt.channel;
-      const connection = <DataConnection>provider.getConnection(peerId, connectionId);
+      const connection = provider.getConnection(peerId, connectionId) as DataConnection;
 
       connection.initialize(dataChannel);
     };
@@ -149,13 +154,13 @@ export class Negotiator {
       peerConnection.oniceconnectionstatechange =
       peerConnection.ondatachannel =
       peerConnection.ontrack =
-        () => {};
+        noop;
 
     const peerConnectionNotClosed = peerConnection.signalingState !== 'closed';
     let dataChannelNotClosed = false;
 
     if (this.connection.type === ConnectionType.Data) {
-      const dataConnection = <DataConnection>this.connection;
+      const dataConnection = this.connection as DataConnection;
       const dataChannel = dataConnection.dataChannel;
 
       if (dataChannel) {
@@ -194,7 +199,7 @@ export class Negotiator {
         };
 
         if (this.connection.type === ConnectionType.Data) {
-          const dataConnection = <DataConnection>this.connection;
+          const dataConnection = this.connection as DataConnection;
 
           payload = {
             ...payload,
@@ -260,7 +265,9 @@ export class Negotiator {
 
   /** Handle an SDP. */
   async handleSDP(type: string, sdp: any): Promise<void> {
-    sdp = new RTCSessionDescription(sdp);
+    const ctr: typeof RTCSessionDescription = this.webRtc.RTCSessionDescription;
+
+    sdp = new ctr(sdp);
     const peerConnection = this.connection.peerConnection;
     const provider = this.connection.provider;
 
@@ -291,8 +298,10 @@ export class Negotiator {
     const provider = this.connection.provider;
 
     try {
+      const ctr: typeof RTCIceCandidate = this.webRtc.RTCIceCandidate;
+
       await peerConnection.addIceCandidate(
-        new RTCIceCandidate({
+        new ctr({
           sdpMid: sdpMid,
           sdpMLineIndex: sdpMLineIndex,
           candidate: candidate,

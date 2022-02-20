@@ -8,18 +8,11 @@ import { ConnectionType, PeerErrorType, PeerEventType, SocketEventType, ServerMe
 import { BaseConnection } from './baseconnection';
 import { ServerMessage } from './servermessage';
 import { API } from './api';
-import type { PeerConnectOption, PeerJSOption } from '..';
+import type { PeerConnectOption, PeerJSOption, Features } from '..';
+import { Supports } from './supports';
 
-class PeerOptions implements PeerJSOption {
+interface PeerOptions extends PeerJSOption {
   debug?: LogLevel; // 1: Errors, 2: Warnings, 3: All logs
-  host?: string;
-  port?: number;
-  path?: string;
-  key?: string;
-  token?: string;
-  config?: any;
-  secure?: boolean;
-  pingInterval?: number;
   logFunction?: (logLevel: LogLevel, ...rest: any[]) => void;
 }
 
@@ -80,6 +73,8 @@ export class Peer extends EventEmitter {
     return this._disconnected;
   }
 
+  readonly features: Features;
+
   constructor(id?: string | PeerOptions, options?: PeerOptions) {
     super();
 
@@ -92,7 +87,7 @@ export class Peer extends EventEmitter {
       userId = id.toString();
     }
 
-    // Configurize options
+    // Configure options
     options = {
       debug: 0, // 1: Errors, 2: Warnings, 3: All logs
       host: Utils.CLOUD_HOST,
@@ -106,7 +101,7 @@ export class Peer extends EventEmitter {
     this._options = options;
 
     // Detect relative URL host.
-    if (this._options.host === '/') {
+    if (typeof window !== 'undefined' && this._options.host === '/') {
       this._options.host = window.location.hostname;
     }
 
@@ -136,9 +131,11 @@ export class Peer extends EventEmitter {
     this._api = new API(options);
     this._socket = this._createServerConnection();
 
+    this.features = Peer.getFeatures(this._options.polyfills?.WebRTC);
+
     // Sanity checks
     // Ensure WebRTC supported
-    if (!Utils.supports.audioVideo && !Utils.supports.data) {
+    if (!this.features.audioVideo && !this.features.data) {
       this._delayedAbort(PeerErrorType.BrowserIncompatible, 'The current browser does not support WebRTC');
       return;
     }
@@ -160,14 +157,7 @@ export class Peer extends EventEmitter {
   }
 
   private _createServerConnection(): Socket {
-    const socket = new Socket(
-      this._options.secure,
-      this._options.host!,
-      this._options.port!,
-      this._options.path!,
-      this._options.key!,
-      this._options.pingInterval
-    );
+    const socket = new Socket(this._options);
 
     socket.on(SocketEventType.Message, (data: ServerMessage) => {
       this._handleMessage(data);
@@ -545,5 +535,70 @@ export class Peer extends EventEmitter {
       .listAllPeers()
       .then(peers => cb(peers))
       .catch(error => this._abort(PeerErrorType.ServerError, error));
+  }
+
+  static getFeatures(webRtc: any): Features {
+    if (!webRtc && typeof window !== 'undefined') {
+      webRtc = window;
+    }
+
+    if (!Peer._features) {
+      Peer._features = Peer.checkFeatures(webRtc);
+    }
+
+    return Peer._features;
+  }
+
+  private static _features?: Features;
+
+  // Lists which features are supported
+  private static checkFeatures(webRtc: any): Features {
+    if (!webRtc && typeof window !== 'undefined') {
+      webRtc = window;
+    }
+
+    const supported: Features = {
+      webRTC: typeof webRtc.RTCPeerConnection !== 'undefined',
+      audioVideo: true,
+      data: false,
+      binaryBlob: false,
+      reliable: false,
+      unifiedPlan: false,
+    };
+
+    if (!supported.webRTC) return supported;
+
+    let pc: RTCPeerConnection;
+
+    try {
+      pc = new webRtc.RTCPeerConnection(Utils.defaultConfig);
+      let dc: RTCDataChannel;
+
+      try {
+        dc = pc.createDataChannel('_PEERJSTEST', { ordered: true });
+        supported.data = true;
+        supported.reliable = !!dc.ordered;
+
+        // Binary test
+        try {
+          dc.binaryType = 'blob';
+          supported.binaryBlob = true; //not works for iOS?
+        } catch (e) {}
+      } catch (e) {
+      } finally {
+        if (dc) {
+          dc.close();
+        }
+      }
+    } catch (e) {
+    } finally {
+      if (pc) {
+        pc.close();
+      }
+    }
+
+    supported.unifiedPlan = Supports.isUnifiedPlanSupported(webRtc);
+
+    return supported;
   }
 }

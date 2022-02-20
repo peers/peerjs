@@ -38,7 +38,7 @@ export class DataConnection extends BaseConnection implements IDataConnection {
   } = {};
 
   private _dc: RTCDataChannel;
-  private _encodingQueue = new EncodingQueue();
+  private _encodingQueue: EncodingQueue;
 
   get dataChannel(): RTCDataChannel {
     return this._dc;
@@ -48,6 +48,8 @@ export class DataConnection extends BaseConnection implements IDataConnection {
     return this._bufferSize;
   }
 
+  private readonly FileReaderCtr: typeof FileReader;
+
   constructor(peerId: string, provider: Peer, options: any) {
     super(peerId, provider, options);
 
@@ -56,6 +58,10 @@ export class DataConnection extends BaseConnection implements IDataConnection {
     this.label = this.options.label || this.connectionId;
     this.serialization = this.options.serialization || SerializationType.Binary;
     this.reliable = !!this.options.reliable;
+
+    this.FileReaderCtr = provider.options.polyfills?.FileReader ?? window.FileReader;
+
+    this._encodingQueue = new EncodingQueue(new this.FileReaderCtr());
 
     this._encodingQueue.on('done', (ab: ArrayBuffer) => {
       this._bufferedSend(ab);
@@ -82,7 +88,7 @@ export class DataConnection extends BaseConnection implements IDataConnection {
   }
 
   private _configureDataChannel(): void {
-    if (!Utils.supports.binaryBlob || Utils.supports.reliable) {
+    if (!this.provider.features.binaryBlob || this.provider.features.reliable) {
       this.dataChannel.binaryType = 'arraybuffer';
     }
 
@@ -114,8 +120,8 @@ export class DataConnection extends BaseConnection implements IDataConnection {
 
     if (isBinarySerialization) {
       if (datatype === Blob) {
-        // Datatype should never be blob
-        Utils.blobToArrayBuffer(data as Blob, ab => {
+        // Datatype should never be Blob
+        Utils.blobToArrayBuffer(this.FileReaderCtr, data as Blob, ab => {
           const unpackedData = Utils.unpack(ab);
           this.emit(ConnectionEventType.Data, unpackedData);
         });
@@ -226,7 +232,7 @@ export class DataConnection extends BaseConnection implements IDataConnection {
         return;
       }
 
-      if (!Utils.supports.binaryBlob) {
+      if (!this.provider.features.binaryBlob) {
         // We only do this if we really need to (e.g. blobs are not supported),
         // because this conversion is costly.
         this._encodingQueue.enque(blob);

@@ -1,6 +1,4 @@
 import * as BinaryPack from 'peerjs-js-binarypack';
-import { Supports } from './supports';
-import type { Features } from '..';
 
 const DEFAULT_CONFIG = {
   iceServers: [
@@ -18,50 +16,6 @@ export const Utils = new (class {
 
   // Returns browser-agnostic default config
   readonly defaultConfig = DEFAULT_CONFIG;
-
-  // Lists which features are supported
-  readonly supports: Features = (function () {
-    const supported: Features = {
-      webRTC: Supports.isWebRTCSupported(),
-      audioVideo: true,
-      data: false,
-      binaryBlob: false,
-      reliable: false,
-    };
-
-    if (!supported.webRTC) return supported;
-
-    let pc: RTCPeerConnection;
-
-    try {
-      pc = new RTCPeerConnection(DEFAULT_CONFIG);
-      let dc: RTCDataChannel;
-
-      try {
-        dc = pc.createDataChannel('_PEERJSTEST', { ordered: true });
-        supported.data = true;
-        supported.reliable = !!dc.ordered;
-
-        // Binary test
-        try {
-          dc.binaryType = 'blob';
-          supported.binaryBlob = true; //not works for iOS?
-        } catch (e) {}
-      } catch (e) {
-      } finally {
-        if (dc) {
-          dc.close();
-        }
-      }
-    } catch (e) {
-    } finally {
-      if (pc) {
-        pc.close();
-      }
-    }
-
-    return supported;
-  })();
 
   // Ensure alphanumeric ids
   validateId(id: string): boolean {
@@ -106,8 +60,8 @@ export const Utils = new (class {
     return chunks;
   }
 
-  blobToArrayBuffer(blob: Blob, cb: (arg: ArrayBuffer | null) => void): FileReader {
-    const fr = new FileReader();
+  blobToArrayBuffer(FileReaderCtr: typeof FileReader, blob: Blob, cb: (arg: ArrayBuffer | null) => void): FileReader {
+    const fr = new FileReaderCtr();
 
     fr.onload = function (evt) {
       if (evt.target) {

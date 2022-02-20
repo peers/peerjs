@@ -5,7 +5,7 @@ export { Peer, Utils };
 
 export default Peer;
 
-if (typeof window === 'object') {
+if (typeof window !== 'undefined') {
   // @ts-expect-error
   window.Peer = Peer;
 }
