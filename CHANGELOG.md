@@ -14,7 +14,8 @@ The main goals of the second version:
 
 - modernize the code base: use `es6` and latest tools;
 - target to the latest browsers API(you can use webrtc adapter to shim old browsers);
-- shrink the package size.
+- shrink the package size;
+- NodeJS support.
 
 ### Breaking changes
 
@@ -73,6 +74,14 @@ In any case, you can use a CDN like `unpkg.com`:
 #### Use `ESBuild` as bundler.
 
 Parcel 1 was a good choice years ago, but now esbuild seems like simple and good solution!
+
+### New
+
+#### NodeJS support
+
+Yeah! You can use `peerjs` in NodeJS!
+
+See details in https://github.com/peers/peerjs/pull/928
 
 ### Another changes
 
