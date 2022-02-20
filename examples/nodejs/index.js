@@ -1,10 +1,8 @@
-const peerjs = require('peerjs');
+const { Peer } = require('peerjs');
 const fetch = require('node-fetch');
 const WebSocket = require('ws');
 const WebRTC = require('wrtc');
 const FileReader = require('filereader');
-
-const { Peer } = peerjs;
 
 const polyfills = { fetch, WebSocket, WebRTC, FileReader };
 
