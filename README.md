@@ -123,6 +123,12 @@ npm test
 
 1. Safari supports only string data when sending via DataConnection. Use JSON serialization type if you want to communicate with Safari. By default, DataConnection uses Binary serialization type.
 
+## FAQ
+
+- How to create an empty stream?
+
+https://github.com/peers/peerjs/issues/594#issuecomment-1046147052
+
 ## Links
 
 ### [Documentation / API Reference](https://peerjs.com/docs.html)
