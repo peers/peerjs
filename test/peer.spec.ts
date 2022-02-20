@@ -1,12 +1,14 @@
-import './setup';
+import { polyfills as pf } from './setup';
 import { expect } from 'chai';
 import { Peer } from '../lib';
-import { Server } from 'mock-socket';
+import { Server, WebSocket } from 'mock-socket';
 import { ConnectionType, ServerMessageType, PeerErrorType, PeerEventType } from '../lib/enums';
+
+const polyfills = { ...pf, WebSocket };
 
 const createMockServer = (): Server => {
   const fakeURL = 'ws://localhost:8080/peerjs?key=peerjs&id=1&token=testToken';
-  const mockServer = new Server(fakeURL);
+  const mockServer = new Server(fakeURL, { mock: false } as any);
 
   mockServer.on('connection', socket => {
     //@ts-ignore
@@ -19,6 +21,7 @@ const createMockServer = (): Server => {
 
   return mockServer;
 };
+
 describe('Peer', function () {
   describe('after construct without parameters', function () {
     it("shouldn't contains any connection", function () {
@@ -36,7 +39,7 @@ describe('Peer', function () {
 
   describe('after construct with parameters', function () {
     it('should contains id and key', function () {
-      const peer = new Peer('1', { key: 'anotherKey' });
+      const peer = new Peer('1', { key: 'anotherKey', polyfills });
 
       expect(peer.id).to.eq('1');
       expect(peer.options.key).to.eq('anotherKey');
@@ -53,7 +56,7 @@ describe('Peer', function () {
     });
 
     it('Peer#1 should has id #1', function (done) {
-      const peer1 = new Peer('1', { port: 8080, host: 'localhost' });
+      const peer1 = new Peer('1', { port: 8080, host: 'localhost', polyfills, debug: 3 });
       expect(peer1.open).to.be.false;
 
       const mediaOptions = {
@@ -66,8 +69,9 @@ describe('Peer', function () {
         },
       };
 
-      const track = new MediaStreamTrack();
-      const mediaStream = new MediaStream([track]);
+      const source = new polyfills.WebRTC.nonstandard.RTCVideoSource();
+      const track = source.createTrack();
+      const mediaStream = new polyfills.WebRTC.MediaStream([track]);
 
       const mediaConnection = peer1.call('2', mediaStream, { ...mediaOptions });
 
@@ -86,7 +90,9 @@ describe('Peer', function () {
         expect(peer1.destroyed).to.be.false;
         expect(peer1.open).to.be.true;
 
+        mediaConnection.close();
         peer1.destroy();
+        track.stop();
 
         expect(peer1.disconnected).to.be.true;
         expect(peer1.destroyed).to.be.true;
@@ -103,14 +109,18 @@ describe('Peer', function () {
   });
 
   describe('reconnect', function () {
-    let mockServer;
+    let mockServer: Server | undefined;
 
-    before(function () {
+    beforeEach(function () {
       mockServer = createMockServer();
     });
 
+    afterEach(function () {
+      mockServer?.stop();
+    });
+
     it('connect to server => disconnect => reconnect => destroy', function (done) {
-      const peer1 = new Peer('1', { port: 8080, host: 'localhost' });
+      const peer1 = new Peer('1', { port: 8080, host: 'localhost', polyfills });
 
       peer1.once('open', () => {
         expect(peer1.open).to.be.true;
@@ -153,7 +163,11 @@ describe('Peer', function () {
     it('disconnect => reconnect => destroy', function (done) {
       mockServer.stop();
 
-      const peer1 = new Peer('1', { port: 8080, host: 'localhost' });
+      const peer1 = new Peer('1', {
+        port: 8080,
+        host: 'localhost',
+        polyfills,
+      });
 
       peer1.once('disconnected', id => {
         expect(id).to.be.eq('1');
@@ -193,7 +207,7 @@ describe('Peer', function () {
     it('destroy peer if no id and no connection', function (done) {
       mockServer.stop();
 
-      const peer1 = new Peer({ port: 8080, host: 'localhost' });
+      const peer1 = new Peer({ port: 8080, host: 'localhost', polyfills });
 
       peer1.once(PeerEventType.Error, error => {
         expect(error.type).to.be.eq(PeerErrorType.ServerError);

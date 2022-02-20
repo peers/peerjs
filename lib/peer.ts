@@ -189,6 +189,8 @@ export class Peer extends EventEmitter {
 
   /** Initialize a connection with the server. */
   private _initialize(id: string): void {
+    if (this.destroyed) return;
+
     this._id = id;
     this.socket.start(id, this._options.token!);
   }

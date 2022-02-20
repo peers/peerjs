@@ -97,10 +97,14 @@ export class Negotiator {
           this.connection.emit(ConnectionEventType.Error, new Error('Connection to ' + peerId + ' closed.'));
           this.connection.close();
           break;
+        case 'connected':
+          logger.log('iceConnectionState changed to connected on the connection with ' + peerId);
+          break;
         case 'disconnected':
           logger.log('iceConnectionState changed to disconnected on the connection with ' + peerId);
           break;
         case 'completed':
+          logger.log('iceConnectionState changed to completed on the connection with ' + peerId);
           peerConnection.onicecandidate = noop;
           break;
       }
@@ -154,7 +158,7 @@ export class Negotiator {
       peerConnection.oniceconnectionstatechange =
       peerConnection.ondatachannel =
       peerConnection.ontrack =
-        noop;
+        null;
 
     const peerConnectionNotClosed = peerConnection.signalingState !== 'closed';
     let dataChannelNotClosed = false;
@@ -179,6 +183,8 @@ export class Negotiator {
 
     try {
       const offer = await peerConnection.createOffer(this.connection.options.constraints);
+
+      if (peerConnection.signalingState === 'closed') return;
 
       logger.log('Created offer.');
 
@@ -233,6 +239,9 @@ export class Negotiator {
 
     try {
       const answer = await peerConnection.createAnswer();
+
+      if (peerConnection.signalingState === 'closed') return;
+
       logger.log('Created answer.');
 
       if (this.connection.options.sdpTransform && typeof this.connection.options.sdpTransform === 'function') {

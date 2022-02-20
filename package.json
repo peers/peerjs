@@ -34,7 +34,7 @@
     "esbuild": "esbuild lib/index.ts --bundle --target=es6 --global-name=Peer",
     "build": "npm run esbuild -- --outfile=dist/peerjs.js --sourcemap && npm run esbuild -- --minify --outfile=dist/peerjs.min.js --sourcemap && npm run esbuild -- --outfile=dist/peerjs.esm.js --format=esm && npm run esbuild -- --outfile=dist/peerjs.cjs.js --format=cjs",
     "prepublishOnly": "npm run tsc-check && npm run test && npm run build",
-    "test": "mocha -r ts-node/register -r jsdom-global/register test/**/*.ts",
+    "test": "mocha -r ts-node/register -r jsdom-global/register test/*.spec.ts",
     "tsc-check": "tsc --noEmit"
   },
   "release": {
@@ -51,9 +51,11 @@
     "jsdom-global": "^3.0.2",
     "mocha": "^9.2.0",
     "mock-socket": "8.0.5",
+    "node-fetch": "^2.6.7",
     "prettier": "^2.5.1",
     "ts-node": "^10.5.0",
-    "typescript": "^4.5.5"
+    "typescript": "^4.5.5",
+    "wrtc": "^0.4.7"
   },
   "dependencies": {
     "eventemitter3": "^3.1.2",
