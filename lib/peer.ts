@@ -146,6 +146,8 @@ export class Peer extends EventEmitter {
       return;
     }
 
+    this.socket.alive = true;
+
     if (userId) {
       this._initialize(userId);
     } else {
@@ -462,6 +464,8 @@ export class Peer extends EventEmitter {
     this.disconnect();
     this._cleanup();
 
+    this.socket.destroy();
+
     this._destroyed = true;
 
     this.emit(PeerEventType.Close);
@@ -506,6 +510,7 @@ export class Peer extends EventEmitter {
     this._disconnected = true;
     this._open = false;
 
+    this.socket.alive = false;
     this.socket.close();
 
     this._lastServerId = currentId;
@@ -519,6 +524,7 @@ export class Peer extends EventEmitter {
     if (this.disconnected && !this.destroyed) {
       logger.log(`Attempting reconnection to server with ID ${this._lastServerId}`);
       this._disconnected = false;
+      this.socket.alive = true;
       this._initialize(this._lastServerId!);
     } else if (this.destroyed) {
       throw new Error('This peer cannot reconnect to the server. It has already been destroyed.');

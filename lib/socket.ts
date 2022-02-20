@@ -1,22 +1,42 @@
 import { EventEmitter } from 'eventemitter3';
 import logger from './logger';
-import { SocketEventType, ServerMessageType } from './enums';
+import { SocketEventType, ServerMessageType, type ConnectionType } from './enums';
 import type { PeerJSOption } from '../index';
 
+type MessageData = {
+  type: ServerMessageType;
+  dst: string;
+  payload: {
+    type: ConnectionType;
+    connectionId: string;
+  } & Record<string, any>;
+};
 /**
  * An abstraction on top of WebSockets to provide the fastest
  * possible connection for peers.
  */
 export class Socket extends EventEmitter {
   private _disconnected: boolean = true;
-  private _id?: string;
-  private _messagesQueue: Array<object> = [];
+  private _id: string | null = null;
+  private _messagesQueue: Array<MessageData> = [];
   private _socket?: WebSocket;
   private _wsPingTimer?: any;
   private readonly _baseUrl: string;
 
   private readonly pingInterval: number;
   private readonly WebSocketConstructor: typeof WebSocket;
+
+  alive: boolean = false;
+
+  private _destroyed = false;
+
+  get messagesQueue(): ReadonlyArray<MessageData> {
+    return this._messagesQueue;
+  }
+
+  get destroyed() {
+    return this._destroyed;
+  }
 
   constructor({ secure, host, port, path, key, pingInterval = 5000, polyfills }: PeerJSOption) {
     super();
@@ -30,18 +50,22 @@ export class Socket extends EventEmitter {
   }
 
   start(id: string, token: string): void {
-    this._id = id;
+    if (this._destroyed) throw new Error('Socket was destroyed!');
 
-    const wsUrl = `${this._baseUrl}&id=${id}&token=${token}`;
+    this._id = id;
 
     if (!!this._socket || !this._disconnected) {
       return;
     }
 
+    const wsUrl = `${this._baseUrl}&id=${id}&token=${token}`;
+
     this._socket = new this.WebSocketConstructor(wsUrl);
     this._disconnected = false;
 
     this._socket.onmessage = event => {
+      if (this._destroyed) return;
+
       let data;
 
       try {
@@ -56,7 +80,7 @@ export class Socket extends EventEmitter {
     };
 
     this._socket.onclose = event => {
-      if (this._disconnected) {
+      if (this._disconnected || this._destroyed) {
         return;
       }
 
@@ -71,13 +95,15 @@ export class Socket extends EventEmitter {
     // Take care of the queue of connections if necessary and make sure Peer knows
     // socket is open.
     this._socket.onopen = () => {
-      if (this._disconnected) {
+      if (this._disconnected || this._destroyed) {
         return;
       }
 
-      this._sendQueuedMessages();
-
       logger.log('Socket open');
+
+      this.emit(SocketEventType.Open);
+
+      this._sendQueuedMessages();
 
       this._scheduleHeartbeat();
     };
@@ -90,6 +116,8 @@ export class Socket extends EventEmitter {
   }
 
   private _sendHeartbeat(): void {
+    if (this._destroyed) return;
+
     if (!this._wsOpen()) {
       logger.log(`Cannot send heartbeat, because socket closed`);
       return;
@@ -110,34 +138,36 @@ export class Socket extends EventEmitter {
   /** Send queued messages. */
   private _sendQueuedMessages(): void {
     //Create copy of queue and clear it,
-    //because send method push the message back to queue if smth will go wrong
+    //because send method push the message back to queue if something will go wrong
     const copiedQueue = [...this._messagesQueue];
     this._messagesQueue = [];
 
     for (const message of copiedQueue) {
       this.send(message);
     }
+
+    if (copiedQueue.length > 0) {
+      logger.log(`${copiedQueue.length} queued messages was sent`);
+    }
   }
 
   /** Exposed send for DC & Peer. */
-  send(data: any): void {
-    if (this._disconnected) {
-      return;
-    }
-
-    // If we didn't get an ID yet, we can't yet send anything so we should queue
-    // up these messages.
-    if (!this._id) {
-      this._messagesQueue.push(data);
-      return;
-    }
+  send(data: MessageData): void {
+    if (this._destroyed) throw new Error('Socket was destroyed!');
 
     if (!data.type) {
       this.emit(SocketEventType.Error, 'Invalid message');
       return;
     }
 
-    if (!this._wsOpen()) {
+    if (!this.alive) {
+      return;
+    }
+
+    // If we didn't get an ID yet, we can't yet send anything so we should queue
+    // up these messages.
+    if (this._id == null || !this._wsOpen()) {
+      this._messagesQueue.push(data);
       return;
     }
 
@@ -153,6 +183,8 @@ export class Socket extends EventEmitter {
 
     this._cleanup();
 
+    this._id = null;
+
     this._disconnected = true;
   }
 
@@ -164,5 +196,14 @@ export class Socket extends EventEmitter {
     }
 
     clearTimeout(this._wsPingTimer!);
+  }
+
+  destroy() {
+    if (this._destroyed) return;
+
+    this.close();
+    this._messagesQueue.length = 0;
+
+    this._destroyed = true;
   }
 }

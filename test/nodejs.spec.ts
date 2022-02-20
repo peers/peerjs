@@ -1,8 +1,8 @@
-import { polyfills } from './setup';
+import { polyfills, randomString } from './setup';
 import { expect } from 'chai';
 import { Peer } from '../lib';
 
-const makePeer = () => new Peer({ polyfills });
+const makePeer = (id?: string) => new Peer(id, { polyfills, debug: 0 });
 
 describe('NodeJS platform', function () {
   describe('basic', function () {
@@ -23,48 +23,37 @@ describe('NodeJS platform', function () {
     });
 
     it('send simple message', function (done) {
-      this.timeout(5000); // ice transfers
+      const peer1 = makePeer(randomString());
 
-      const peer1 = makePeer();
-      const peer2 = makePeer();
-
-      const promise = new Promise<string>(res => {
-        peer1.on('open', id => {
-          res(id);
+      peer1.on('connection', conn => {
+        conn.on('data', data => {
+          expect(data).eq('hi from peer2');
+          conn.send(`finished!`);
         });
 
-        peer1.on('connection', conn => {
-          conn.on('data', data => {
-            expect(data).eq('hi from peer2');
-            conn.send(`finished!`);
-          });
-
-          conn.on('open', () => {
-            conn.send('hello!');
-          });
+        conn.on('open', () => {
+          conn.send('hello!');
         });
       });
 
-      peer2.on('open', async () => {
-        const id = await promise;
+      const peer2 = makePeer();
 
-        const conn = peer2.connect(id, { serialization: 'json' });
+      const conn = peer2.connect(peer1.id, { serialization: 'json' });
 
-        conn.on('open', () => {
-          conn.send('hi from peer2');
+      conn.on('open', () => {
+        conn.send('hi from peer2');
 
-          const receivedMessage = [];
-          conn.on('data', data => {
-            receivedMessage.push(data);
-            if (data === 'finished!') {
-              expect(receivedMessage).deep.eq(['hello!', 'finished!']);
-              done();
-              peer1.destroy();
-              peer2.destroy();
-              peer1.removeAllListeners();
-              peer2.removeAllListeners();
-            }
-          });
+        const receivedMessage = [];
+        conn.on('data', data => {
+          receivedMessage.push(data);
+          if (data === 'finished!') {
+            expect(receivedMessage).deep.eq(['hello!', 'finished!']);
+            done();
+            peer1.destroy();
+            peer2.destroy();
+            peer1.removeAllListeners();
+            peer2.removeAllListeners();
+          }
         });
       });
     });

@@ -47,6 +47,7 @@ export enum SocketEventType {
   Disconnected = 'disconnected',
   Error = 'error',
   Close = 'close',
+  Open = 'open',
 }
 
 export enum ServerMessageType {

@@ -64,7 +64,7 @@ export class Negotiator {
     const provider = this.connection.provider;
 
     // ICE CANDIDATES.
-    logger.log('Listening for ICE candidates.');
+    logger.log('Listening for ICE candidates, remote streams and data channels.');
 
     peerConnection.onicecandidate = evt => {
       if (!evt.candidate || !evt.candidate.candidate) return;
@@ -112,8 +112,6 @@ export class Negotiator {
       this.connection.emit(ConnectionEventType.IceStateChanged, peerConnection.iceConnectionState);
     };
 
-    // DATACONNECTION.
-    logger.log('Listening for data channel');
     // Fired between offer and answer, so options should already be saved
     // in the options hash.
     peerConnection.ondatachannel = evt => {
@@ -124,9 +122,6 @@ export class Negotiator {
 
       connection.initialize(dataChannel);
     };
-
-    // MEDIACONNECTION.
-    logger.log('Listening for remote stream');
 
     peerConnection.ontrack = evt => {
       logger.log('Received remote stream');
