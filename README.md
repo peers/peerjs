@@ -129,6 +129,10 @@ npm test
 
 https://github.com/peers/peerjs/issues/594#issuecomment-1046147052
 
+- It doesn't work for iOS, any idea?
+
+https://github.com/peers/peerjs/issues/599#issuecomment-559981544
+
 ## Links
 
 ### [Documentation / API Reference](https://peerjs.com/docs.html)
