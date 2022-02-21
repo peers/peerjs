@@ -71,6 +71,11 @@ In any case, you can use a CDN like `unpkg.com`:
 <script src="https://unpkg.com/peerjs@2.0.0/dist/peerjs.min.js"></script>
 ```
 
+#### Replace `util.supports` to `Peer.getFeatures()`
+
+You can check the possible features of WebRTC by static method `Peer.getFeatures()`
+before instantiating a `Peer` object.
+
 #### Use `ESBuild` as bundler.
 
 Parcel 1 was a good choice years ago, but now esbuild seems like simple and good solution!
@@ -89,6 +94,7 @@ See details in https://github.com/peers/peerjs/pull/928
 - apply `Prettier` for the code style
 - rename `util` to `Utils`
 - remove `peerjs` export.
+- fix #864
 
 <a name="1.3.2"></a>
 
