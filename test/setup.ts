@@ -19,3 +19,5 @@ export function randomString(length = 10): string {
 
   return result;
 }
+
+process.on('beforeExit', (code) => process.exit(code));
