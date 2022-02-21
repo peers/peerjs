@@ -31,8 +31,11 @@
   "license": "MIT",
   "scripts": {
     "dev": "",
-    "esbuild": "esbuild lib/index.ts --bundle --target=es6 --global-name=Peer",
-    "build": "npm run esbuild -- --outfile=dist/peerjs.js --sourcemap && npm run esbuild -- --minify --outfile=dist/peerjs.min.js --sourcemap && npm run esbuild -- --outfile=dist/peerjs.esm.js --format=esm && npm run esbuild -- --outfile=dist/peerjs.cjs.js --format=cjs",
+    "esbuild": "esbuild lib/index.ts --bundle --target=es6",
+    "build:esm": "npm run esbuild -- --outfile=dist/peerjs.esm.js --format=esm",
+    "build:cjs": "npm run esbuild -- --outfile=dist/peerjs.cjs.js --format=cjs",
+    "build:browser": "npm run esbuild -- --outfile=dist/peerjs.js --sourcemap --format=iife && npm run esbuild -- --minify --outfile=dist/peerjs.min.js --sourcemap --format=iife",
+    "build": "npm run build:esm && npm run build:cjs && npm run build:browser",
     "prepublishOnly": "npm run tsc-check && npm run test && npm run build",
     "test": "mocha -r ts-node/register -r jsdom-global/register test/*.spec.ts",
     "tsc-check": "tsc --noEmit"
