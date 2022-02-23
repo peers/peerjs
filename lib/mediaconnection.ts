@@ -16,6 +16,7 @@ export class MediaConnection extends BaseConnection {
   private _negotiator: Negotiator;
   private _localStream: MediaStream;
   private _remoteStream: MediaStream;
+  private _addTransceivers: Boolean;
 
   get type() {
     return ConnectionType.Media;
@@ -32,12 +33,16 @@ export class MediaConnection extends BaseConnection {
       this.options.connectionId ||
       MediaConnection.ID_PREFIX + util.randomToken();
 
+    this._addTransceivers =
+      this.options.addTransceivers || false;
+
     this._negotiator = new Negotiator(this);
 
     if (this._localStream) {
       this._negotiator.startConnection({
         _stream: this._localStream,
-        originator: true
+        originator: true,
+        _addTransceivers: this._addTransceivers
       });
     }
   }

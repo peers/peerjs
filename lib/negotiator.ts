@@ -19,7 +19,7 @@ export class Negotiator {
     this.connection.peerConnection = peerConnection;
 
     if (this.connection.type === ConnectionType.Media && options._stream) {
-      this._addTracksToConnection(options._stream, peerConnection);
+      this._addTracksToConnection(options._stream, peerConnection, options._addTransceivers);
     }
 
     // What do we need to do now?
@@ -331,7 +331,8 @@ export class Negotiator {
 
   private _addTracksToConnection(
     stream: MediaStream,
-    peerConnection: RTCPeerConnection
+    peerConnection: RTCPeerConnection,
+    addTransceivers: Boolean
   ): void {
     logger.log(`add tracks from stream ${stream.id} to peer connection`);
 
@@ -344,6 +345,16 @@ export class Negotiator {
     stream.getTracks().forEach(track => {
       peerConnection.addTrack(track, stream);
     });
+
+    if (addTransceivers) {
+      if (stream.getVideoTracks().length == 0) {
+        peerConnection.addTransceiver("video");
+      }
+
+      if (stream.getAudioTracks().length == 0) {
+        peerConnection.addTransceiver("audio");
+      }
+    }
   }
 
   private _addStreamToMediaConnection(
