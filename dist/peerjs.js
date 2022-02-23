@@ -6615,8 +6615,8 @@ function () {
   class_1.prototype.isUnifiedPlanSupported = function () {
     var browser = this.getBrowser();
     var version = adapter_1.webRTCAdapter.browserDetails.version || 0;
-    if (browser === 'chrome' && version < 72) return false;
-    if (browser === 'firefox' && version >= 59) return true;
+    if (browser === 'chrome' && version < this.minChromeVersion) return false;
+    if (browser === 'firefox' && version >= this.minFirefoxVersion) return true;
     if (!window.RTCRtpTransceiver || !('currentDirection' in RTCRtpTransceiver.prototype)) return false;
     var tempPc;
     var supported = false;
@@ -6635,7 +6635,7 @@ function () {
   };
 
   class_1.prototype.toString = function () {
-    return "Supports: \n    browser:" + this.getBrowser() + " \n    version:" + this.getVersion() + " \n    isIOS:" + this.isIOS + " \n    isWebRTCSupported:" + this.isWebRTCSupported() + " \n    isBrowserSupported:" + this.isBrowserSupported() + " \n    isUnifiedPlanSupported:" + this.isUnifiedPlanSupported();
+    return "Supports: \n    browser:".concat(this.getBrowser(), " \n    version:").concat(this.getVersion(), " \n    isIOS:").concat(this.isIOS, " \n    isWebRTCSupported:").concat(this.isWebRTCSupported(), " \n    isBrowserSupported:").concat(this.isBrowserSupported(), " \n    isUnifiedPlanSupported:").concat(this.isUnifiedPlanSupported());
   };
 
   return class_1;
@@ -7196,12 +7196,14 @@ var __read = this && this.__read || function (o, n) {
   return ar;
 };
 
-var __spreadArray = this && this.__spreadArray || function (to, from) {
-  for (var i = 0, il = from.length, j = to.length; i < il; i++, j++) {
-    to[j] = from[i];
+var __spreadArray = this && this.__spreadArray || function (to, from, pack) {
+  if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+    if (ar || !(i in from)) {
+      if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+      ar[i] = from[i];
+    }
   }
-
-  return to;
+  return to.concat(ar || Array.prototype.slice.call(from));
 };
 
 Object.defineProperty(exports, "__esModule", {
@@ -7252,7 +7254,7 @@ function () {
     }
 
     if (this._logLevel >= LogLevel.All) {
-      this._print.apply(this, __spreadArray([LogLevel.All], __read(args)));
+      this._print.apply(this, __spreadArray([LogLevel.All], __read(args), false));
     }
   };
 
@@ -7264,7 +7266,7 @@ function () {
     }
 
     if (this._logLevel >= LogLevel.Warnings) {
-      this._print.apply(this, __spreadArray([LogLevel.Warnings], __read(args)));
+      this._print.apply(this, __spreadArray([LogLevel.Warnings], __read(args), false));
     }
   };
 
@@ -7276,7 +7278,7 @@ function () {
     }
 
     if (this._logLevel >= LogLevel.Errors) {
-      this._print.apply(this, __spreadArray([LogLevel.Errors], __read(args)));
+      this._print.apply(this, __spreadArray([LogLevel.Errors], __read(args), false));
     }
   };
 
@@ -7291,7 +7293,7 @@ function () {
       rest[_i - 1] = arguments[_i];
     }
 
-    var copy = __spreadArray([LOG_PREFIX], __read(rest));
+    var copy = __spreadArray([LOG_PREFIX], __read(rest), false);
 
     for (var i in copy) {
       if (copy[i] instanceof Error) {
@@ -7300,11 +7302,11 @@ function () {
     }
 
     if (logLevel >= LogLevel.All) {
-      console.log.apply(console, __spreadArray([], __read(copy)));
+      console.log.apply(console, __spreadArray([], __read(copy), false));
     } else if (logLevel >= LogLevel.Warnings) {
-      console.warn.apply(console, __spreadArray(["WARNING"], __read(copy)));
+      console.warn.apply(console, __spreadArray(["WARNING"], __read(copy), false));
     } else if (logLevel >= LogLevel.Errors) {
-      console.error.apply(console, __spreadArray(["ERROR"], __read(copy)));
+      console.error.apply(console, __spreadArray(["ERROR"], __read(copy), false));
     }
   };
 
@@ -7454,12 +7456,14 @@ var __read = this && this.__read || function (o, n) {
   return ar;
 };
 
-var __spreadArray = this && this.__spreadArray || function (to, from) {
-  for (var i = 0, il = from.length, j = to.length; i < il; i++, j++) {
-    to[j] = from[i];
+var __spreadArray = this && this.__spreadArray || function (to, from, pack) {
+  if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+    if (ar || !(i in from)) {
+      if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+      ar[i] = from[i];
+    }
   }
-
-  return to;
+  return to.concat(ar || Array.prototype.slice.call(from));
 };
 
 var __values = this && this.__values || function (o) {
@@ -7525,7 +7529,7 @@ function (_super) {
     var _this = this;
 
     this._id = id;
-    var wsUrl = this._baseUrl + "&id=" + id + "&token=" + token;
+    var wsUrl = "".concat(this._baseUrl, "&id=").concat(id, "&token=").concat(token);
 
     if (!!this._socket || !this._disconnected) {
       return;
@@ -7613,7 +7617,7 @@ function (_super) {
     //because send method push the message back to queue if smth will go wrong
 
 
-    var copiedQueue = __spreadArray([], __read(this._messagesQueue));
+    var copiedQueue = __spreadArray([], __read(this._messagesQueue), false);
 
     this._messagesQueue = [];
 
@@ -7889,7 +7893,7 @@ function () {
     this.connection.peerConnection = peerConnection;
 
     if (this.connection.type === enums_1.ConnectionType.Media && options._stream) {
-      this._addTracksToConnection(options._stream, peerConnection);
+      this._addTracksToConnection(options._stream, peerConnection, options._addTransceivers);
     } // What do we need to do now?
 
 
@@ -7934,7 +7938,7 @@ function () {
 
     peerConnection.onicecandidate = function (evt) {
       if (!evt.candidate || !evt.candidate.candidate) return;
-      logger_1.default.log("Received ICE candidates for " + peerId + ":", evt.candidate);
+      logger_1.default.log("Received ICE candidates for ".concat(peerId, ":"), evt.candidate);
       provider.socket.send({
         type: enums_1.ServerMessageType.Candidate,
         payload: {
@@ -8071,7 +8075,7 @@ function () {
           case 4:
             _a.sent();
 
-            logger_1.default.log("Set localDescription:", offer, "for:" + this.connection.peer);
+            logger_1.default.log("Set localDescription:", offer, "for:".concat(this.connection.peer));
             payload = {
               sdp: offer,
               type: this.connection.type,
@@ -8169,7 +8173,7 @@ function () {
           case 4:
             _a.sent();
 
-            logger_1.default.log("Set localDescription:", answer, "for:" + this.connection.peer);
+            logger_1.default.log("Set localDescription:", answer, "for:".concat(this.connection.peer));
             provider.socket.send({
               type: enums_1.ServerMessageType.Answer,
               payload: {
@@ -8239,7 +8243,7 @@ function () {
           case 2:
             _a.sent();
 
-            logger_1.default.log("Set remoteDescription:" + type + " for:" + this.connection.peer);
+            logger_1.default.log("Set remoteDescription:".concat(type, " for:").concat(this.connection.peer));
             if (!(type === "OFFER")) return [3
             /*break*/
             , 4];
@@ -8304,7 +8308,7 @@ function () {
           case 2:
             _a.sent();
 
-            logger_1.default.log("Added ICE candidate for:" + this.connection.peer);
+            logger_1.default.log("Added ICE candidate for:".concat(this.connection.peer));
             return [3
             /*break*/
             , 4];
@@ -8326,8 +8330,8 @@ function () {
     });
   };
 
-  Negotiator.prototype._addTracksToConnection = function (stream, peerConnection) {
-    logger_1.default.log("add tracks from stream " + stream.id + " to peer connection");
+  Negotiator.prototype._addTracksToConnection = function (stream, peerConnection, addTransceivers) {
+    logger_1.default.log("add tracks from stream ".concat(stream.id, " to peer connection"));
 
     if (!peerConnection.addTrack) {
       return logger_1.default.error("Your browser does't support RTCPeerConnection#addTrack. Ignored.");
@@ -8336,10 +8340,20 @@ function () {
     stream.getTracks().forEach(function (track) {
       peerConnection.addTrack(track, stream);
     });
+
+    if (addTransceivers) {
+      if (stream.getVideoTracks().length == 0) {
+        peerConnection.addTransceiver("video");
+      }
+
+      if (stream.getAudioTracks().length == 0) {
+        peerConnection.addTransceiver("audio");
+      }
+    }
   };
 
   Negotiator.prototype._addStreamToMediaConnection = function (stream, mediaConnection) {
-    logger_1.default.log("add stream " + stream.id + " to media connection " + mediaConnection.connectionId);
+    logger_1.default.log("add stream ".concat(stream.id, " to media connection ").concat(mediaConnection.connectionId));
     mediaConnection.addStream(stream);
   };
 
@@ -8511,12 +8525,14 @@ function (_super) {
 
     _this._localStream = _this.options._stream;
     _this.connectionId = _this.options.connectionId || MediaConnection.ID_PREFIX + util_1.util.randomToken();
+    _this._addTransceivers = _this.options.addTransceivers || false;
     _this._negotiator = new negotiator_1.Negotiator(_this);
 
     if (_this._localStream) {
       _this._negotiator.startConnection({
         _stream: _this._localStream,
-        originator: true
+        originator: true,
+        _addTransceivers: _this._addTransceivers
       });
     }
 
@@ -8571,7 +8587,7 @@ function (_super) {
         break;
 
       default:
-        logger_1.default.warn("Unrecognized message type:" + type + " from peer:" + this.peer);
+        logger_1.default.warn("Unrecognized message type:".concat(type, " from peer:").concat(this.peer));
         break;
     }
   };
@@ -8885,7 +8901,7 @@ function (_super) {
     });
 
     _this._encodingQueue.on('error', function () {
-      logger_1.default.error("DC#" + _this.connectionId + ": Error occured in encoding from blob to arraybuffer, close DC");
+      logger_1.default.error("DC#".concat(_this.connectionId, ": Error occured in encoding from blob to arraybuffer, close DC"));
 
       _this.close();
     });
@@ -8936,20 +8952,20 @@ function (_super) {
     }
 
     this.dataChannel.onopen = function () {
-      logger_1.default.log("DC#" + _this.connectionId + " dc connection success");
+      logger_1.default.log("DC#".concat(_this.connectionId, " dc connection success"));
       _this._open = true;
 
       _this.emit(enums_1.ConnectionEventType.Open);
     };
 
     this.dataChannel.onmessage = function (e) {
-      logger_1.default.log("DC#" + _this.connectionId + " dc onmessage:", e.data);
+      logger_1.default.log("DC#".concat(_this.connectionId, " dc onmessage:"), e.data);
 
       _this._handleDataMessage(e);
     };
 
     this.dataChannel.onclose = function () {
-      logger_1.default.log("DC#" + _this.connectionId + " dc closed for:", _this.peer);
+      logger_1.default.log("DC#".concat(_this.connectionId, " dc closed for:"), _this.peer);
 
       _this.close();
     };
@@ -9126,7 +9142,7 @@ function (_super) {
     try {
       this.dataChannel.send(msg);
     } catch (e) {
-      logger_1.default.error("DC#:" + this.connectionId + " Error when sending:", e);
+      logger_1.default.error("DC#:".concat(this.connectionId, " Error when sending:"), e);
       this._buffering = true;
       this.close();
       return false;
@@ -9160,7 +9176,7 @@ function (_super) {
     var e_1, _a;
 
     var blobs = util_1.util.chunk(blob);
-    logger_1.default.log("DC#" + this.connectionId + " Try to send " + blobs.length + " chunks...");
+    logger_1.default.log("DC#".concat(this.connectionId, " Try to send ").concat(blobs.length, " chunks..."));
 
     try {
       for (var blobs_1 = __values(blobs), blobs_1_1 = blobs_1.next(); !blobs_1_1.done; blobs_1_1 = blobs_1.next()) {
@@ -9404,7 +9420,7 @@ function () {
             response = _a.sent();
 
             if (response.status !== 200) {
-              throw new Error("Error. Status:" + response.status);
+              throw new Error("Error. Status:".concat(response.status));
             }
 
             return [2
@@ -9465,7 +9481,7 @@ function () {
                 throw new Error("It doesn't look like you have permission to list peers IDs. " + helpfulError);
               }
 
-              throw new Error("Error. Status:" + response.status);
+              throw new Error("Error. Status:".concat(response.status));
             }
 
             return [2
@@ -9701,7 +9717,7 @@ function (_super) {
 
 
     if (!!userId && !util_1.util.validateId(userId)) {
-      _this._delayedAbort(enums_1.PeerErrorType.InvalidID, "ID \"" + userId + "\" is invalid");
+      _this._delayedAbort(enums_1.PeerErrorType.InvalidID, "ID \"".concat(userId, "\" is invalid"));
 
       return _this;
     }
@@ -9858,19 +9874,19 @@ function (_super) {
 
       case enums_1.ServerMessageType.IdTaken:
         // The selected ID is taken.
-        this._abort(enums_1.PeerErrorType.UnavailableID, "ID \"" + this.id + "\" is taken");
+        this._abort(enums_1.PeerErrorType.UnavailableID, "ID \"".concat(this.id, "\" is taken"));
 
         break;
 
       case enums_1.ServerMessageType.InvalidKey:
         // The given API key cannot be found.
-        this._abort(enums_1.PeerErrorType.InvalidKey, "API KEY \"" + this._options.key + "\" is invalid");
+        this._abort(enums_1.PeerErrorType.InvalidKey, "API KEY \"".concat(this._options.key, "\" is invalid"));
 
         break;
 
       case enums_1.ServerMessageType.Leave:
         // Another peer has closed its connection to this peer.
-        logger_1.default.log("Received leave message from " + peerId);
+        logger_1.default.log("Received leave message from ".concat(peerId));
 
         this._cleanupPeer(peerId);
 
@@ -9880,7 +9896,7 @@ function (_super) {
 
       case enums_1.ServerMessageType.Expire:
         // The offer sent to a peer has expired without response.
-        this.emitError(enums_1.PeerErrorType.PeerUnavailable, "Could not connect to peer " + peerId);
+        this.emitError(enums_1.PeerErrorType.PeerUnavailable, "Could not connect to peer ".concat(peerId));
         break;
 
       case enums_1.ServerMessageType.Offer:
@@ -9891,7 +9907,7 @@ function (_super) {
 
           if (connection) {
             connection.close();
-            logger_1.default.warn("Offer received for existing Connection ID:" + connectionId);
+            logger_1.default.warn("Offer received for existing Connection ID:".concat(connectionId));
           } // Create a new connection.
 
 
@@ -9919,7 +9935,7 @@ function (_super) {
 
             this.emit(enums_1.PeerEventType.Connection, connection);
           } else {
-            logger_1.default.warn("Received malformed connection type:" + payload.type);
+            logger_1.default.warn("Received malformed connection type:".concat(payload.type));
             return;
           } // Find messages.
 
@@ -9949,7 +9965,7 @@ function (_super) {
       default:
         {
           if (!payload) {
-            logger_1.default.warn("You received a malformed message from " + peerId + " of type " + type);
+            logger_1.default.warn("You received a malformed message from ".concat(peerId, " of type ").concat(type));
             return;
           }
 
@@ -10051,7 +10067,7 @@ function (_super) {
 
 
   Peer.prototype._addConnection = function (peerId, connection) {
-    logger_1.default.log("add connection " + connection.type + ":" + connection.connectionId + " to peerId:" + peerId);
+    logger_1.default.log("add connection ".concat(connection.type, ":").concat(connection.connectionId, " to peerId:").concat(peerId));
 
     if (!this._connections.has(peerId)) {
       this._connections.set(peerId, []);
@@ -10163,7 +10179,7 @@ function (_super) {
       return;
     }
 
-    logger_1.default.log("Destroy peer with ID:" + this.id);
+    logger_1.default.log("Destroy peer with ID:".concat(this.id));
     this.disconnect();
 
     this._cleanup();
@@ -10240,7 +10256,7 @@ function (_super) {
     }
 
     var currentId = this.id;
-    logger_1.default.log("Disconnect peer with ID:" + currentId);
+    logger_1.default.log("Disconnect peer with ID:".concat(currentId));
     this._disconnected = true;
     this._open = false;
     this.socket.close();
@@ -10253,7 +10269,7 @@ function (_super) {
 
   Peer.prototype.reconnect = function () {
     if (this.disconnected && !this.destroyed) {
-      logger_1.default.log("Attempting reconnection to server with ID " + this._lastServerId);
+      logger_1.default.log("Attempting reconnection to server with ID ".concat(this._lastServerId));
       this._disconnected = false;
 
       this._initialize(this._lastServerId);
@@ -10263,7 +10279,7 @@ function (_super) {
       // Do nothing. We're still connecting the first time.
       logger_1.default.error("In a hurry? We're still trying to make the initial connection!");
     } else {
-      throw new Error("Peer " + this.id + " cannot reconnect because it is not disconnected from the server!");
+      throw new Error("Peer ".concat(this.id, " cannot reconnect because it is not disconnected from the server!"));
     }
   };
   /**
