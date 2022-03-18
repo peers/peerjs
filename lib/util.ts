@@ -170,7 +170,7 @@ class Util {
 	}
 
 	randomToken(): string {
-		return Math.random().toString(36).substr(2);
+		return Math.random().toString(36).slice(2);
 	}
 
 	isSecure(): boolean {
