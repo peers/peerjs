@@ -106,7 +106,7 @@ A. The message occurs when you use PeerJS with Webpack. It is not critical! It r
 
 ## Links
 
-### [Documentation / API Reference](https://peerjs.com/docs.html)
+### [Documentation / API Reference](https://peerjs.com/docs/)
 
 ### [PeerServer](https://github.com/peers/peerjs-server)
 
