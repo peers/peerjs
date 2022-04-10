@@ -62,3 +62,7 @@ export enum ServerMessageType {
   Expire = "EXPIRE" // The offer sent to a peer has expired without response.
 
 }
+
+export enum SocketSpecialMessagePrefix {
+  Heartbeat = "HEARTBEAT_",
+}

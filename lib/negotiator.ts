@@ -217,7 +217,8 @@ export class Negotiator {
             ...payload,
             label: dataConnection.label,
             reliable: dataConnection.reliable,
-            serialization: dataConnection.serialization
+            serialization: dataConnection.serialization,
+            heartbeatInterval: dataConnection.heartbeatInterval,
           };
         }
 
