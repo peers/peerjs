@@ -23,7 +23,7 @@ with yarn:
 
 ```js
 // The usage -
-import { Peer } from "peerjs";
+import Peer from "peerjs";
 ```
 
 **Create a Peer**
