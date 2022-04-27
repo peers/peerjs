@@ -61,7 +61,7 @@ All notable changes will be documented in this file.
 ## 1.0.3 (2019-08-21)
 
 - add pingInterval option
-  
+
 <a name="1.0.2"></a>
 
 ## 1.0.2 (2019-07-20)
@@ -97,6 +97,7 @@ Almost all project was refactored!!!
 - changed: fetch api instead of xhr
 
 ### Features
+
 - added: heartbeat #502
 
 ### Bug Fixes

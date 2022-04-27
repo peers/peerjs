@@ -1,0 +1,23 @@
+# From https://til.simonwillison.net/github-actions/prettier-github-actions
+name: Check JavaScript for conformance with Prettier
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        name: Configure npm caching
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/workflows/prettier.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+      - name: Run prettier
+        run: |-
+          npx prettier --check .
