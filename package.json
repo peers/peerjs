@@ -1,65 +1,165 @@
 {
 	"name": "peerjs",
-	"version": "1.3.2",
-	"description": "PeerJS client",
-	"main": "./dist/peerjs.min.js",
-	"homepage": "https://github.com/peers/peerjs#readme",
+	"version": "1.4.0-rc.0",
 	"keywords": [
 		"peerjs",
 		"webrtc",
 		"p2p",
 		"rtc"
 	],
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/peers/peerjs.git"
-	},
+	"description": "PeerJS client",
+	"homepage": "https://peerjs.com",
 	"bugs": {
 		"url": "https://github.com/peers/peerjs/issues"
 	},
-	"files": [
-		"dist/*.js",
-		"dist/*.map",
-		"lib/",
-		"index.d.ts"
-	],
-	"author": "Michelle Bu, Eric Zhang, Jairo Caro-Accino, Carlos Caballero",
-	"maintainers": [
-		"Alex Sosnovskiy <devbyru@gmail.com> (https://github.com/afrokick)"
-	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/peers/peerjs"
+	},
 	"license": "MIT",
+	"contributors": [
+		"Michelle Bu <michelle@michellebu.com>",
+		"afrokick <devbyru@gmail.com>",
+		"ericz <really.ez@gmail.com>",
+		"Jairo <kidandcat@gmail.com>",
+		"Jairo Caro-Accino Viciana <jairo@galax.be>",
+		"Carlos Caballero <carlos.caballero.gonzalez@gmail.com>",
+		"hc <hheennrryy@gmail.com>",
+		"Muhammad Asif <capripio@gmail.com>",
+		"PrashoonB <prashoonbhattacharjee@gmail.com>",
+		"Moritz Stückler <moritz.stueckler@gmail.com>",
+		"Harsh Bardhan Mishra <47351025+HarshCasper@users.noreply.github.com>",
+		"akotynski <aleksanderkotbury@gmail.com>",
+		"Jairooo <jairocaro@msn.com>",
+		"lmb <i@lmb.io>",
+		"Jonas Gloning <34194370+jonasgloning@users.noreply.github.com>",
+		"Simon <crydotsnakegithub@gmail.com>",
+		"Philipp Hancke <fippo@andyet.net>",
+		"Matthias Lohr <matthias@lohr.me>",
+		"Jess <jessachandler@gmail.com>",
+		"khankuan <khankuan@gmail.com>",
+		"Denis Lukov <denismassters@gmail.com>",
+		"Hans Oksendahl <hansoksendahl@gmail.com>",
+		"XiZhao <kwang1imsa@gmail.com>",
+		"DUODVK <kurmanov.work@gmail.com>",
+		"Sören Balko <Soeren.Balko@gmail.com>",
+		"Steve Blaurock <sblaurock@gmail.com>",
+		"Yemel Jardi <angel.jardi@gmail.com>",
+		"Yuki Ito <yuki@gnnk.net>",
+		"alxnull <alxnull@e.mail.de>",
+		"bob.barstead@exaptive.com <bob.barstead@exaptive.com>",
+		"chandika <chandika@gmail.com>",
+		"eddieherm <edhermoso@gmail.com>",
+		"emersion <contact@emersion.fr>",
+		"fresheneesz <bitetrudpublic@gmail.com>",
+		"jasonbarry <jasbarry@me.com>",
+		"jonnyf <github@jonathanfoss.co.uk>",
+		"=frank tree <=frnktrb@googlemail.com>",
+		"xizhao <kevin.wang@cloudera.com>",
+		"Alberto Torres <kungfoobar@gmail.com>",
+		"Alex Chuev <alex@chuev.com>",
+		"Andre Eckardt <aeckardt@outlook.com>",
+		"Arpit Solanki <solankiarpit1997@gmail.com>",
+		"Artur Zayats <zag2art@gmail.com>",
+		"Ben Parnell <benjaminparnell.94@gmail.com>",
+		"Benny Lichtner <bennlich@gmail.com>",
+		"Chris Cowan <agentme49@gmail.com>",
+		"Christopher Van <cvan@users.noreply.github.com>",
+		"Diwank Singh Tomer <singh@diwank.name>",
+		"Eduardo Pinho <enet4mikeenet@gmail.com>",
+		"Evandro Zanatta <ezanatta@tray.net.br>",
+		"Gardner Bickford <gardner@users.noreply.github.com>",
+		"Gian Luca <gianluca.cecchi@cynny.com>",
+		"Hizkia Felix <hizkifw@gmail.com>",
+		"Hristo Oskov <hristo.oskov@gmail.com>",
+		"Ilya Konanykhin <ilya.konanykhin@gmail.com>",
+		"Isaac Madwed <i.madwed@gmail.com>",
+		"Jefferson Felix <me@jsfelix.dev>",
+		"Jonathan Burke <jonathan.burke.1311@googlemail.com>",
+		"Jonathan Mayol <mayoljonathan@gmail.com>",
+		"JooYoung <qkdlql@naver.com>",
+		"Jordan Austin <jrax86@gmail.com>",
+		"Josh Hamit <josh.hamit@gmail.com>",
+		"Kevin Mai-Husan Chia <mhchia@users.noreply.github.com>",
+		"Kyrylo Shegeda <shegeda@ualberta.ca>",
+		"PatrickJS <github@gdi2290.com>",
+		"Pepijn de Vos <pepijndevos@gmail.com>",
+		"Rolf Erik Lekang <me@rolflekang.com>"
+	],
+	"funding": {
+		"type": "opencollective",
+		"url": "https://opencollective.com/peer"
+	},
+	"collective": {
+		"type": "opencollective",
+		"url": "https://opencollective.com/peer"
+	},
+	"files": [
+		"dist/*"
+	],
+	"type": "module",
+	"sideEffects": [
+		"lib/global.ts",
+		"lib/supports.ts"
+	],
+	"main": "dist/bundler.cjs",
+	"browser-minified": "dist/peerjs.min.cjs",
+	"browser-unminified": "dist/peerjs.cjs",
+	"types": "dist/types.d.ts",
+	"targets": {
+		"types": {
+			"source": "lib/exports.ts"
+		},
+		"main": {
+			"source": "lib/exports.ts"
+		},
+		"browser-minified": {
+			"includeNodeModules": true,
+			"context": "browser",
+			"optimize": true,
+			"engines": {
+				"browsers": "cover 99%, not dead"
+			},
+			"source": "lib/global.ts"
+		},
+		"browser-unminified": {
+			"includeNodeModules": true,
+			"context": "browser",
+			"optimize": false,
+			"engines": {
+				"browsers": "cover 99%, not dead"
+			},
+			"source": "lib/global.ts"
+		}
+	},
 	"scripts": {
-		"build": "parcel build lib/exports.ts --out-file peerjs.min.js",
-		"build-nonminified": "parcel build lib/exports.ts --out-file peerjs.js --no-minify",
+		"check": "tsc --noEmit",
+		"watch": "parcel watch",
+		"build": "rm -rf dist && parcel build && ln -s dist/peerjs.cjs dist/peerjs.js && ln -s dist/peerjs.min.cjs dist/peerjs.min.js",
 		"prepublishOnly": "npm run build",
 		"test": "mocha -r ts-node/register -r jsdom-global/register test/**/*.ts",
 		"format": "prettier --write ."
 	},
-	"release": {
-		"branch": "master"
-	},
-	"types": "./index.d.ts",
 	"devDependencies": {
+		"@parcel/packager-ts": "^2.5.0",
+		"@parcel/transformer-typescript-types": "^2.5.0",
 		"@types/chai": "^4.3.0",
 		"@types/mocha": "^9.1.0",
+		"@types/node": "^17.0.18",
 		"chai": "^4.3.6",
 		"jsdom": "^19.0.0",
 		"jsdom-global": "^3.0.2",
 		"mocha": "^9.2.0",
 		"mock-socket": "8.0.5",
-		"parcel-bundler": "^1.12.4",
+		"parcel": "^2.5.0",
 		"prettier": "^2.6.2",
+		"standard": "^16.0.4",
 		"ts-node": "^10.5.0",
 		"typescript": "^4.5.5"
 	},
 	"dependencies": {
-		"@types/node": "^17.0.18",
 		"eventemitter3": "^3.1.2",
 		"peerjs-js-binarypack": "1.0.1",
 		"webrtc-adapter": "^7.7.1"
-	},
-	"collective": {
-		"type": "opencollective",
-		"url": "https://opencollective.com/peer"
 	}
 }

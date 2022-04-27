@@ -9,7 +9,7 @@ import {
 import { Peer } from "./peer";
 import { BaseConnection } from "./baseconnection";
 import { ServerMessage } from "./servermessage";
-import { AnswerOption } from "..";
+import type { AnswerOption } from "./optionInterfaces";
 
 /**
  * Wraps the streaming interface between two Peers.

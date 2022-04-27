@@ -5,6 +5,8 @@
 		"downlevelIteration": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
-		"skipLibCheck": true
+		"skipLibCheck": true,
+		"isolatedModules": true,
+		"lib": ["es2020", "dom"]
 	}
 }

@@ -14,9 +14,10 @@ results
 demo
 bower.json
 node_modules
-.cache
+.parcel-cache
 .idea
 npm-debug.log
+.DS_STORE
 
 test/output
 .tscache

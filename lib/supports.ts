@@ -1,4 +1,4 @@
-import { webRTCAdapter } from "./adapter";
+import webRTCAdapter from "webrtc-adapter";
 
 export const Supports = new (class {
 	readonly isIOS = ["iPad", "iPhone", "iPod"].includes(navigator.platform);

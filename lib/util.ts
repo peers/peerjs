@@ -1,6 +1,14 @@
 import * as BinaryPack from "peerjs-js-binarypack";
 import { Supports } from "./supports";
-import { UtilSupportsObj } from "..";
+
+interface UtilSupportsObj {
+	browser: boolean;
+	webRTC: boolean;
+	audioVideo: boolean;
+	data: boolean;
+	binaryBlob: boolean;
+	reliable: boolean;
+}
 
 const DEFAULT_CONFIG = {
 	iceServers: [
@@ -14,7 +22,7 @@ const DEFAULT_CONFIG = {
 	sdpSemantics: "unified-plan",
 };
 
-export const util = new (class {
+class Util {
 	noop(): void {}
 
 	readonly CLOUD_HOST = "0.peerjs.com";
@@ -157,4 +165,5 @@ export const util = new (class {
 	isSecure(): boolean {
 		return location.protocol === "https:";
 	}
-})();
+}
+export const util = new Util();
