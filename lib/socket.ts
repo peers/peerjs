@@ -39,7 +39,7 @@ export class Socket extends EventEmitter {
 			return;
 		}
 
-		this._socket = new WebSocket(wsUrl + "?version=" + version);
+		this._socket = new WebSocket(wsUrl + "&version=" + version);
 		this._disconnected = false;
 
 		this._socket.onmessage = (event) => {
