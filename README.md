@@ -126,7 +126,7 @@ A. The message occurs when you use PeerJS with Webpack. It is not critical! It r
 
 ### [Discuss PeerJS on our Telegram Channel](https://t.me/joinchat/ENhPuhTvhm8WlIxTjQf7Og)
 
-### [Changelog](https://github.com/peers/peerjs/blob/master/changelog.md)
+### [Changelog](https://github.com/peers/peerjs/blob/master/CHANGELOG.md)
 
 ## Contributors
 
