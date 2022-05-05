@@ -1,3 +1,10 @@
+# [1.4.0-rc.3](https://github.com/peers/peerjs/compare/v1.4.0-rc.2...v1.4.0-rc.3) (2022-05-05)
+
+
+### Bug Fixes
+
+* add changelog and npm version to the repo ([d5bd955](https://github.com/peers/peerjs/commit/d5bd9552daf5d42f9d04b3087ddc34c729004daa))
+
 <a name="1.3.2"></a>
 
 ## 1.3.2 (2021-03-11)
