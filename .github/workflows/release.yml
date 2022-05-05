@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - rc
+      - stable
 jobs:
   release:
     name: Release
@@ -18,8 +19,18 @@ jobs:
           node-version: "lts/*"
       - name: Install dependencies
         run: npm ci
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v4
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GIT_COMMITTER_NAME: ${{ steps.import_gpg.outputs.name }}
+          GIT_COMMITTER_EMAIL: ${{ steps.import_gpg.outputs.email }}
         run: npx semantic-release

@@ -1,11 +1,3 @@
-# Change Log
-
-All notable changes will be documented in this file.
-
-## vNEXT
-
-...
-
 <a name="1.3.2"></a>
 
 ## 1.3.2 (2021-03-11)
