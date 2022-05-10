@@ -1,3 +1,22 @@
+# [1.4.0](https://github.com/peers/peerjs/compare/v1.3.2...v1.4.0) (2022-05-10)
+
+
+### Bug Fixes
+
+* add changelog and npm version to the repo ([d5bd955](https://github.com/peers/peerjs/commit/d5bd9552daf5d42f9d04b3087ddc34c729004daa))
+* add token to PeerJSOption type definition ([e7675e1](https://github.com/peers/peerjs/commit/e7675e1474b079b2804167c70335a6c6e2b8ec08))
+* websocket connection string ([82b8c71](https://github.com/peers/peerjs/commit/82b8c713bc03be34c2526bdf442a583c4d547c83))
+
+
+### Features
+
+* upgrade to Parcel@2 ([aae9d1f](https://github.com/peers/peerjs/commit/aae9d1fa37731d0819f93535b8ad78fe4b685d1e)), closes [#845](https://github.com/peers/peerjs/issues/845) [#859](https://github.com/peers/peerjs/issues/859) [#552](https://github.com/peers/peerjs/issues/552) [#585](https://github.com/peers/peerjs/issues/585)
+
+
+### Performance Improvements
+
+* **turn:** lower TURN-latency due to more local servers ([a412ea4](https://github.com/peers/peerjs/commit/a412ea4984a46d50de8873904b7067897b0f29f9))
+
 <a name="1.3.2"></a>
 
 ## 1.3.2 (2021-03-11)
