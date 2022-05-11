@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/peers/peerjs/compare/v1.4.0...v1.4.1) (2022-05-11)
+
+
+### Bug Fixes
+
+* **old bundlers:** include support for Node 10 (EOL since 2021-04-01) / old bundlers ([c0f4648](https://github.com/peers/peerjs/commit/c0f4648b1c104e5e0e5967bb239c217288aa83e0)), closes [#952](https://github.com/peers/peerjs/issues/952)
+
 # [1.4.0](https://github.com/peers/peerjs/compare/v1.3.2...v1.4.0) (2022-05-10)
 
 
