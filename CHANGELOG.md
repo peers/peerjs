@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/peers/peerjs/compare/v1.4.1...v1.4.2) (2022-05-12)
+
+
+### Bug Fixes
+
+* **bundler import:** enable module target ([b5beec4](https://github.com/peers/peerjs/commit/b5beec4a07827f82c5e50c79c71a8cfb1ec3c40e)), closes [#761](https://github.com/peers/peerjs/issues/761)
+
 ## [1.4.1](https://github.com/peers/peerjs/compare/v1.4.0...v1.4.1) (2022-05-11)
 
 
