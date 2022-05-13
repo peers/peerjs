@@ -3,7 +3,7 @@
 import BinaryPack from "peerjs-js-binarypack";
 import { Supports } from "./supports";
 
-interface UtilSupportsObj {
+export interface UtilSupportsObj {
 	browser: boolean;
 	webRTC: boolean;
 	audioVideo: boolean;

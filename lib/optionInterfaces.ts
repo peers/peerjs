@@ -19,3 +19,8 @@ export interface PeerConnectOption {
 	serialization?: string;
 	reliable?: boolean;
 }
+
+export interface CallOption {
+	metadata?: any;
+	sdpTransform?: Function;
+}
