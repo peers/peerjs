@@ -115,13 +115,19 @@
 			"source": "lib/exports.ts"
 		},
 		"main": {
-			"source": "lib/exports.ts"
+			"source": "lib/exports.ts",
+			"sourceMap": {
+				"inlineSources": true
+			}
 		},
 		"module": {
 			"source": "lib/exports.ts",
 			"includeNodeModules": [
 				"eventemitter3"
-			]
+			],
+			"sourceMap": {
+				"inlineSources": true
+			}
 		},
 		"browser-minified": {
 			"includeNodeModules": true,
@@ -145,7 +151,7 @@
 	"scripts": {
 		"check": "tsc --noEmit",
 		"watch": "parcel watch",
-		"build": "rm -rf dist && parcel build && ln -s dist/peerjs.cjs dist/peerjs.js && ln -s dist/peerjs.min.cjs dist/peerjs.min.js",
+		"build": "rm -rf dist && parcel build && cp dist/peerjs.cjs dist/peerjs.js && cp dist/peerjs.min.cjs dist/peerjs.min.js",
 		"prepublishOnly": "npm run build",
 		"test": "mocha -r ts-node/register -r jsdom-global/register test/**/*.ts",
 		"format": "prettier --write .",
