@@ -12,14 +12,13 @@ export enum ConnectionType {
 	Media = "media",
 }
 
-export enum PeerEventType {
-	Open = "open",
-	Close = "close",
-	Connection = "connection",
-	Call = "call",
-	Disconnected = "disconnected",
-	Error = "error",
-}
+export type PeerEventType =
+	| "open"
+	| "close"
+	| "connection"
+	| "call"
+	| "disconnected"
+	| "error";
 
 export enum PeerErrorType {
 	BrowserIncompatible = "browser-incompatible",

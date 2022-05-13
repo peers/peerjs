@@ -7,7 +7,6 @@ import { DataConnection } from "./dataconnection";
 import {
 	ConnectionType,
 	PeerErrorType,
-	PeerEventType,
 	SocketEventType,
 	ServerMessageType,
 } from "./enums";
@@ -33,10 +32,18 @@ class PeerOptions implements PeerJSOption {
 	logFunction?: (logLevel: LogLevel, ...rest: any[]) => void;
 }
 
+type PeerEvents = {
+	open: (id: string) => void;
+	connection: (dataConnection: DataConnection) => void;
+	call: (mediaConnection: MediaConnection) => void;
+	close: () => void;
+	disconnected: (currentId: string) => void;
+	error: (error: Error) => void;
+};
 /**
  * A peer who can initiate connections with other peers.
  */
-export class Peer extends EventEmitter {
+export class Peer extends EventEmitter<PeerEvents> {
 	private static readonly DEFAULT_KEY = "peerjs";
 
 	private readonly _options: PeerOptions;
@@ -232,7 +239,7 @@ export class Peer extends EventEmitter {
 			case ServerMessageType.Open: // The connection to the server is open.
 				this._lastServerId = this.id;
 				this._open = true;
-				this.emit(PeerEventType.Open, this.id);
+				this.emit("open", this.id);
 				break;
 			case ServerMessageType.Error: // Server error.
 				this._abort(PeerErrorType.ServerError, payload.msg);
@@ -271,15 +278,16 @@ export class Peer extends EventEmitter {
 
 				// Create a new connection.
 				if (payload.type === ConnectionType.Media) {
-					connection = new MediaConnection(peerId, this, {
+					const mediaConnection = new MediaConnection(peerId, this, {
 						connectionId: connectionId,
 						_payload: payload,
 						metadata: payload.metadata,
 					});
+					connection = mediaConnection;
 					this._addConnection(peerId, connection);
-					this.emit(PeerEventType.Call, connection);
+					this.emit("call", mediaConnection);
 				} else if (payload.type === ConnectionType.Data) {
-					connection = new DataConnection(peerId, this, {
+					const dataConnection = new DataConnection(peerId, this, {
 						connectionId: connectionId,
 						_payload: payload,
 						metadata: payload.metadata,
@@ -287,8 +295,9 @@ export class Peer extends EventEmitter {
 						serialization: payload.serialization,
 						reliable: payload.reliable,
 					});
+					connection = dataConnection;
 					this._addConnection(peerId, connection);
-					this.emit(PeerEventType.Connection, connection);
+					this.emit("connection", dataConnection);
 				} else {
 					logger.warn(`Received malformed connection type:${payload.type}`);
 					return;
@@ -491,7 +500,7 @@ export class Peer extends EventEmitter {
 
 		error.type = type;
 
-		this.emit(PeerEventType.Error, error);
+		this.emit("error", error);
 	}
 
 	/**
@@ -512,7 +521,7 @@ export class Peer extends EventEmitter {
 
 		this._destroyed = true;
 
-		this.emit(PeerEventType.Close);
+		this.emit("close");
 	}
 
 	/** Disconnects every connection on this peer. */
@@ -559,7 +568,7 @@ export class Peer extends EventEmitter {
 		this._lastServerId = currentId;
 		this._id = null;
 
-		this.emit(PeerEventType.Disconnected, currentId);
+		this.emit("disconnected", currentId);
 	}
 
 	/** Attempts to reconnect with the same ID. */
