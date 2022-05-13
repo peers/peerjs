@@ -1,4 +1,8 @@
-import webRTCAdapter from "webrtc-adapter";
+import webRTCAdapter_import from "webrtc-adapter";
+
+const webRTCAdapter: typeof webRTCAdapter_import =
+	//@ts-ignore
+	webRTCAdapter_import.default || webRTCAdapter_import;
 
 export const Supports = new (class {
 	readonly isIOS = ["iPad", "iPhone", "iPod"].includes(navigator.platform);
@@ -66,12 +70,12 @@ export const Supports = new (class {
 	}
 
 	toString(): string {
-		return `Supports: 
-    browser:${this.getBrowser()} 
-    version:${this.getVersion()} 
-    isIOS:${this.isIOS} 
-    isWebRTCSupported:${this.isWebRTCSupported()} 
-    isBrowserSupported:${this.isBrowserSupported()} 
+		return `Supports:
+    browser:${this.getBrowser()}
+    version:${this.getVersion()}
+    isIOS:${this.isIOS}
+    isWebRTCSupported:${this.isWebRTCSupported()}
+    isBrowserSupported:${this.isBrowserSupported()}
     isUnifiedPlanSupported:${this.isUnifiedPlanSupported()}`;
 	}
 })();
