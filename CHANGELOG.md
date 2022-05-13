@@ -1,3 +1,10 @@
+## [1.4.3](https://github.com/peers/peerjs/compare/v1.4.2...v1.4.3) (2022-05-13)
+
+
+### Bug Fixes
+
+* **typings:** export interfaces ([979e695](https://github.com/peers/peerjs/commit/979e69545cc2fe10c60535ac9793140ef8dba4ec)), closes [#953](https://github.com/peers/peerjs/issues/953)
+
 ## [1.4.2](https://github.com/peers/peerjs/compare/v1.4.1...v1.4.2) (2022-05-12)
 
 
