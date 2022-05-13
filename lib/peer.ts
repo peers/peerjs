@@ -14,7 +14,11 @@ import {
 import { BaseConnection } from "./baseconnection";
 import { ServerMessage } from "./servermessage";
 import { API } from "./api";
-import type { PeerConnectOption, PeerJSOption, CallOption } from "./optionInterfaces";
+import type {
+	PeerConnectOption,
+	PeerJSOption,
+	CallOption,
+} from "./optionInterfaces";
 
 class PeerOptions implements PeerJSOption {
 	debug?: LogLevel; // 1: Errors, 2: Warnings, 3: All logs
@@ -373,7 +377,11 @@ export class Peer extends EventEmitter {
 	 * Returns a MediaConnection to the specified peer. See documentation for a
 	 * complete list of options.
 	 */
-	call(peer: string, stream: MediaStream,  options: CallOption = {}): MediaConnection {
+	call(
+		peer: string,
+		stream: MediaStream,
+		options: CallOption = {},
+	): MediaConnection {
 		if (this.disconnected) {
 			logger.warn(
 				"You cannot connect to a new Peer because you called " +
@@ -394,7 +402,10 @@ export class Peer extends EventEmitter {
 			return;
 		}
 
-		const mediaConnection = new MediaConnection(peer, this, {...options, _stream:stream});
+		const mediaConnection = new MediaConnection(peer, this, {
+			...options,
+			_stream: stream,
+		});
 		this._addConnection(peer, mediaConnection);
 		return mediaConnection;
 	}
