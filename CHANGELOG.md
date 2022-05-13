@@ -1,3 +1,11 @@
+## [1.4.4](https://github.com/peers/peerjs/compare/v1.4.3...v1.4.4) (2022-05-13)
+
+
+### Bug Fixes
+
+* **CRA@4:** import hack ([41c3ba7](https://github.com/peers/peerjs/commit/41c3ba7b2ca6adc226efd0e2add546a570a4aa3a)), closes [#954](https://github.com/peers/peerjs/issues/954)
+* **source maps:** enable source map inlining ([97a724b](https://github.com/peers/peerjs/commit/97a724b6a1e04817d79ecaf91d4384ae3a94cf99))
+
 ## [1.4.3](https://github.com/peers/peerjs/compare/v1.4.2...v1.4.3) (2022-05-13)
 
 
