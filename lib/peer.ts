@@ -29,6 +29,7 @@ class PeerOptions implements PeerJSOption {
 	config?: any;
 	secure?: boolean;
 	pingInterval?: number;
+	referrerPolicy?: ReferrerPolicy;
 	logFunction?: (logLevel: LogLevel, ...rest: any[]) => void;
 }
 
@@ -164,6 +165,7 @@ export class Peer extends EventEmitter<PeerEvents> {
 			key: Peer.DEFAULT_KEY,
 			token: util.randomToken(),
 			config: util.defaultConfig,
+			referrerPolicy: "strict-origin-when-cross-origin",
 			...options,
 		};
 		this._options = options;

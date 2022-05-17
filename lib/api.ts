@@ -14,7 +14,7 @@ export class API {
 		url.searchParams.set("ts", `${Date.now()}${Math.random()}`);
 		url.searchParams.set("version", version);
 		return fetch(url.href, {
-			referrerPolicy: "strict-origin-when-cross-origin",
+			referrerPolicy: this._options.referrerPolicy,
 		});
 	}
 
