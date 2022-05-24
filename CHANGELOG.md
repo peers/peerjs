@@ -1,3 +1,11 @@
+## [1.4.5](https://github.com/peers/peerjs/compare/v1.4.4...v1.4.5) (2022-05-24)
+
+
+### Bug Fixes
+
+* **referrerPolicy:** you can now set a custom referrerPolicy for api requests ([c0ba9e4](https://github.com/peers/peerjs/commit/c0ba9e4b64f233c2733a8c5e904a8536ae37eb42)), closes [#955](https://github.com/peers/peerjs/issues/955)
+* **typings:** add missing type exports ([#959](https://github.com/peers/peerjs/issues/959)) ([3c915d5](https://github.com/peers/peerjs/commit/3c915d57bb18ac822d3438d879717266ee84b635)), closes [#961](https://github.com/peers/peerjs/issues/961)
+
 ## [1.4.4](https://github.com/peers/peerjs/compare/v1.4.3...v1.4.4) (2022-05-13)
 
 
