@@ -76,7 +76,7 @@ export class MediaConnection extends BaseConnection {
 		}
 	}
 
-	answer(stream: MediaStream, options: AnswerOption = {}): void {
+	answer(stream?: MediaStream, options: AnswerOption = {}): void {
 		if (this._localStream) {
 			logger.warn(
 				"Local stream already exists on this MediaConnection. Are you answering a call twice?",
