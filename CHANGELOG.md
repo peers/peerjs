@@ -1,3 +1,16 @@
+## [1.4.6-rc.1](https://github.com/peers/peerjs/compare/v1.4.5...v1.4.6-rc.1) (2022-05-25)
+
+
+### Bug Fixes
+
+* **typings:** `MediaConnection.answer()` doesn’t need a `stream` anymore, thanks [@matallui](https://github.com/matallui)! ([666dcd9](https://github.com/peers/peerjs/commit/666dcd9770fe080e00898b9138664e8996bf5162))
+* **typings:** much stronger event typings for `DataConnection`,`MediaConnection` ([0c96603](https://github.com/peers/peerjs/commit/0c96603a3f97f28eabe24906e692c31ef0ebca13))
+
+
+### Performance Improvements
+
+* **turn:** reduce turn server count ([8816f54](https://github.com/peers/peerjs/commit/8816f54c4b4bff5f6bd0c7ccf5327ec84e80a8ca))
+
 ## [1.4.5](https://github.com/peers/peerjs/compare/v1.4.4...v1.4.5) (2022-05-24)
 
 
