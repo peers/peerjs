@@ -2,19 +2,18 @@ import { util } from "./util";
 import logger from "./logger";
 import { MediaConnection } from "./mediaconnection";
 import { DataConnection } from "./dataconnection";
-import {
-	ConnectionType,
-	PeerErrorType,
-	ConnectionEventType,
-	ServerMessageType,
-} from "./enums";
-import { BaseConnection } from "./baseconnection";
+import { ConnectionType, PeerErrorType, ServerMessageType } from "./enums";
+import { BaseConnection, BaseConnectionEvents } from "./baseconnection";
+import { ValidEventTypes } from "eventemitter3";
 
 /**
  * Manages all negotiations between Peers.
  */
-export class Negotiator {
-	constructor(readonly connection: BaseConnection) {}
+export class Negotiator<
+	A extends ValidEventTypes,
+	T extends BaseConnection<A | BaseConnectionEvents>,
+> {
+	constructor(readonly connection: T) {}
 
 	/** Returns a PeerConnection object set up correctly (for data, media). */
 	startConnection(options: any) {
@@ -30,7 +29,7 @@ export class Negotiator {
 		// What do we need to do now?
 		if (options.originator) {
 			if (this.connection.type === ConnectionType.Data) {
-				const dataConnection = <DataConnection>this.connection;
+				const dataConnection = <DataConnection>(<unknown>this.connection);
 
 				const config: RTCDataChannelInit = { ordered: !!options.reliable };
 
@@ -93,7 +92,7 @@ export class Negotiator {
 						"iceConnectionState is failed, closing connections to " + peerId,
 					);
 					this.connection.emit(
-						ConnectionEventType.Error,
+						"error",
 						new Error("Negotiation of connection to " + peerId + " failed."),
 					);
 					this.connection.close();
@@ -103,7 +102,7 @@ export class Negotiator {
 						"iceConnectionState is closed, closing connections to " + peerId,
 					);
 					this.connection.emit(
-						ConnectionEventType.Error,
+						"error",
 						new Error("Connection to " + peerId + " closed."),
 					);
 					this.connection.close();
@@ -120,7 +119,7 @@ export class Negotiator {
 			}
 
 			this.connection.emit(
-				ConnectionEventType.IceStateChanged,
+				"iceStateChanged",
 				peerConnection.iceConnectionState,
 			);
 		};
@@ -179,7 +178,7 @@ export class Negotiator {
 		let dataChannelNotClosed = false;
 
 		if (this.connection.type === ConnectionType.Data) {
-			const dataConnection = <DataConnection>this.connection;
+			const dataConnection = <DataConnection>(<unknown>this.connection);
 			const dataChannel = dataConnection.dataChannel;
 
 			if (dataChannel) {
@@ -230,7 +229,7 @@ export class Negotiator {
 				};
 
 				if (this.connection.type === ConnectionType.Data) {
-					const dataConnection = <DataConnection>this.connection;
+					const dataConnection = <DataConnection>(<unknown>this.connection);
 
 					payload = {
 						...payload,

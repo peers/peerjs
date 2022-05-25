@@ -10,7 +10,6 @@ import {
 	SocketEventType,
 	ServerMessageType,
 } from "./enums";
-import { BaseConnection } from "./baseconnection";
 import { ServerMessage } from "./servermessage";
 import { API } from "./api";
 import type {
@@ -76,7 +75,10 @@ export class Peer extends EventEmitter<PeerEvents> {
 	private _destroyed = false; // Connections have been killed
 	private _disconnected = false; // Connection to PeerServer killed but P2P connections still active
 	private _open = false; // Sockets and such are not yet open.
-	private readonly _connections: Map<string, BaseConnection[]> = new Map(); // All connections for this peer.
+	private readonly _connections: Map<
+		string,
+		(DataConnection | MediaConnection)[]
+	> = new Map(); // All connections for this peer.
 	private readonly _lostMessages: Map<string, ServerMessage[]> = new Map(); // src => [list of messages]
 	/**
 	 * The brokering ID of this peer
@@ -471,7 +473,10 @@ export class Peer extends EventEmitter<PeerEvents> {
 	}
 
 	/** Add a data/media connection to this peer. */
-	private _addConnection(peerId: string, connection: BaseConnection): void {
+	private _addConnection(
+		peerId: string,
+		connection: MediaConnection | DataConnection,
+	): void {
 		logger.log(
 			`add connection ${connection.type}:${connection.connectionId} to peerId:${peerId}`,
 		);
@@ -483,7 +488,7 @@ export class Peer extends EventEmitter<PeerEvents> {
 	}
 
 	//TODO should be private
-	_removeConnection(connection: BaseConnection): void {
+	_removeConnection(connection: DataConnection | MediaConnection): void {
 		const connections = this._connections.get(connection.peer);
 
 		if (connections) {
@@ -499,7 +504,10 @@ export class Peer extends EventEmitter<PeerEvents> {
 	}
 
 	/** Retrieve a data/media connection for this peer. */
-	getConnection(peerId: string, connectionId: string): null | BaseConnection {
+	getConnection(
+		peerId: string,
+		connectionId: string,
+	): null | DataConnection | MediaConnection {
 		const connections = this._connections.get(peerId);
 		if (!connections) {
 			return null;

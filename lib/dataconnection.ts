@@ -1,26 +1,35 @@
 import { util } from "./util";
 import logger from "./logger";
 import { Negotiator } from "./negotiator";
-import {
-	ConnectionType,
-	ConnectionEventType,
-	SerializationType,
-	ServerMessageType,
-} from "./enums";
+import { ConnectionType, SerializationType, ServerMessageType } from "./enums";
 import { Peer } from "./peer";
 import { BaseConnection } from "./baseconnection";
 import { ServerMessage } from "./servermessage";
 import { EncodingQueue } from "./encodingQueue";
 import type { DataConnection as IDataConnection } from "./dataconnection";
 
+type DataConnectionEvents = {
+	/**
+	 * Emitted when data is received from the remote peer.
+	 */
+	data: (data: unknown) => void;
+	/**
+	 * Emitted when the connection is established and ready-to-use.
+	 */
+	open: () => void;
+};
+
 /**
  * Wraps a DataChannel between two Peers.
  */
-export class DataConnection extends BaseConnection implements IDataConnection {
+export class DataConnection
+	extends BaseConnection<DataConnectionEvents>
+	implements IDataConnection
+{
 	private static readonly ID_PREFIX = "dc_";
 	private static readonly MAX_BUFFERED_AMOUNT = 8 * 1024 * 1024;
 
-	private _negotiator: Negotiator;
+	private _negotiator: Negotiator<DataConnectionEvents, DataConnection>;
 	readonly label: string;
 	readonly serialization: SerializationType;
 	readonly reliable: boolean;
@@ -98,7 +107,7 @@ export class DataConnection extends BaseConnection implements IDataConnection {
 		this.dataChannel.onopen = () => {
 			logger.log(`DC#${this.connectionId} dc connection success`);
 			this._open = true;
-			this.emit(ConnectionEventType.Open);
+			this.emit("open");
 		};
 
 		this.dataChannel.onmessage = (e) => {
@@ -131,7 +140,7 @@ export class DataConnection extends BaseConnection implements IDataConnection {
 				// Datatype should never be blob
 				util.blobToArrayBuffer(data as Blob, (ab) => {
 					const unpackedData = util.unpack(ab);
-					this.emit(ConnectionEventType.Data, unpackedData);
+					this.emit("data", unpackedData);
 				});
 				return;
 			} else if (datatype === ArrayBuffer) {
@@ -152,7 +161,7 @@ export class DataConnection extends BaseConnection implements IDataConnection {
 			return;
 		}
 
-		super.emit(ConnectionEventType.Data, deserializedData);
+		super.emit("data", deserializedData);
 	}
 
 	private _handleChunk(data: {
@@ -222,14 +231,14 @@ export class DataConnection extends BaseConnection implements IDataConnection {
 
 		this._open = false;
 
-		super.emit(ConnectionEventType.Close);
+		super.emit("close");
 	}
 
 	/** Allows user to send data. */
 	send(data: any, chunked?: boolean): void {
 		if (!this.open) {
 			super.emit(
-				ConnectionEventType.Error,
+				"error",
 				new Error(
 					"Connection is not open. You should listen for the `open` event before sending messages.",
 				),

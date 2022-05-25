@@ -1,23 +1,26 @@
 import { util } from "./util";
 import logger from "./logger";
 import { Negotiator } from "./negotiator";
-import {
-	ConnectionType,
-	ConnectionEventType,
-	ServerMessageType,
-} from "./enums";
+import { ConnectionType, ServerMessageType } from "./enums";
 import { Peer } from "./peer";
 import { BaseConnection } from "./baseconnection";
 import { ServerMessage } from "./servermessage";
 import type { AnswerOption } from "./optionInterfaces";
 
+type MediaConnectionEvents = {
+	/**
+	 * Emitted when a connection to the PeerServer is established.
+	 */
+	stream: (stream: MediaStream) => void;
+};
+
 /**
  * Wraps the streaming interface between two Peers.
  */
-export class MediaConnection extends BaseConnection {
+export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 	private static readonly ID_PREFIX = "mc_";
 
-	private _negotiator: Negotiator;
+	private _negotiator: Negotiator<MediaConnectionEvents, MediaConnection>;
 	private _localStream: MediaStream;
 	private _remoteStream: MediaStream;
 
@@ -54,7 +57,7 @@ export class MediaConnection extends BaseConnection {
 		logger.log("Receiving stream", remoteStream);
 
 		this._remoteStream = remoteStream;
-		super.emit(ConnectionEventType.Stream, remoteStream); // Should we call this `open`?
+		super.emit("stream", remoteStream); // Should we call this `open`?
 	}
 
 	handleMessage(message: ServerMessage): void {
@@ -134,6 +137,6 @@ export class MediaConnection extends BaseConnection {
 
 		this._open = false;
 
-		super.emit(ConnectionEventType.Close);
+		super.emit("close");
 	}
 }

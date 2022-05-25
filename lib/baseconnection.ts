@@ -1,9 +1,20 @@
-import { EventEmitter } from "eventemitter3";
+import { EventEmitter, ValidEventTypes } from "eventemitter3";
 import { Peer } from "./peer";
 import { ServerMessage } from "./servermessage";
 import { ConnectionType } from "./enums";
 
-export abstract class BaseConnection extends EventEmitter {
+export type BaseConnectionEvents = {
+	/**
+	 * Emitted when either you or the remote peer closes the connection.
+	 */
+	close: () => void;
+	error: (error: Error) => void;
+	iceStateChanged: (state: RTCIceConnectionState) => void;
+};
+
+export abstract class BaseConnection<
+	T extends ValidEventTypes,
+> extends EventEmitter<T & BaseConnectionEvents> {
 	protected _open = false;
 
 	readonly metadata: any;

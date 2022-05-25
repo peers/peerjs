@@ -1,24 +1,7 @@
-export enum ConnectionEventType {
-	Open = "open",
-	Stream = "stream",
-	Data = "data",
-	Close = "close",
-	Error = "error",
-	IceStateChanged = "iceStateChanged",
-}
-
 export enum ConnectionType {
 	Data = "data",
 	Media = "media",
 }
-
-export type PeerEventType =
-	| "open"
-	| "close"
-	| "connection"
-	| "call"
-	| "disconnected"
-	| "error";
 
 export enum PeerErrorType {
 	BrowserIncompatible = "browser-incompatible",

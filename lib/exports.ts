@@ -12,9 +12,7 @@ export type { DataConnection } from "./dataconnection";
 export type { MediaConnection } from "./mediaconnection";
 export type { LogLevel } from "./logger";
 export type {
-	ConnectionEventType,
 	ConnectionType,
-	PeerEventType,
 	PeerErrorType,
 	SerializationType,
 	SocketEventType,
