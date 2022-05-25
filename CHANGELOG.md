@@ -1,3 +1,15 @@
+## [1.4.6-rc.1](https://github.com/peers/peerjs/compare/v1.4.5...v1.4.6-rc.1) (2022-05-25)
+
+
+### Bug Fixes
+
+* `close` event was not triggered reliably ([#860](https://github.com/peers/peerjs/issues/860)) ([ec1d5ae](https://github.com/peers/peerjs/commit/ec1d5ae8436b5265a59ef277e3fa05608f19f1ae)), closes [#636](https://github.com/peers/peerjs/issues/636)
+
+
+### Performance Improvements
+
+* **turn:** reduce turn server count ([8816f54](https://github.com/peers/peerjs/commit/8816f54c4b4bff5f6bd0c7ccf5327ec84e80a8ca))
+
 ## [1.4.5](https://github.com/peers/peerjs/compare/v1.4.4...v1.4.5) (2022-05-24)
 
 
