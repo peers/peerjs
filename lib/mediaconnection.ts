@@ -23,6 +23,7 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 	private _negotiator: Negotiator<MediaConnectionEvents, MediaConnection>;
 	private _localStream: MediaStream;
 	private _remoteStream: MediaStream;
+	private _dc: RTCDataChannel;
 
 	get type() {
 		return ConnectionType.Media;
@@ -33,6 +34,10 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 	}
 	get remoteStream(): MediaStream {
 		return this._remoteStream;
+	}
+
+	get dataChannel(): RTCDataChannel {
+		return this._dc;
 	}
 
 	constructor(peerId: string, provider: Peer, options: any) {
@@ -51,6 +56,31 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 				originator: true,
 			});
 		}
+	}
+
+	/** Called by the Negotiator when the DataChannel is ready. */
+	initialize(dc: RTCDataChannel): void {
+		this._dc = dc;
+		this._configureDataChannel();
+	}
+
+	private _configureDataChannel(): void {
+		if (!util.supports.binaryBlob || util.supports.reliable) {
+			this.dataChannel.binaryType = "arraybuffer";
+		}
+
+		this.dataChannel.onopen = () => {
+			logger.log(`DC#${this.connectionId} dc connection success`);
+		};
+
+		this.dataChannel.onmessage = (e) => {
+			logger.log(`DC#${this.connectionId} dc onmessage:`, e.data);
+		};
+
+		this.dataChannel.onclose = () => {
+			logger.log(`DC#${this.connectionId} dc closed for:`, this.peer);
+			this.close();
+		};
 	}
 
 	addStream(remoteStream) {
