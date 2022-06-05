@@ -21,17 +21,17 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 	private static readonly ID_PREFIX = "mc_";
 
 	private _negotiator: Negotiator<MediaConnectionEvents, MediaConnection>;
-	private _localStream: MediaStream;
-	private _remoteStream: MediaStream;
+	private _localStream: MediaStream[];
+	private _remoteStream: MediaStream[];
 
 	get type() {
 		return ConnectionType.Media;
 	}
 
-	get localStream(): MediaStream {
+	get localStream(): MediaStream[] {
 		return this._localStream;
 	}
-	get remoteStream(): MediaStream {
+	get remoteStream(): MediaStream[] {
 		return this._remoteStream;
 	}
 
@@ -53,7 +53,7 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		}
 	}
 
-	addStream(remoteStream) {
+	addStream(remoteStream: MediaStream[]) {
 		logger.log("Receiving stream", remoteStream);
 
 		this._remoteStream = remoteStream;
@@ -79,7 +79,7 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		}
 	}
 
-	answer(stream?: MediaStream, options: AnswerOption = {}): void {
+	answer(stream?: MediaStream[], options: AnswerOption = {}): void {
 		if (this._localStream) {
 			logger.warn(
 				"Local stream already exists on this MediaConnection. Are you answering a call twice?",
