@@ -377,6 +377,6 @@ export class Negotiator<
 			`add stream ${stream.id} to media connection ${mediaConnection.connectionId}`,
 		);
 
-		mediaConnection.addStream(stream);
+		mediaConnection.addStream([stream]);
 	}
 }
