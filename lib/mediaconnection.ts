@@ -57,7 +57,7 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		logger.log("Receiving stream", remoteStream);
 
 		this._remoteStream = remoteStream;
-		super.emit("stream", remoteStream); // Should we call this `open`?
+		remoteStream.forEach(stream => super.emit("stream", stream)); // Should we call this `open`?
 	}
 
 	handleMessage(message: ServerMessage): void {
