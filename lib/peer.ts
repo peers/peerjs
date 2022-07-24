@@ -241,6 +241,7 @@ export class Peer extends EventEmitter<PeerEvents> {
 			this._options.path!,
 			this._options.key!,
 			this._options.pingInterval,
+			this._options.protocol,
 		);
 
 		socket.on(SocketEventType.Message, (data: ServerMessage) => {
