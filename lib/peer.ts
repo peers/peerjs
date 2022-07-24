@@ -28,7 +28,7 @@ class PeerOptions implements PeerJSOption {
 	config?: any;
 	secure?: boolean;
 	pingInterval?: number;
-  protocol?: string | string[];
+	protocol?: string | string[];
 	referrerPolicy?: ReferrerPolicy;
 	logFunction?: (logLevel: LogLevel, ...rest: any[]) => void;
 }
