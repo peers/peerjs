@@ -99,15 +99,14 @@
 	"files": [
 		"dist/*"
 	],
-	"type": "module",
 	"sideEffects": [
 		"lib/global.ts",
 		"lib/supports.ts"
 	],
 	"main": "dist/bundler.cjs",
 	"module": "dist/bundler.mjs",
-	"browser-minified": "dist/peerjs.min.cjs",
-	"browser-unminified": "dist/peerjs.cjs",
+	"browser-minified": "dist/peerjs.min.js",
+	"browser-unminified": "dist/peerjs.js",
 	"types": "dist/types.d.ts",
 	"engines": {
 		"node": ">= 10"
@@ -132,8 +131,8 @@
 			}
 		},
 		"browser-minified": {
-			"includeNodeModules": true,
 			"context": "browser",
+			"outputFormat": "global",
 			"optimize": true,
 			"engines": {
 				"browsers": "cover 99%, not dead"
@@ -141,8 +140,8 @@
 			"source": "lib/global.ts"
 		},
 		"browser-unminified": {
-			"includeNodeModules": true,
 			"context": "browser",
+			"outputFormat": "global",
 			"optimize": false,
 			"engines": {
 				"browsers": "cover 99%, not dead"
@@ -154,7 +153,7 @@
 		"contributors": "git-authors-cli --print=false && prettier --write package.json && git add package.json package-lock.json && git commit -m \"chore(contributors): update and sort contributors list\"",
 		"check": "tsc --noEmit",
 		"watch": "parcel watch",
-		"build": "rm -rf dist && parcel build && cp dist/peerjs.cjs dist/peerjs.js && cp dist/peerjs.min.cjs dist/peerjs.min.js",
+		"build": "rm -rf dist && parcel build",
 		"prepublishOnly": "npm run build",
 		"test": "mocha -r ts-node/register -r jsdom-global/register test/**/*.ts",
 		"format": "prettier --write .",
