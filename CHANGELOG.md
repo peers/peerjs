@@ -1,3 +1,10 @@
+## [1.4.7](https://github.com/peers/peerjs/compare/v1.4.6...v1.4.7) (2022-08-09)
+
+
+### Bug Fixes
+
+* **browser-bundle:** Leaked private functions in the global scope ([857d425](https://github.com/peers/peerjs/commit/857d42524a929388b352a2330f18fdfc15df6c22)), closes [#989](https://github.com/peers/peerjs/issues/989)
+
 ## [1.4.6](https://github.com/peers/peerjs/compare/v1.4.5...v1.4.6) (2022-05-25)
 
 
