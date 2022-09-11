@@ -1,7 +1,7 @@
 # Template for commit messages from Prettifier.
 # Placeholders are:
 # - {{commitSha}}: the SHA of your commit that Prettifier formats
-commitMessage: 'AutoFormat {{commitSha}}'
+commitMessage: "AutoFormat {{commitSha}}"
 
 fixByCommit: true
 

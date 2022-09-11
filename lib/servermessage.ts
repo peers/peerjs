@@ -1,7 +1,7 @@
-import type { ServerMessageType } from './enums';
+import type { ServerMessageType } from "./enums";
 
 export interface ServerMessage {
-  type: ServerMessageType;
-  payload: any;
-  src: string;
+	type: ServerMessageType;
+	payload: any;
+	src: string;
 }

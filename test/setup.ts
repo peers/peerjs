@@ -1,23 +1,24 @@
-import { Utils } from '../lib';
+import { Utils } from "../lib";
 
-import fetch from 'node-fetch';
-import * as WebRTC from 'wrtc';
+import fetch from "node-fetch";
+import * as WebRTC from "wrtc";
 
 export const polyfills = { fetch, WebRTC };
 
-Utils.randomToken = () => 'testToken';
+Utils.randomToken = () => "testToken";
 
 export function randomString(length = 10): string {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  const charactersLength = characters.length;
+	const characters =
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+	const charactersLength = characters.length;
 
-  let result = '';
+	let result = "";
 
-  for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
-  }
+	for (let i = 0; i < length; i++) {
+		result += characters.charAt(Math.floor(Math.random() * charactersLength));
+	}
 
-  return result;
+	return result;
 }
 
-process.on('beforeExit', (code) => process.exit(code));
+process.on("beforeExit", (code) => process.exit(code));
