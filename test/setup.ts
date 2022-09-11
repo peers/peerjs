@@ -1,7 +1,7 @@
 import { Utils } from "../lib";
 
 import fetch from "node-fetch";
-import * as WebRTC from "wrtc";
+import * as WebRTC from "@koush/wrtc";
 
 export const polyfills = { fetch, WebRTC };
 
