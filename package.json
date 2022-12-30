@@ -183,7 +183,7 @@
 	},
 	"dependencies": {
 		"@swc/helpers": "^0.4.0",
-		"eventemitter3": "^5.0.0",
+		"eventemitter3": "^4.0.7",
 		"peerjs-js-binarypack": "1.0.1",
 		"webrtc-adapter": "^8.0.0"
 	}
