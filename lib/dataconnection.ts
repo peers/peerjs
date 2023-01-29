@@ -1,7 +1,12 @@
 import { util } from "./util";
 import logger from "./logger";
 import { Negotiator } from "./negotiator";
-import { ConnectionType, SerializationType, ServerMessageType } from "./enums";
+import {
+	ConnectionType,
+	DataConnectionErrorType,
+	SerializationType,
+	ServerMessageType,
+} from "./enums";
 import { Peer } from "./peer";
 import { BaseConnection } from "./baseconnection";
 import { ServerMessage } from "./servermessage";
@@ -190,7 +195,23 @@ export class DataConnection
 			this._handleDataMessage({ data });
 		}
 	}
+  
+	/** Emits a typed error message. */
+	private _emitError(type: DataConnectionErrorType, err: string | Error): void {
+		logger.error("Error:", err);
 
+		let error: Error & { type?: DataConnectionErrorType };
+
+		if (typeof err === "string") {
+			error = new Error(err);
+		} else {
+			error = err as Error;
+		}
+
+		error.type = type;
+
+		super.emit("error", error);
+	}
 	/**
 	 * Exposed functionality for users.
 	 */
@@ -237,11 +258,9 @@ export class DataConnection
 	/** Allows user to send data. */
 	send(data: any, chunked?: boolean): void {
 		if (!this.open) {
-			super.emit(
-				"error",
-				new Error(
-					"Connection is not open. You should listen for the `open` event before sending messages.",
-				),
+			this._emitError(
+				DataConnectionErrorType.NotOpen,
+				"Connection is not open. You should listen for the `open` event before sending messages.",
 			);
 			return;
 		}

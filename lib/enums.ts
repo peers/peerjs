@@ -17,6 +17,9 @@ export enum PeerErrorType {
 	UnavailableID = "unavailable-id",
 	WebRTC = "webrtc",
 }
+export enum DataConnectionErrorType {
+	NotOpen = "not-open",
+}
 
 export enum SerializationType {
 	Binary = "binary",
