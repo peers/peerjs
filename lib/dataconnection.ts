@@ -195,7 +195,7 @@ export class DataConnection
 			this._handleDataMessage({ data });
 		}
 	}
-  
+
 	/** Emits a typed error message. */
 	private _emitError(type: DataConnectionErrorType, err: string | Error): void {
 		logger.error("Error:", err);
