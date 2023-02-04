@@ -28,7 +28,7 @@ export abstract class BaseConnection<
 		return this._open;
 	}
 
-	constructor(
+	protected constructor(
 		readonly peer: string,
 		public provider: Peer,
 		readonly options: any,

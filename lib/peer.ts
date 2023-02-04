@@ -3,7 +3,7 @@ import { util } from "./util";
 import logger, { LogLevel } from "./logger";
 import { Socket } from "./socket";
 import { MediaConnection } from "./mediaconnection";
-import { DataConnection } from "./dataconnection";
+import { DataConnection } from "./dataconnection/DataConnection";
 import {
 	ConnectionType,
 	PeerErrorType,
@@ -17,6 +17,9 @@ import type {
 	PeerJSOption,
 	CallOption,
 } from "./optionInterfaces";
+import { BinaryJSConnection } from "./dataconnection/BufferedConnection/BinaryJSConnection";
+import { RawConnection } from "./dataconnection/BufferedConnection/RawConnection";
+import { JsonConnection } from "./dataconnection/BufferedConnection/JsonConnection";
 
 class PeerOptions implements PeerJSOption {
 	debug?: LogLevel; // 1: Errors, 2: Warnings, 3: All logs
@@ -30,7 +33,25 @@ class PeerOptions implements PeerJSOption {
 	pingInterval?: number;
 	referrerPolicy?: ReferrerPolicy;
 	logFunction?: (logLevel: LogLevel, ...rest: any[]) => void;
+	serializers?: SerializerMapping;
 }
+
+type SerializerMapping = {
+	[key: string]: new (
+		peerId: string,
+		provider: Peer,
+		options: any,
+	) => DataConnection;
+};
+
+const serializers: SerializerMapping = {
+	raw: RawConnection,
+	json: JsonConnection,
+
+	default: BinaryJSConnection,
+	binary: BinaryJSConnection,
+	"binary-utf8": BinaryJSConnection,
+};
 
 type PeerEvents = {
 	/**
@@ -64,6 +85,7 @@ type PeerEvents = {
 export class Peer extends EventEmitter<PeerEvents> {
 	private static readonly DEFAULT_KEY = "peerjs";
 
+	private readonly _serializers: SerializerMapping;
 	private readonly _options: PeerOptions;
 	private readonly _api: API;
 	private readonly _socket: Socket;
@@ -168,9 +190,11 @@ export class Peer extends EventEmitter<PeerEvents> {
 			token: util.randomToken(),
 			config: util.defaultConfig,
 			referrerPolicy: "strict-origin-when-cross-origin",
+			serializers,
 			...options,
 		};
 		this._options = options;
+		this._serializers = { ...serializers, ...this.options.serializers };
 
 		// Detect relative URL host.
 		if (this._options.host === "/") {
@@ -337,15 +361,20 @@ export class Peer extends EventEmitter<PeerEvents> {
 					this._addConnection(peerId, connection);
 					this.emit("call", mediaConnection);
 				} else if (payload.type === ConnectionType.Data) {
-					const dataConnection = new DataConnection(peerId, this, {
-						connectionId: connectionId,
-						_payload: payload,
-						metadata: payload.metadata,
-						label: payload.label,
-						serialization: payload.serialization,
-						reliable: payload.reliable,
-					});
+					const dataConnection = new this._serializers[payload.serialization](
+						peerId,
+						this,
+						{
+							connectionId: connectionId,
+							_payload: payload,
+							metadata: payload.metadata,
+							label: payload.label,
+							serialization: payload.serialization,
+							reliable: payload.reliable,
+						},
+					);
 					connection = dataConnection;
+
 					this._addConnection(peerId, connection);
 					this.emit("connection", dataConnection);
 				} else {
@@ -413,7 +442,11 @@ export class Peer extends EventEmitter<PeerEvents> {
 	 * @param peer The brokering ID of the remote peer (their peer.id).
 	 * @param options for specifying details about Peer Connection
 	 */
-	connect(peer: string, options: PeerConnectOption = {}): DataConnection {
+	connect(peer: string, options: PeerConnectOption): DataConnection {
+		options = {
+			serialization: "default",
+			...options,
+		};
 		if (this.disconnected) {
 			logger.warn(
 				"You cannot connect to a new Peer because you called " +
@@ -428,7 +461,11 @@ export class Peer extends EventEmitter<PeerEvents> {
 			return;
 		}
 
-		const dataConnection = new DataConnection(peer, this, options);
+		const dataConnection = new this._serializers[options.serialization](
+			peer,
+			this,
+			options,
+		);
 		this._addConnection(peer, dataConnection);
 		return dataConnection;
 	}
