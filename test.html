@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+	<head></head>
+	<body>
+		<script type="module">
+			import t from "./test.json";
+			import { Peer } from "./lib/exports";
+			import { MsgPackConnection } from "./lib/dataconnection/StreamConnection/MsgPackConnection";
+			import { CborConnection } from "./lib/dataconnection/StreamConnection/CborConnection";
+
+			const serializers = {
+				msgpack: MsgPackConnection,
+				cbor: CborConnection,
+			};
+
+			const A = new Peer({
+				serializers,
+			});
+			const B = new Peer({
+				serializers,
+			});
+
+			const Bid = new Promise((resolve) => {
+				B.on("open", (id) => {
+					console.log("B: " + id);
+					resolve(id);
+				});
+			});
+
+			B.on("connection", (conn) => {
+				console.log("B connection");
+				conn.on("data", (data) => {
+					console.log("B: ", data);
+				});
+			});
+
+			A.on("open", async (Aid) => {
+				console.log("A: " + Aid);
+				const dataConnection = await A.connect(await Bid, {
+					// serialization: "binary",
+					// serialization: "json",
+					serialization: "cbor",
+					// serialization: "msgpack",
+					reliable: true,
+				});
+				dataConnection.on("open", () => {
+					console.log("A: data connection opened");
+					for (let i = 0; i < 10; i++) {
+						const object = {
+							nil: null,
+							integer: i,
+							float: Math.PI,
+							string: "Hello, world!",
+							binary: Uint8Array.from([1, 2, 3]),
+							test: new Uint8Array(36024),
+							array: [10, 20, 30],
+							map: { foo: "bar" },
+							timestampExt: new Date(),
+						};
+
+						let te = {};
+						te[i] = object;
+						dataConnection.send({ a: "hello", i: i });
+						dataConnection.send(object);
+						dataConnection.send(t);
+					}
+				});
+				dataConnection.on("error", (err) => {
+					console.log("A: data connection error", err);
+				});
+				dataConnection.on("close", () => {
+					console.log("A: data connection closed");
+				});
+			});
+		</script>
+	</body>
+</html>
