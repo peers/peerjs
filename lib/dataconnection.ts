@@ -1,4 +1,4 @@
-import { util } from "./util";
+import { concatArrayBuffers, util } from "./util";
 import logger from "./logger";
 import { Negotiator } from "./negotiator";
 import { ConnectionType, SerializationType, ServerMessageType } from "./enums";
@@ -45,7 +45,7 @@ export class DataConnection
 	private _buffering = false;
 	private _chunkedData: {
 		[id: number]: {
-			data: Blob[];
+			data: Uint8Array[];
 			count: number;
 			total: number;
 		};
@@ -168,7 +168,7 @@ export class DataConnection
 		__peerData: number;
 		n: number;
 		total: number;
-		data: Blob;
+		data: ArrayBuffer;
 	}): void {
 		const id = data.__peerData;
 		const chunkInfo = this._chunkedData[id] || {
@@ -177,7 +177,7 @@ export class DataConnection
 			total: data.total,
 		};
 
-		chunkInfo.data[data.n] = data.data;
+		chunkInfo.data[data.n] = new Uint8Array(data.data);
 		chunkInfo.count++;
 		this._chunkedData[id] = chunkInfo;
 
@@ -186,8 +186,8 @@ export class DataConnection
 			delete this._chunkedData[id];
 
 			// We've received all the chunks--time to construct the complete data.
-			const data = new Blob(chunkInfo.data);
-			this._handleDataMessage({ data });
+			const data = concatArrayBuffers(chunkInfo.data);
+			this.emit("data", util.unpack(data));
 		}
 	}
 
@@ -246,6 +246,11 @@ export class DataConnection
 			return;
 		}
 
+		if (data instanceof Blob) {
+			data.arrayBuffer().then((ab) => this.send(ab));
+			return;
+		}
+
 		if (this.serialization === SerializationType.JSON) {
 			this._bufferedSend(this.stringify(data));
 		} else if (
@@ -254,18 +259,12 @@ export class DataConnection
 		) {
 			const blob = util.pack(data);
 
-			if (!chunked && blob.size > util.chunkedMTU) {
+			if (!chunked && blob.byteLength > util.chunkedMTU) {
 				this._sendChunks(blob);
 				return;
 			}
 
-			if (!util.supports.binaryBlob) {
-				// We only do this if we really need to (e.g. blobs are not supported),
-				// because this conversion is costly.
-				this._encodingQueue.enque(blob);
-			} else {
-				this._bufferedSend(blob);
-			}
+			this._bufferedSend(blob);
 		} else {
 			this._bufferedSend(data);
 		}
@@ -327,7 +326,7 @@ export class DataConnection
 		}
 	}
 
-	private _sendChunks(blob: Blob): void {
+	private _sendChunks(blob: ArrayBuffer): void {
 		const blobs = util.chunk(blob);
 		logger.log(`DC#${this.connectionId} Try to send ${blobs.length} chunks...`);
 
