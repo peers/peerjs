@@ -1,6 +1,6 @@
 {
 	"name": "peerjs",
-	"version": "1.4.6-rc.2",
+	"version": "1.4.7",
 	"keywords": [
 		"peerjs",
 		"webrtc",
@@ -99,15 +99,14 @@
 	"files": [
 		"dist/*"
 	],
-	"type": "module",
 	"sideEffects": [
 		"lib/global.ts",
 		"lib/supports.ts"
 	],
 	"main": "dist/bundler.cjs",
 	"module": "dist/bundler.mjs",
-	"browser-minified": "dist/peerjs.min.cjs",
-	"browser-unminified": "dist/peerjs.cjs",
+	"browser-minified": "dist/peerjs.min.js",
+	"browser-unminified": "dist/peerjs.js",
 	"types": "dist/types.d.ts",
 	"engines": {
 		"node": ">= 10"
@@ -132,8 +131,8 @@
 			}
 		},
 		"browser-minified": {
-			"includeNodeModules": true,
 			"context": "browser",
+			"outputFormat": "global",
 			"optimize": true,
 			"engines": {
 				"browsers": "cover 99%, not dead"
@@ -141,8 +140,8 @@
 			"source": "lib/global.ts"
 		},
 		"browser-unminified": {
-			"includeNodeModules": true,
 			"context": "browser",
+			"outputFormat": "global",
 			"optimize": false,
 			"engines": {
 				"browsers": "cover 99%, not dead"
@@ -154,40 +153,38 @@
 		"contributors": "git-authors-cli --print=false && prettier --write package.json && git add package.json package-lock.json && git commit -m \"chore(contributors): update and sort contributors list\"",
 		"check": "tsc --noEmit",
 		"watch": "parcel watch",
-		"build": "rm -rf dist && parcel build && cp dist/peerjs.cjs dist/peerjs.js && cp dist/peerjs.min.cjs dist/peerjs.min.js",
+		"build": "rm -rf dist && parcel build",
 		"prepublishOnly": "npm run build",
 		"test": "mocha -r ts-node/register -r jsdom-global/register test/**/*.ts",
 		"format": "prettier --write .",
 		"semantic-release": "semantic-release"
 	},
 	"devDependencies": {
-		"@parcel/config-default": "^2.5.0",
-		"@parcel/packager-ts": "^2.5.0",
-		"@parcel/transformer-typescript-tsc": "^2.5.0",
-		"@parcel/transformer-typescript-types": "^2.5.0",
+		"@parcel/config-default": "^2.8.1",
+		"@parcel/packager-ts": "^2.8.1",
+		"@parcel/transformer-typescript-tsc": "^2.8.1",
+		"@parcel/transformer-typescript-types": "^2.8.1",
 		"@semantic-release/changelog": "^6.0.1",
 		"@semantic-release/git": "^10.0.1",
 		"@types/chai": "^4.3.0",
 		"@types/mocha": "^9.1.0",
 		"@types/node": "^17.0.18",
 		"chai": "^4.3.6",
-		"git-authors-cli": "^1.0.40",
 		"jsdom": "^19.0.0",
 		"jsdom-global": "^3.0.2",
 		"mocha": "^9.2.0",
-		"mock-socket": "8.0.5",
-		"parcel": "^2.5.0",
+		"mock-socket": "8.1.1",
+		"parcel": "^2.8.1",
 		"parcel-transformer-tsc-sourcemaps": "^1.0.2",
 		"prettier": "^2.6.2",
 		"semantic-release": "^19.0.2",
-		"standard": "^16.0.4",
 		"ts-node": "^10.5.0",
 		"typescript": "^4.5.5"
 	},
 	"dependencies": {
-		"@swc/helpers": "^0.3.13",
+		"@swc/helpers": "^0.4.0",
 		"eventemitter3": "^4.0.7",
-		"peerjs-js-binarypack": "1.0.1",
-		"webrtc-adapter": "^7.7.1"
+		"peerjs-js-binarypack": "^2.0.0-rc.1",
+		"webrtc-adapter": "^8.0.0"
 	}
 }

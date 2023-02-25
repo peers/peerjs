@@ -1,12 +1,11 @@
-## [1.4.6-rc.2](https://github.com/peers/peerjs/compare/v1.4.6-rc.1...v1.4.6-rc.2) (2022-06-08)
+## [1.4.7](https://github.com/peers/peerjs/compare/v1.4.6...v1.4.7) (2022-08-09)
 
 
 ### Bug Fixes
 
-* **typings:** `MediaConnection.answer()` doesn’t need a `stream` anymore, thanks [@matallui](https://github.com/matallui)! ([666dcd9](https://github.com/peers/peerjs/commit/666dcd9770fe080e00898b9138664e8996bf5162))
-* **typings:** much stronger event typings for `DataConnection`,`MediaConnection` ([0c96603](https://github.com/peers/peerjs/commit/0c96603a3f97f28eabe24906e692c31ef0ebca13))
+* **browser-bundle:** Leaked private functions in the global scope ([857d425](https://github.com/peers/peerjs/commit/857d42524a929388b352a2330f18fdfc15df6c22)), closes [#989](https://github.com/peers/peerjs/issues/989)
 
-## [1.4.6-rc.1](https://github.com/peers/peerjs/compare/v1.4.5...v1.4.6-rc.1) (2022-05-25)
+## [1.4.6](https://github.com/peers/peerjs/compare/v1.4.5...v1.4.6) (2022-05-25)
 
 
 ### Bug Fixes
