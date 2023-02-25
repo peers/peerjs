@@ -25,10 +25,11 @@ describe("DataChannel:Default", () => {
 		await P.init();
 	});
 	it("should transfer numbers", serializationTest("./numbers.js"));
-	/** ordering bug: chunked string not in order */
-	// it('should transfer strings', serializationTest("./strings.js"))
+	it("should transfer strings", serializationTest("./strings.js"));
 	it("should transfer objects", serializationTest("./objects.js"));
 	it("should transfer arrays", serializationTest("./arrays.js"));
-	/** can't send bug */
-	// it('should transfer typed arrays / array buffers', serializationTest("./arraybuffers.js"))
+	it(
+		"should transfer typed arrays / array buffers",
+		serializationTest("./arraybuffers.js"),
+	);
 });
