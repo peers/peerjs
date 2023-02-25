@@ -1,3 +1,15 @@
+## [1.4.8-rc.1](https://github.com/peers/peerjs/compare/v1.4.7...v1.4.8-rc.1) (2023-02-25)
+
+
+### Bug Fixes
+
+* `close` event was not triggered reliably ([#860](https://github.com/peers/peerjs/issues/860)) ([ec1d5ae](https://github.com/peers/peerjs/commit/ec1d5ae8436b5265a59ef277e3fa05608f19f1ae)), closes [#636](https://github.com/peers/peerjs/issues/636)
+* **datachannel:** sending order is now preserved correctly ([18d491a](https://github.com/peers/peerjs/commit/18d491a83df759f26c08d1bb10d6011891eb2efc)), closes [#746](https://github.com/peers/peerjs/issues/746)
+* **deps:** update dependency @swc/helpers to ^0.4.0 ([a7de8b7](https://github.com/peers/peerjs/commit/a7de8b78f57a5cf9708fa54e9f82f4ab43c0bca2))
+* **deps:** update dependency eventemitter3 to v5 ([caf01c6](https://github.com/peers/peerjs/commit/caf01c6440534cbe190facd84cecf9ca62e4a5ce))
+* **deps:** update dependency webrtc-adapter to v8 ([431f00b](https://github.com/peers/peerjs/commit/431f00bd89809867a19c98224509982b82769558))
+* **npm audit:** Updates all dependencies that cause npm audit to issue a warning ([6ef5707](https://github.com/peers/peerjs/commit/6ef5707dc85d8b921d8dfea74890b110ddf5cd4f))
+
 ## [1.4.7](https://github.com/peers/peerjs/compare/v1.4.6...v1.4.7) (2022-08-09)
 
 
