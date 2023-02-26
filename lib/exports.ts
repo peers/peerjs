@@ -1,4 +1,4 @@
-import { util } from "./util";
+export { util, type Util } from "./util";
 import { Peer } from "./peer";
 
 export type {
@@ -19,5 +19,5 @@ export type {
 	ServerMessageType,
 } from "./enums";
 
-export { Peer, util };
+export { Peer };
 export default Peer;

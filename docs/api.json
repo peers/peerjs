@@ -504,49 +504,5 @@
         "description": "For media connections, this is always <code>'media'</code>."
       }
     ]
-  },
-  {
-    "name": "util",
-    "type": "object",
-    "tags": [
-      "utility"
-    ],
-    "description": "Provides a variety of helpful utilities.<span class='warn'>Only the utilities documented here are guaranteed to be present on <code>util</code>. Undocumented utilities can be removed without warning. We don't consider these to be 'breaking changes.'</span>",
-    "children": [
-      {
-        "name": ".browser",
-        "type": "string",
-        "snippet": "if (util.browser === 'firefox') { /* OK to peer with Firefox peers. */ }",
-        "description": "The current browser. This property can be useful in determining whether or not two peers can connect. For example, as of now data connections are not yet interoperable between major browsers. <code>util.browser</code> can currently have the values <code>'firefox'</code>, <code>'chrome'</code>, <code>'safari'</code>, <code>'edge'</code>, <code>'Not a supported browser.'</code>, or <code>'Not a browser.'</code> (unknown WebRTC-compatible agent)."
-      },
-      {
-        "name": ".supports",
-        "type": "object",
-        "snippet": "if (util.supports.data) { /* OK to start a data connection. */ }",
-        "description": "A hash of WebRTC features mapped to booleans that correspond to whether the feature is supported by the current browser.<span class='warn'>Only the properties documented here are guaranteed to be present on <code>util.supports</code>.</span>",
-        "children": [
-          {
-            "name": ".audioVideo",
-            "type": "boolean",
-            "description": "True if the current browser supports media streams and PeerConnection."
-          },
-          {
-            "name": ".data",
-            "type": "boolean",
-            "description": "True if the current browser supports DataChannel and PeerConnection."
-          },
-          {
-            "name": ".binary",
-            "type": "boolean",
-            "description": "True if the current browser supports binary DataChannels."
-          },
-          {
-            "name": ".reliable",
-            "type": "boolean",
-            "description": "True if the current browser supports reliable DataChannels."
-          }
-        ]
-      }
-    ]
   }
 ]
