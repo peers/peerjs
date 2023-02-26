@@ -360,7 +360,7 @@ export class DataConnection
 		const blobs = util.chunk(blob);
 		logger.log(`DC#${this.connectionId} Try to send ${blobs.length} chunks...`);
 
-		for (let blob of blobs) {
+		for (const blob of blobs) {
 			this.send(blob, true);
 		}
 	}

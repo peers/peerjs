@@ -118,7 +118,7 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		// Retrieve lost messages stored because PeerConnection not set up.
 		const messages = this.provider._getMessages(this.connectionId);
 
-		for (let message of messages) {
+		for (const message of messages) {
 			this.handleMessage(message);
 		}
 
