@@ -1,6 +1,6 @@
 export { util, type Util } from "./util";
 import { Peer } from "./peer";
-export type { PeerEvents, PeerError,PeerOptions } from "./peer";
+export type { PeerEvents, PeerError, PeerOptions } from "./peer";
 
 export type {
 	PeerJSOption,
