@@ -7,15 +7,20 @@ import { BaseConnection } from "./baseconnection";
 import { ServerMessage } from "./servermessage";
 import type { AnswerOption } from "./optionInterfaces";
 
-type MediaConnectionEvents = {
+export type MediaConnectionEvents = {
 	/**
 	 * Emitted when a connection to the PeerServer is established.
+	 *
+	 * ```ts
+	 * mediaConnection.on('stream', (stream) => { ... });
+	 * ```
 	 */
 	stream: (stream: MediaStream) => void;
 };
 
 /**
- * Wraps the streaming interface between two Peers.
+ * Wraps WebRTC's media streams.
+ * To get one, use {@apilink Peer.call} or listen for the {@apilink PeerEvents | `call`} event.
  */
 export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 	private static readonly ID_PREFIX = "mc_";
@@ -24,6 +29,9 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 	private _localStream: MediaStream;
 	private _remoteStream: MediaStream;
 
+	/**
+	 * For media connections, this is always 'media'.
+	 */
 	get type() {
 		return ConnectionType.Media;
 	}
@@ -79,6 +87,16 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		}
 	}
 
+	/**
+	 * When receiving a {@apilink PeerEvents | `call`} event on a peer, you can call
+	 * `answer` on the media connection provided by the callback to accept the call
+	 * and optionally send your own media stream.
+
+	 *
+	 * @param stream A WebRTC media stream.
+	 * @param options
+	 * @returns
+	 */
 	answer(stream?: MediaStream, options: AnswerOption = {}): void {
 		if (this._localStream) {
 			logger.warn(
@@ -111,7 +129,9 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 	 * Exposed functionality for users.
 	 */
 
-	/** Allows user to close connection. */
+	/**
+	 * Closes the media connection.
+	 */
 	close(): void {
 		if (this._negotiator) {
 			this._negotiator.cleanup();

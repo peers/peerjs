@@ -32,7 +32,7 @@ class PeerOptions implements PeerJSOption {
 	logFunction?: (logLevel: LogLevel, ...rest: any[]) => void;
 }
 
-type PeerEvents = {
+export type PeerEvents = {
 	/**
 	 * Emitted when a connection to the PeerServer is established.
 	 */

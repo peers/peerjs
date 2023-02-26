@@ -1,4 +1,7 @@
 export interface AnswerOption {
+	/**
+	 * Function which runs before create answer to modify sdp answer message.
+	 */
 	sdpTransform?: Function;
 }
 
