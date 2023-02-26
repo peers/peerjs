@@ -1,6 +1,4 @@
-// Types aren’t accurate
-//@ts-ignore
-import BinaryPack from "peerjs-js-binarypack";
+import * as BinaryPack from "peerjs-js-binarypack";
 import { Supports } from "./supports";
 
 export interface UtilSupportsObj {
