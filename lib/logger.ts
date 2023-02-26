@@ -62,7 +62,7 @@ class Logger {
 	private _print(logLevel: LogLevel, ...rest: any[]): void {
 		const copy = [LOG_PREFIX, ...rest];
 
-		for (let i in copy) {
+		for (const i in copy) {
 			if (copy[i] instanceof Error) {
 				copy[i] = "(" + copy[i].name + ") " + copy[i].message;
 			}

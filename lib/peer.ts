@@ -160,7 +160,7 @@ export class Peer extends EventEmitter<PeerEvents> {
 	get connections(): Object {
 		const plainConnections = Object.create(null);
 
-		for (let [k, v] of this._connections) {
+		for (const [k, v] of this._connections) {
 			plainConnections[k] = v;
 		}
 
@@ -409,7 +409,7 @@ export class Peer extends EventEmitter<PeerEvents> {
 
 				// Find messages.
 				const messages = this._getMessages(connectionId);
-				for (let message of messages) {
+				for (const message of messages) {
 					connection.handleMessage(message);
 				}
 
@@ -567,7 +567,7 @@ export class Peer extends EventEmitter<PeerEvents> {
 			return null;
 		}
 
-		for (let connection of connections) {
+		for (const connection of connections) {
 			if (connection.connectionId === connectionId) {
 				return connection;
 			}
@@ -633,7 +633,7 @@ export class Peer extends EventEmitter<PeerEvents> {
 
 	/** Disconnects every connection on this peer. */
 	private _cleanup(): void {
-		for (let peerId of this._connections.keys()) {
+		for (const peerId of this._connections.keys()) {
 			this._cleanupPeer(peerId);
 			this._connections.delete(peerId);
 		}
@@ -647,7 +647,7 @@ export class Peer extends EventEmitter<PeerEvents> {
 
 		if (!connections) return;
 
-		for (let connection of connections) {
+		for (const connection of connections) {
 			connection.close();
 		}
 	}
