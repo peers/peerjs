@@ -9,7 +9,7 @@ export type {
 	CallOption,
 } from "./optionInterfaces";
 export type { UtilSupportsObj } from "./util";
-export type { DataConnection } from "./dataconnection";
+export type { DataConnection, DataConnectionEvents } from "./dataconnection";
 export type { MediaConnection, MediaConnectionEvents } from "./mediaconnection";
 export type { LogLevel } from "./logger";
 export type {
