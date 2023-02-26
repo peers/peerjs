@@ -8,9 +8,21 @@ Prints log messages depending on the debug level passed in. Defaults to 0.
 3  Prints all logs.
 */
 export enum LogLevel {
+	/**
+	 * Prints no logs.
+	 */
 	Disabled,
+	/**
+	 * Prints only errors.
+	 */
 	Errors,
+	/**
+	 * Prints errors and warnings.
+	 */
 	Warnings,
+	/**
+	 * Prints all logs.
+	 */
 	All,
 }
 

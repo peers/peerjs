@@ -8,19 +8,28 @@ import { ServerMessage } from "./servermessage";
 import { EncodingQueue } from "./encodingQueue";
 import type { DataConnection as IDataConnection } from "./dataconnection";
 
-type DataConnectionEvents = {
+export type DataConnectionEvents = {
 	/**
 	 * Emitted when data is received from the remote peer.
+	 *
+	 * ```ts
+	 * dataConnection.on('data', (data) => { ... });
+	 * ```
 	 */
 	data: (data: unknown) => void;
 	/**
 	 * Emitted when the connection is established and ready-to-use.
+	 *
+	 * ```ts
+	 * dataConnection.on('open', () => { ... });
+	 * ```
 	 */
 	open: () => void;
 };
 
 /**
- * Wraps a DataChannel between two Peers.
+ * Wraps WebRTC's DataChannel.
+ * To get one, use {@apilink Peer.connect} or listen for the {@apilink PeerEvents | `connect`} event.
  */
 export class DataConnection
 	extends BaseConnection<DataConnectionEvents>
@@ -30,8 +39,18 @@ export class DataConnection
 	private static readonly MAX_BUFFERED_AMOUNT = 8 * 1024 * 1024;
 
 	private _negotiator: Negotiator<DataConnectionEvents, DataConnection>;
+	/**
+	 * The optional label passed in or assigned by PeerJS when the connection was initiated.
+	 */
 	readonly label: string;
+	/**
+	 * The serialization format of the data sent over the connection.
+	 * {@apilink SerializationType | possible values}
+	 */
 	readonly serialization: SerializationType;
+	/**
+	 * Whether the underlying data channels are reliable; defined when the connection was initiated.
+	 */
 	readonly reliable: boolean;
 	stringify: (data: any) => string = JSON.stringify;
 	parse: (data: string) => any = JSON.parse;
@@ -41,6 +60,9 @@ export class DataConnection
 	}
 
 	private _buffer: any[] = [];
+	/**
+	 * The number of messages queued to be sent once the browser buffer is no longer full.
+	 */
 	private _bufferSize = 0;
 	private _buffering = false;
 	private _chunkedData: {
@@ -54,6 +76,9 @@ export class DataConnection
 	private _dc: RTCDataChannel;
 	private _encodingQueue = new EncodingQueue();
 
+	/**
+	 * A reference to the RTCDataChannel object associated with the connection.
+	 */
 	get dataChannel(): RTCDataChannel {
 		return this._dc;
 	}
@@ -234,7 +259,11 @@ export class DataConnection
 		super.emit("close");
 	}
 
-	/** Allows user to send data. */
+	/**
+	 * `data` is serialized and sent to the remote peer.
+	 * @param data You can send any type of data, including objects, strings, and blobs.
+	 * @returns
+	 */
 	send(data: any, chunked?: boolean): void {
 		if (!this.open) {
 			super.emit(

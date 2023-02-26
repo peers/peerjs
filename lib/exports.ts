@@ -1,5 +1,6 @@
-import { util } from "./util";
+export { util, type Util } from "./util";
 import { Peer } from "./peer";
+export type { PeerEvents, PeerError } from "./peer";
 
 export type {
 	PeerJSOption,
@@ -8,8 +9,9 @@ export type {
 	CallOption,
 } from "./optionInterfaces";
 export type { UtilSupportsObj } from "./util";
-export type { DataConnection } from "./dataconnection";
-export type { MediaConnection } from "./mediaconnection";
+export type { BaseConnection } from "./baseconnection";
+export type { DataConnection, DataConnectionEvents } from "./dataconnection";
+export type { MediaConnection, MediaConnectionEvents } from "./mediaconnection";
 export type { LogLevel } from "./logger";
 export type {
 	ConnectionType,
@@ -19,5 +21,5 @@ export type {
 	ServerMessageType,
 } from "./enums";
 
-export { Peer, util };
+export { Peer };
 export default Peer;
