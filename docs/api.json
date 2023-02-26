@@ -419,6 +419,21 @@
         "name": ".bufferSize",
         "type": "number",
         "description": "The number of messages queued to be sent once the browser buffer is no longer full."
+      },
+      {
+        "name": "'error'",
+        "type": "event",
+        "snippet": "dataConnection.on('error', function(err) { ... });",
+        "description": "",
+        "children": [
+          {
+            "name": "'not-open'",
+            "type": "Error",
+            "tags": [
+            ],
+            "description": "An a attempt to use the DataConnection to send a message was made before the connection was open and ready. Listen for the 'open' event to know when a conncetion is ready."
+          }
+        ]
       }
     ]
   },
