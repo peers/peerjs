@@ -365,6 +365,9 @@ export class DataConnection
 		}
 	}
 
+	/**
+	 * @internal
+	 */
 	handleMessage(message: ServerMessage): void {
 		const payload = message.payload;
 

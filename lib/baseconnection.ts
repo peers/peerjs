@@ -60,5 +60,8 @@ export abstract class BaseConnection<
 
 	abstract close(): void;
 
+	/**
+	 * @internal
+	 */
 	abstract handleMessage(message: ServerMessage): void;
 }

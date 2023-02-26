@@ -68,6 +68,9 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		super.emit("stream", remoteStream); // Should we call this `open`?
 	}
 
+	/**
+	 * @internal
+	 */
 	handleMessage(message: ServerMessage): void {
 		const type = message.type;
 		const payload = message.payload;

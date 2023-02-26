@@ -76,7 +76,7 @@ class PeerError extends Error {
 
 	type: PeerErrorType;
 }
-export type { PeerError };
+export type { PeerError, PeerOptions };
 
 export type PeerEvents = {
 	/**
@@ -148,6 +148,9 @@ export class Peer extends EventEmitter<PeerEvents> {
 		return this._open;
 	}
 
+	/**
+	 * @internal
+	 */
 	get socket() {
 		return this._socket;
 	}
@@ -449,7 +452,10 @@ export class Peer extends EventEmitter<PeerEvents> {
 		this._lostMessages.get(connectionId).push(message);
 	}
 
-	/** Retrieve messages from lost message store */
+	/**
+	 * Retrieve messages from lost message store
+	 * @internal
+	 */
 	//TODO Change it to private
 	public _getMessages(connectionId: string): ServerMessage[] {
 		const messages = this._lostMessages.get(connectionId);

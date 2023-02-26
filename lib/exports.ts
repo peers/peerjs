@@ -1,6 +1,6 @@
 export { util, type Util } from "./util";
 import { Peer } from "./peer";
-export type { PeerEvents, PeerError } from "./peer";
+export type { PeerEvents, PeerError,PeerOptions } from "./peer";
 
 export type {
 	PeerJSOption,
@@ -9,7 +9,7 @@ export type {
 	CallOption,
 } from "./optionInterfaces";
 export type { UtilSupportsObj } from "./util";
-export type { BaseConnection } from "./baseconnection";
+export type { BaseConnection, BaseConnectionEvents } from "./baseconnection";
 export type { DataConnection, DataConnectionEvents } from "./dataconnection";
 export type { MediaConnection, MediaConnectionEvents } from "./mediaconnection";
 export type { LogLevel } from "./logger";
