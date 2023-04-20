@@ -218,7 +218,7 @@ export class DataConnection
 	}
 
 	/** Allows user to send data. */
-	send(data: any, chunked?: boolean): void {
+	send(data: any): void {
 		if (!this.open) {
 			super.emit(
 				"error",
@@ -242,7 +242,7 @@ export class DataConnection
 		) {
 			const blob = util.pack(data);
 
-			if (!chunked && blob.byteLength > util.chunkedMTU) {
+			if (blob.byteLength > util.chunkedMTU) {
 				this._sendChunks(blob);
 				return;
 			}
@@ -314,7 +314,7 @@ export class DataConnection
 		logger.log(`DC#${this.connectionId} Try to send ${blobs.length} chunks...`);
 
 		for (let blob of blobs) {
-			this.send(blob, true);
+			this._bufferedSend(blob);
 		}
 	}
 
