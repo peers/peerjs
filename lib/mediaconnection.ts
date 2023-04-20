@@ -60,7 +60,7 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		super.emit("stream", remoteStream); // Should we call this `open`?
 	}
 
-	handleMessage(message: ServerMessage): void {
+	handleServerMessage(message: ServerMessage): void {
 		const type = message.type;
 		const payload = message.payload;
 
@@ -101,7 +101,7 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		const messages = this.provider._getMessages(this.connectionId);
 
 		for (let message of messages) {
-			this.handleMessage(message);
+			this.handleServerMessage(message);
 		}
 
 		this._open = true;

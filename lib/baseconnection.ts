@@ -40,5 +40,5 @@ export abstract class BaseConnection<
 
 	abstract close(): void;
 
-	abstract handleMessage(message: ServerMessage): void;
+	abstract handleServerMessage(message: ServerMessage): void;
 }

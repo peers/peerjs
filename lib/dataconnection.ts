@@ -5,7 +5,6 @@ import { ConnectionType, SerializationType, ServerMessageType } from "./enums";
 import { Peer } from "./peer";
 import { BaseConnection } from "./baseconnection";
 import { ServerMessage } from "./servermessage";
-import { EncodingQueue } from "./encodingQueue";
 import type { DataConnection as IDataConnection } from "./dataconnection";
 
 type DataConnectionEvents = {
@@ -52,7 +51,6 @@ export class DataConnection
 	} = {};
 
 	private _dc: RTCDataChannel;
-	private _encodingQueue = new EncodingQueue();
 
 	get dataChannel(): RTCDataChannel {
 		return this._dc;
@@ -73,16 +71,6 @@ export class DataConnection
 		this.serialization = this.options.serialization || SerializationType.Binary;
 		this.reliable = !!this.options.reliable;
 
-		this._encodingQueue.on("done", (ab: ArrayBuffer) => {
-			this._bufferedSend(ab);
-		});
-
-		this._encodingQueue.on("error", () => {
-			logger.error(
-				`DC#${this.connectionId}: Error occured in encoding from blob to arraybuffer, close DC`,
-			);
-			this.close();
-		});
 
 		this._negotiator = new Negotiator(this);
 
@@ -219,11 +207,6 @@ export class DataConnection
 			this._dc = null;
 		}
 
-		if (this._encodingQueue) {
-			this._encodingQueue.destroy();
-			this._encodingQueue.removeAllListeners();
-			this._encodingQueue = null;
-		}
 
 		if (!this.open) {
 			return;
@@ -335,7 +318,7 @@ export class DataConnection
 		}
 	}
 
-	handleMessage(message: ServerMessage): void {
+	handleServerMessage(message: ServerMessage): void {
 		const payload = message.payload;
 
 		switch (message.type) {

@@ -356,7 +356,7 @@ export class Peer extends EventEmitter<PeerEvents> {
 				// Find messages.
 				const messages = this._getMessages(connectionId);
 				for (let message of messages) {
-					connection.handleMessage(message);
+					connection.handleServerMessage(message);
 				}
 
 				break;
@@ -374,7 +374,7 @@ export class Peer extends EventEmitter<PeerEvents> {
 
 				if (connection && connection.peerConnection) {
 					// Pass it on.
-					connection.handleMessage(message);
+					connection.handleServerMessage(message);
 				} else if (connectionId) {
 					// Store for possible later use
 					this._storeMessage(connectionId, message);
