@@ -179,9 +179,15 @@ export class DataConnection
 			deserializedData = this.parse(data as string);
 		}
 
-		// Check if we've chunked--if so, piece things back together.
-		// We're guaranteed that this isn't 0.
-		if (deserializedData.__peerData) {
+		// PeerJS specific message
+		const peerData = deserializedData["__peerData"];
+		if (peerData) {
+			if (peerData.type === "close") {
+				this.close();
+				return;
+			}
+
+			// Chunked data -- piece things back together.
 			this._handleChunk(deserializedData);
 			return;
 		}
@@ -221,7 +227,15 @@ export class DataConnection
 	 */
 
 	/** Allows user to close connection. */
-	close(): void {
+	close(options?: { flush?: boolean }) {
+		if (options?.flush) {
+			this.send({
+				__peerData: {
+					type: "close",
+				},
+			});
+			return;
+		}
 		this._buffer = [];
 		this._bufferSize = 0;
 		this._chunkedData = {};
