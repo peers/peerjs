@@ -39,10 +39,8 @@ export class DataConnection
 	private static readonly MAX_BUFFERED_AMOUNT = 8 * 1024 * 1024;
 
 	private _negotiator: Negotiator<DataConnectionEvents, DataConnection>;
-	/**
-	 * The optional label passed in or assigned by PeerJS when the connection was initiated.
-	 */
 	readonly label: string;
+
 	/**
 	 * The serialization format of the data sent over the connection.
 	 * {@apilink SerializationType | possible values}
@@ -119,12 +117,8 @@ export class DataConnection
 	}
 
 	/** Called by the Negotiator when the DataChannel is ready. */
-	initialize(dc: RTCDataChannel): void {
+	override _initializeDataChannel(dc: RTCDataChannel): void {
 		this._dc = dc;
-		this._configureDataChannel();
-	}
-
-	private _configureDataChannel(): void {
 		if (!util.supports.binaryBlob || util.supports.reliable) {
 			this.dataChannel.binaryType = "arraybuffer";
 		}

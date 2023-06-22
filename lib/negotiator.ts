@@ -28,23 +28,15 @@ export class Negotiator<
 
 		// What do we need to do now?
 		if (options.originator) {
-			if (this.connection.type === ConnectionType.Data) {
-				const dataConnection = <DataConnection>(<unknown>this.connection);
+			const dataConnection = this.connection;
 
-				const config: RTCDataChannelInit = { ordered: !!options.reliable };
+			const config: RTCDataChannelInit = { ordered: !!options.reliable };
 
-				const dataChannel = peerConnection.createDataChannel(
-					dataConnection.label,
-					config,
-				);
-				dataConnection.initialize(dataChannel);
-			} else if (this.connection.type === ConnectionType.Media) {
-				const mediaConnection = <MediaConnection>(<unknown>this.connection);
-				const dataChannel = peerConnection.createDataChannel(
-					mediaConnection.connectionId,
-				);
-				mediaConnection.initialize(dataChannel);
-			}
+			const dataChannel = peerConnection.createDataChannel(
+				dataConnection.label,
+				config,
+			);
+			dataConnection._initializeDataChannel(dataChannel);
 
 			this._makeOffer();
 		} else {
@@ -142,7 +134,7 @@ export class Negotiator<
 				provider.getConnection(peerId, connectionId)
 			);
 
-			connection.initialize(dataChannel);
+			connection._initializeDataChannel(dataChannel);
 		};
 
 		// MEDIACONNECTION.
@@ -183,22 +175,11 @@ export class Negotiator<
 		const peerConnectionNotClosed = peerConnection.signalingState !== "closed";
 		let dataChannelNotClosed = false;
 
-		if (this.connection.type === ConnectionType.Data) {
-			const dataConnection = <DataConnection>(<unknown>this.connection);
-			const dataChannel = dataConnection.dataChannel;
+		const dataChannel = this.connection.dataChannel;
 
-			if (dataChannel) {
-				dataChannelNotClosed =
-					!!dataChannel.readyState && dataChannel.readyState !== "closed";
-			}
-		} else if (this.connection.type === ConnectionType.Media) {
-			const mediaConnection = <MediaConnection>(<unknown>this.connection);
-			const dataChannel = mediaConnection.dataChannel;
-
-			if (dataChannel) {
-				dataChannelNotClosed =
-					!!dataChannel.readyState && dataChannel.readyState !== "closed";
-			}
+		if (dataChannel) {
+			dataChannelNotClosed =
+				!!dataChannel.readyState && dataChannel.readyState !== "closed";
 		}
 
 		if (peerConnectionNotClosed || dataChannelNotClosed) {

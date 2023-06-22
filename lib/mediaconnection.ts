@@ -1,11 +1,11 @@
-import { util } from "./util";
+import {util} from "./util";
 import logger from "./logger";
-import { Negotiator } from "./negotiator";
-import { ConnectionType, ServerMessageType } from "./enums";
-import { Peer } from "./peer";
-import { BaseConnection } from "./baseconnection";
-import { ServerMessage } from "./servermessage";
-import type { AnswerOption } from "./optionInterfaces";
+import {Negotiator} from "./negotiator";
+import {ConnectionType, ServerMessageType} from "./enums";
+import {Peer} from "./peer";
+import {BaseConnection} from "./baseconnection";
+import {ServerMessage} from "./servermessage";
+import type {AnswerOption} from "./optionInterfaces";
 
 export type MediaConnectionEvents = {
 	/**
@@ -24,6 +24,7 @@ export type MediaConnectionEvents = {
  */
 export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 	private static readonly ID_PREFIX = "mc_";
+	readonly label: string;
 
 	private _negotiator: Negotiator<MediaConnectionEvents, MediaConnection>;
 	private _localStream: MediaStream;
@@ -67,30 +68,14 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 	}
 
 	/** Called by the Negotiator when the DataChannel is ready. */
-	initialize(dc: RTCDataChannel): void {
+	override _initializeDataChannel(dc: RTCDataChannel): void {
 		this._dc = dc;
-		this._configureDataChannel();
-	}
-
-	private _configureDataChannel(): void {
-		if (!util.supports.binaryBlob || util.supports.reliable) {
-			this.dataChannel.binaryType = "arraybuffer";
-		}
-
-		this.dataChannel.onopen = () => {
-			logger.log(`DC#${this.connectionId} dc connection success`);
-		};
-
-		this.dataChannel.onmessage = (e) => {
-			logger.log(`DC#${this.connectionId} dc onmessage:`, e.data);
-		};
 
 		this.dataChannel.onclose = () => {
 			logger.log(`DC#${this.connectionId} dc closed for:`, this.peer);
 			this.close();
 		};
 	}
-
 	addStream(remoteStream) {
 		logger.log("Receiving stream", remoteStream);
 
