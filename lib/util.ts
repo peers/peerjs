@@ -131,10 +131,10 @@ export class Util {
 	private _dataCount: number = 1;
 
 	chunk(
-		blob: Blob,
-	): { __peerData: number; n: number; total: number; data: Blob }[] {
+		blob: ArrayBuffer,
+	): { __peerData: number; n: number; total: number; data: ArrayBuffer }[] {
 		const chunks = [];
-		const size = blob.size;
+		const size = blob.byteLength;
 		const total = Math.ceil(size / util.chunkedMTU);
 
 		let index = 0;
@@ -208,3 +208,16 @@ export class Util {
  * :::
  */
 export const util = new Util();
+export function concatArrayBuffers(bufs: Uint8Array[]) {
+	let size = 0;
+	for (const buf of bufs) {
+		size += buf.byteLength;
+	}
+	const result = new Uint8Array(size);
+	let offset = 0;
+	for (const buf of bufs) {
+		result.set(buf, offset);
+		offset += buf.byteLength;
+	}
+	return result;
+}
