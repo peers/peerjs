@@ -24,10 +24,12 @@ export type MediaConnectionEvents = {
  */
 export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 	private static readonly ID_PREFIX = "mc_";
+	readonly label: string;
 
 	private _negotiator: Negotiator<MediaConnectionEvents, MediaConnection>;
 	private _localStream: MediaStream;
 	private _remoteStream: MediaStream;
+	private _dc: RTCDataChannel;
 
 	/**
 	 * For media connections, this is always 'media'.
@@ -41,6 +43,10 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 	}
 	get remoteStream(): MediaStream {
 		return this._remoteStream;
+	}
+
+	get dataChannel(): RTCDataChannel {
+		return this._dc;
 	}
 
 	constructor(peerId: string, provider: Peer, options: any) {
@@ -61,6 +67,15 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		}
 	}
 
+	/** Called by the Negotiator when the DataChannel is ready. */
+	override _initializeDataChannel(dc: RTCDataChannel): void {
+		this._dc = dc;
+
+		this.dataChannel.onclose = () => {
+			logger.log(`DC#${this.connectionId} dc closed for:`, this.peer);
+			this.close();
+		};
+	}
 	addStream(remoteStream) {
 		logger.log("Receiving stream", remoteStream);
 

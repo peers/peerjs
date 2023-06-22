@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title></title>
+		<link rel="stylesheet" href="../style.css" />
+	</head>
+	<body>
+		<h1>MediaChannel</h1>
+		<canvas id="sender-stream" width="200" height="100"></canvas>
+		<video id="receiver-stream" autoplay></video>
+		<script>
+			const canvas = document.getElementById("sender-stream");
+			const ctx = canvas.getContext("2d");
+
+			// Set the canvas background color to white
+			ctx.fillStyle = "white";
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			// Draw the text "Alice" in black
+			ctx.font = "30px sans-serif";
+			ctx.fillStyle = "black";
+			ctx.fillText(window.location.hash.substring(1), 50, 50);
+		</script>
+		<div id="inputs">
+			<input type="text" id="receiver-id" placeholder="Receiver ID" />
+			<button id="call-btn" disabled>Call</button>
+			<button id="close-btn">Hang up</button>
+		</div>
+		<div id="messages"></div>
+		<div id="result"></div>
+		<div id="error-message"></div>
+		<video></video>
+		<script src="/dist/peerjs.js"></script>
+		<script src="close.js" type="module"></script>
+	</body>
+</html>

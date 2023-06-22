@@ -34,8 +34,14 @@ export abstract class BaseConnection<
 	connectionId: string;
 
 	peerConnection: RTCPeerConnection;
+	abstract get dataChannel(): RTCDataChannel;
 
 	abstract get type(): ConnectionType;
+
+	/**
+	 * The optional label passed in or assigned by PeerJS when the connection was initiated.
+	 */
+	abstract readonly label: string;
 
 	/**
 	 * Whether the media connection is active (e.g. your call has been answered).
@@ -64,4 +70,10 @@ export abstract class BaseConnection<
 	 * @internal
 	 */
 	abstract handleMessage(message: ServerMessage): void;
+
+	/**
+	 * Called by the Negotiator when the DataChannel is ready.
+	 * @internal
+	 * */
+	abstract _initializeDataChannel(dc: RTCDataChannel): void;
 }
