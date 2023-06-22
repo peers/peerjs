@@ -1,11 +1,11 @@
-import {util} from "./util";
+import { util } from "./util";
 import logger from "./logger";
-import {Negotiator} from "./negotiator";
-import {ConnectionType, ServerMessageType} from "./enums";
-import {Peer} from "./peer";
-import {BaseConnection} from "./baseconnection";
-import {ServerMessage} from "./servermessage";
-import type {AnswerOption} from "./optionInterfaces";
+import { Negotiator } from "./negotiator";
+import { ConnectionType, ServerMessageType } from "./enums";
+import { Peer } from "./peer";
+import { BaseConnection } from "./baseconnection";
+import { ServerMessage } from "./servermessage";
+import type { AnswerOption } from "./optionInterfaces";
 
 export type MediaConnectionEvents = {
 	/**
