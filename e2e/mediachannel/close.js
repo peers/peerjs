@@ -14,7 +14,6 @@ const messages = document.getElementById("messages");
 const errorMessage = document.getElementById("error-message");
 
 const stream = window["sender-stream"].captureStream(30);
-// const stream =  await navigator.mediaDevices.getUserMedia({video: true, audio: true})
 const peer = new Peer({ debug: 3 });
 /**
  * @type {import("peerjs").MediaConnection}
@@ -29,18 +28,19 @@ peer
 	})
 	.once("call", (call) => {
 		mediaConnection = call;
-		mediaConnection.on("stream", function (stream) {
-			console.log("stream", stream);
-			const video = document.getElementById("receiver-stream");
-			console.log("video element", video);
-			video.srcObject = stream;
-			video.play();
-		});
-		mediaConnection.once("close", () => {
-			messages.textContent = "Closed!";
-		});
+		mediaConnection
+			.once("stream", function (stream) {
+				const video = document.getElementById("receiver-stream");
+				video.srcObject = stream;
+				video.play();
+			})
+			.once("close", () => {
+				messages.textContent = "Closed!";
+			})
+			.once("willCloseOnRemote", () => {
+				messages.textContent = "Connected!";
+			});
 		call.answer(stream);
-		messages.innerText = "Connected!";
 	});
 
 callBtn.addEventListener("click", async () => {
@@ -50,17 +50,16 @@ callBtn.addEventListener("click", async () => {
 	const receiverId = receiverIdInput.value;
 	if (receiverId) {
 		mediaConnection = peer.call(receiverId, stream);
-		mediaConnection.on("stream", (stream) => {
-			console.log("stream", stream);
-			const video = document.getElementById("receiver-stream");
-			console.log("video element", video);
-			video.srcObject = stream;
-			video.play();
-			messages.innerText = "Connected!";
-		});
-		mediaConnection.on("close", () => {
-			messages.textContent = "Closed!";
-		});
+		mediaConnection
+			.once("stream", (stream) => {
+				const video = document.getElementById("receiver-stream");
+				video.srcObject = stream;
+				video.play();
+				messages.innerText = "Connected!";
+			})
+			.once("close", () => {
+				messages.textContent = "Closed!";
+			});
 	}
 });
 

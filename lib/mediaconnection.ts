@@ -16,6 +16,12 @@ export type MediaConnectionEvents = {
 	 * ```
 	 */
 	stream: (stream: MediaStream) => void;
+	/**
+	 * Emitted when the auxiliary data channel is established.
+	 * After this event, hanging up will close the connection cleanly on the remote peer.
+	 * @beta
+	 */
+	willCloseOnRemote: () => void;
 };
 
 /**
@@ -70,6 +76,11 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 	/** Called by the Negotiator when the DataChannel is ready. */
 	override _initializeDataChannel(dc: RTCDataChannel): void {
 		this._dc = dc;
+
+		this.dataChannel.onopen = () => {
+			logger.log(`DC#${this.connectionId} dc connection success`);
+			this.emit("willCloseOnRemote");
+		};
 
 		this.dataChannel.onclose = () => {
 			logger.log(`DC#${this.connectionId} dc closed for:`, this.peer);
