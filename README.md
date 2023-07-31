@@ -102,15 +102,14 @@ peer.on("call", (call) => {
 npm test
 ```
 
-## Browsers support
+## Browser support
 
 | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png" alt="Firefox" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)<br/>Firefox | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png" alt="Chrome" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)<br/>Chrome | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/safari/safari_48x48.png" alt="Safari" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)<br/>Safari |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| last 4 versions                                                                                                                                                                                                   | last 4 versions                                                                                                                                                                                               | 12.1+                                                                                                                                                                                                         |
+| 80+                                                                                                                                                                                                               | 81+                                                                                                                                                                                                           | 14+                                                                                                                                                                                                           |
 
-## Safari
-
-1. Safari supports only string data when sending via DataConnection. Use JSON serialization type if you want to communicate with Safari. By default, DataConnection uses Binary serialization type.
+We test PeerJS against these versions of Chrome, Firefox, and Safari to ensure compatibility.
+It may work in other and older browsers, but we don't officially support them.
 
 ## FAQ
 
