@@ -194,7 +194,6 @@
 		"wdio-geckodriver-service": "^5.0.1"
 	},
 	"dependencies": {
-		"@swc/helpers": "^0.5.0",
 		"eventemitter3": "^4.0.7",
 		"peerjs-js-binarypack": "^2.0.0",
 		"webrtc-adapter": "^8.0.0"
