@@ -11,13 +11,11 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
-      - uses: actions/cache@v3
-        name: Configure npm caching
+      - uses: actions/setup-node@v3
         with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/workflows/prettier.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
+          node-version: 16
+          cache: "npm"
+      - run: npm ci
       - name: Run prettier
         run: |-
-          npx prettier --check .
+          npm run format:check

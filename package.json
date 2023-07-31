@@ -159,6 +159,7 @@
 		"test:watch": "jest --watch",
 		"coverage": "jest --coverage --collectCoverageFrom=\"./lib/**\"",
 		"format": "prettier --write .",
+		"format:check": "prettier --check .",
 		"semantic-release": "semantic-release",
 		"e2e": "wdio run e2e/wdio.local.conf.ts",
 		"e2e:bstack": "wdio run e2e/wdio.bstack.conf.ts"
