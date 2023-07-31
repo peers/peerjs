@@ -135,7 +135,7 @@
 			"outputFormat": "global",
 			"optimize": true,
 			"engines": {
-				"browsers": "cover 99%, not dead"
+				"browsers": "safari >= 14 or firefox >= 80 or chrome >= 81"
 			},
 			"source": "lib/global.ts"
 		},
@@ -144,7 +144,7 @@
 			"outputFormat": "global",
 			"optimize": false,
 			"engines": {
-				"browsers": "cover 99%, not dead"
+				"browsers": "safari >= 14 or firefox >= 80 or chrome >= 81"
 			},
 			"source": "lib/global.ts"
 		}
