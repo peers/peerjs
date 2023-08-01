@@ -16,7 +16,7 @@ export const config: WebdriverIO.Config = {
 		],
 		capabilities: [
 			{
-				browserName: "Edge",
+				browserName: "Chrome",
 				"bstack:options": {
 					os: "Windows",
 					osVersion: "11",
