@@ -14,9 +14,9 @@ jobs:
       - name: "BrowserStack Local Tunnel Setup" # Invokes the setup-local action
         uses: browserstack/github-actions/setup-local@master
         with:
-          local-testing: 'start'
-          local-logging-level: 'all-logs'
-          local-identifier: 'random'
+          local-testing: "start"
+          local-logging-level: "all-logs"
+          local-identifier: "random"
 
       # The next 3 steps are for building the web application to be tested and starting the web server on the runner environment
 
@@ -35,4 +35,4 @@ jobs:
       - name: "BrowserStackLocal Stop" # Terminating the BrowserStackLocal tunnel connection
         uses: browserstack/github-actions/setup-local@master
         with:
-          local-testing: 'stop'
+          local-testing: "stop"
