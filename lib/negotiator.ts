@@ -1,7 +1,7 @@
 import { util } from "./util";
 import logger from "./logger";
 import { MediaConnection } from "./mediaconnection";
-import { DataConnection } from "./dataconnection";
+import { DataConnection } from "./dataconnection/DataConnection";
 import { ConnectionType, PeerErrorType, ServerMessageType } from "./enums";
 import { BaseConnection, BaseConnectionEvents } from "./baseconnection";
 import { ValidEventTypes } from "eventemitter3";
@@ -323,26 +323,14 @@ export class Negotiator<
 	}
 
 	/** Handle a candidate. */
-	async handleCandidate(ice: any): Promise<void> {
+	async handleCandidate(ice: RTCIceCandidate) {
 		logger.log(`handleCandidate:`, ice);
 
-		const candidate = ice.candidate;
-		const sdpMLineIndex = ice.sdpMLineIndex;
-		const sdpMid = ice.sdpMid;
-		const peerConnection = this.connection.peerConnection;
-		const provider = this.connection.provider;
-
 		try {
-			await peerConnection.addIceCandidate(
-				new RTCIceCandidate({
-					sdpMid: sdpMid,
-					sdpMLineIndex: sdpMLineIndex,
-					candidate: candidate,
-				}),
-			);
+			await this.connection.peerConnection.addIceCandidate(ice);
 			logger.log(`Added ICE candidate for:${this.connection.peer}`);
 		} catch (err) {
-			provider.emitError(PeerErrorType.WebRTC, err);
+			this.connection.provider.emitError(PeerErrorType.WebRTC, err);
 			logger.log("Failed to handleCandidate, ", err);
 		}
 	}

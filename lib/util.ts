@@ -132,7 +132,7 @@ export class Util {
 
 	chunk(
 		blob: ArrayBuffer,
-	): { __peerData: number; n: number; total: number; data: ArrayBuffer }[] {
+	): { __peerData: number; n: number; total: number; data: Uint8Array }[] {
 		const chunks = [];
 		const size = blob.byteLength;
 		const total = Math.ceil(size / util.chunkedMTU);
