@@ -14,8 +14,9 @@ jobs:
       - name: "BrowserStack Local Tunnel Setup" # Invokes the setup-local action
         uses: browserstack/github-actions/setup-local@master
         with:
-          local-testing: start
-          local-identifier: peerjs-${{ github.run_id }}-${{ github.run_attempt }}
+          local-testing: 'start'
+          local-logging-level: 'all-logs'
+          local-identifier: 'random'
 
       # The next 3 steps are for building the web application to be tested and starting the web server on the runner environment
 
@@ -30,10 +31,8 @@ jobs:
 
       - name: "Running test on BrowserStack" # Invokes the actual test script that would run on BrowserStack browsers
         run: npm run e2e:bstack # See sample test script above
-        env:
-          BROWSERSTACK_LOCAL_IDENTIFIER: peerjs-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: "BrowserStackLocal Stop" # Terminating the BrowserStackLocal tunnel connection
         uses: browserstack/github-actions/setup-local@master
         with:
-          local-testing: stop
+          local-testing: 'stop'
