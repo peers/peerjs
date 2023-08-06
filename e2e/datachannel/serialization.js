@@ -1,7 +1,7 @@
 /**
  * @type {typeof import("../../lib/exports.js").Peer}
  */
-const Peer = window.peerjs.Peer
+const Peer = window.peerjs.Peer;
 
 const params = new URLSearchParams(document.location.search);
 const testfile = params.get("testfile");
