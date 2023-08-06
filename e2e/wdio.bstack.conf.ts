@@ -20,7 +20,25 @@ export const config: WebdriverIO.Config = {
 				"bstack:options": {
 					os: "Windows",
 					osVersion: "11",
-					browserVersion: "81",
+					browserVersion: "83",
+					localIdentifier: process.env.BROWSERSTACK_LOCAL_IDENTIFIER,
+				},
+			},
+			{
+				browserName: "Chrome",
+				"bstack:options": {
+					os: "Windows",
+					osVersion: "11",
+					browserVersion: "83",
+					localIdentifier: process.env.BROWSERSTACK_LOCAL_IDENTIFIER,
+				},
+			},
+			{
+				browserName: "Chrome",
+				"bstack:options": {
+					browserVersion: "latest",
+					os: "Windows",
+					osVersion: "11",
 					localIdentifier: process.env.BROWSERSTACK_LOCAL_IDENTIFIER,
 				},
 			},
@@ -34,38 +52,32 @@ export const config: WebdriverIO.Config = {
 				},
 			},
 			{
-				browserName: "Safari",
+				browserName: "Firefox",
 				"bstack:options": {
-					browserVersion: "latest",
+					browserVersion: "105",
 					os: "OS X",
-					osVersion: "Big Sur",
+					osVersion: "Ventura",
 					localIdentifier: process.env.BROWSERSTACK_LOCAL_IDENTIFIER,
 				},
 			},
 			// {
-			// 	browserName: 'Safari',
-			// 	'bstack:options': {
-			// 		browserVersion: 'latest',
-			// 		os: 'OS X',
-			// 		osVersion: 'Monterey'
-			// 	}
+			//     browserName: "Safari",
+			//     "bstack:options": {
+			//         browserVersion: "latest",
+			//         os: "OS X",
+			//         osVersion: "Monterey",
+			//         localIdentifier: process.env.BROWSERSTACK_LOCAL_IDENTIFIER,
+			//     },
 			// },
 			// {
-			// 	browserName: 'Chrome',
-			// 	'bstack:options': {
-			// 		browserVersion: 'latest',
-			// 		os: 'Windows',
-			// 		osVersion: '11'
-			// 	}
+			//     browserName: 'Safari',
+			//     'bstack:options': {
+			//         browserVersion: 'latest',
+			//         os: 'OS X',
+			//         osVersion: 'Ventura',
+			//         localIdentifier: process.env.BROWSERSTACK_LOCAL_IDENTIFIER,
+			//     }
 			// },
-			// {
-			// 	browserName: 'Firefox',
-			// 	'bstack:options': {
-			// 		browserVersion: 'latest',
-			// 		os: 'OS X',
-			// 		osVersion: 'Ventura'
-			// 	}
-			// }
 		],
 	},
 };

@@ -1,7 +1,7 @@
 /**
- * @type {typeof import("../peerjs").Peer}
+ * @type {typeof import("../..").Peer}
  */
-const Peer = window.Peer;
+const Peer = window.peerjs.Peer;
 
 document.getElementsByTagName("title")[0].innerText =
 	window.location.hash.substring(1);

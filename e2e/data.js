@@ -31,7 +31,7 @@ export const strings = [
 
 export { commit_data } from "./commit_data.js";
 
-export const typed_arrays = [
+export const uint8_arrays = [
 	new Uint8Array(),
 	new Uint8Array([0]),
 	new Uint8Array([0, 1, 2, 3, 4, 6, 7]),
@@ -40,6 +40,9 @@ export const typed_arrays = [
 		0, 1, 2, 3, 4, 6, 78, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23,
 		24, 25, 26, 27, 28, 30, 31,
 	]),
+];
+
+export const int32_arrays = [
 	new Int32Array([0].map((x) => -x)),
 	new Int32Array([0, 1, 2, 3, 4, 6, 7].map((x) => -x)),
 	new Int32Array(
@@ -53,7 +56,7 @@ export const typed_arrays = [
 	),
 ];
 
-export const typed_array_view = new Uint8Array(typed_arrays[6].buffer, 4);
+export const typed_array_view = new Uint8Array(uint8_arrays[4].buffer, 4);
 
 export const array_buffers = [
 	new Uint8Array(),

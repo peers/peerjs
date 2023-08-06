@@ -1,7 +1,7 @@
 import P from "./close.page.js";
 import { browser } from "@wdio/globals";
 
-fdescribe("MediaStream", () => {
+describe("MediaStream", () => {
 	beforeAll(async () => {
 		await P.init();
 	});

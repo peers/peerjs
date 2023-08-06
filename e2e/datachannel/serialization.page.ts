@@ -37,20 +37,16 @@ class SerializationPage {
 		);
 	}
 
-	async open(testFile: string, json: boolean = false) {
+	async open(testFile: string, serialization: string) {
 		await browser.switchWindow("Alice");
 		await browser.url(
-			`/e2e/datachannel/serialization${
-				json ? "_json" : ""
-			}.html?test=${testFile}#Alice`,
+			`/e2e/datachannel/serialization.html?testfile=${testFile}&serialization=${serialization}#Alice`,
 		);
 		await this.connectBtn.waitForEnabled();
 
 		await browser.switchWindow("Bob");
 		await browser.url(
-			`/e2e/datachannel/serialization${
-				json ? "_json" : ""
-			}.html?test=${testFile}#Bob`,
+			`/e2e/datachannel/serialization.html?testfile=${testFile}#Bob`,
 		);
 		await this.connectBtn.waitForEnabled();
 	}

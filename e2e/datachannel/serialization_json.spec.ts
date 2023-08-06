@@ -1,31 +1,30 @@
 import P from "./serialization.page.js";
-import { browser, expect } from "@wdio/globals";
+import { serializationTest } from "./serializationTest.js";
 
-const serializationTest = (testFile: string) => async () => {
-	await P.open(testFile, true);
-	await P.waitForMessage("Your Peer ID: ");
-	const bobId = (await P.messages.getText()).split("Your Peer ID: ")[1];
-	await browser.switchWindow("Alice");
-	await P.waitForMessage("Your Peer ID: ");
-	await P.receiverId.setValue(bobId);
-	await P.connectBtn.click();
-	await P.waitForMessage("Connected!");
-	await P.sendBtn.click();
-	await P.waitForMessage("Sent!");
-	await browser.switchWindow("Bob");
-	await P.waitForMessage("Closed!");
-	await P.checkBtn.click();
-	await P.waitForMessage("Checked!");
-
-	await expect(await P.errorMessage.getText()).toBe("");
-	await expect(await P.result.getText()).toBe("Success!");
-};
 describe("DataChannel:JSON", () => {
 	beforeAll(async () => {
 		await P.init();
 	});
-	it("should transfer numbers", serializationTest("./numbers.js"));
-	it("should transfer strings", serializationTest("./strings_json.js"));
-	it("should transfer objects", serializationTest("./objects.js"));
-	it("should transfer arrays", serializationTest("./arrays_json.js"));
+	it("should transfer numbers", serializationTest("./numbers", "json"));
+	it("should transfer strings", serializationTest("./strings", "json"));
+	// it("should transfer long string", serializationTest("./long_string", "json"));
+	it("should transfer objects", serializationTest("./objects", "json"));
+	it(
+		"should transfer arrays (no chunks)",
+		serializationTest("./arrays_unchunked", "json"),
+	);
+	it(
+		"should transfer Dates as strings",
+		serializationTest("./dates_as_json_string", "json"),
+	);
+	// it("should transfer ArrayBuffers", serializationTest("./arraybuffers", "json"));
+	// it("should transfer TypedArrayView", serializationTest("./typed_array_view", "json"));
+	// it(
+	// 	"should transfer Uint8Arrays",
+	// 	serializationTest("./Uint8Array", "json"),
+	// );
+	// it(
+	// 	"should transfer Int32Arrays",
+	// 	serializationTest("./Int32Array", "json"),
+	// );
 });
