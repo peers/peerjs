@@ -3,6 +3,10 @@ import { config as sharedConfig } from "./wdio.shared.conf.js";
 export const config: WebdriverIO.Config = {
 	...sharedConfig,
 	...{
+		/**
+		 * Only allow one instance. We are limited to 5 parallel tests on BrowserStack.
+		 */
+		maxInstances: 1,
 		user: process.env.BROWSERSTACK_USERNAME,
 		key: process.env.BROWSERSTACK_ACCESS_KEY,
 		hostname: "hub.browserstack.com",
