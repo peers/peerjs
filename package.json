@@ -109,7 +109,7 @@
 	"browser-unminified": "dist/peerjs.js",
 	"types": "dist/types.d.ts",
 	"engines": {
-		"node": ">= 10"
+		"node": ">= 14"
 	},
 	"targets": {
 		"types": {
@@ -135,7 +135,7 @@
 			"outputFormat": "global",
 			"optimize": true,
 			"engines": {
-				"browsers": "cover 99%, not dead"
+				"browsers": "chrome >= 83, edge >= 83, firefox >= 80, safari >= 15"
 			},
 			"source": "lib/global.ts"
 		},
@@ -144,7 +144,7 @@
 			"outputFormat": "global",
 			"optimize": false,
 			"engines": {
-				"browsers": "cover 99%, not dead"
+				"browsers": "chrome >= 83, edge >= 83, firefox >= 80, safari >= 15"
 			},
 			"source": "lib/global.ts"
 		}
@@ -194,7 +194,6 @@
 		"wdio-geckodriver-service": "^5.0.1"
 	},
 	"dependencies": {
-		"@swc/helpers": "^0.5.0",
 		"eventemitter3": "^4.0.7",
 		"peerjs-js-binarypack": "^2.0.0",
 		"webrtc-adapter": "^8.0.0"
