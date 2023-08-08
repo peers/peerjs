@@ -40,12 +40,6 @@ export abstract class StreamConnection extends DataConnection {
 		start: (controller) => {
 			this.once("open", () => {
 				this.dataChannel.addEventListener("message", (e) => {
-					// if(e.data?.__peerData?.type === "close")
-					// {
-					// 	controller.close()
-					// 	this.close()
-					// 	return
-					// }
 					controller.enqueue(e.data);
 				});
 			});
@@ -55,7 +49,7 @@ export abstract class StreamConnection extends DataConnection {
 	protected constructor(peerId: string, provider: Peer, options: any) {
 		super(peerId, provider, { ...options, reliable: true });
 
-		this._splitStream.readable.pipeTo(this._rawSendStream);
+		void this._splitStream.readable.pipeTo(this._rawSendStream);
 	}
 
 	public override _initializeDataChannel(dc) {

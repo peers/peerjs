@@ -1,6 +1,6 @@
 import P from "./serialization.page.js";
 import { serializationTest } from "./serializationTest.js";
-import { browser, $, $$, expect } from "@wdio/globals";
+import { browser } from "@wdio/globals";
 
 describe("DataChannel:CBOR", function () {
 	beforeAll(async function () {

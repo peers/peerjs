@@ -151,9 +151,8 @@
 			"source": "lib/global.ts"
 		},
 		"browser-minified-cbor": {
-			"context": "node",
+			"context": "browser",
 			"outputFormat": "esmodule",
-			"includeNodeModules": true,
 			"isLibrary": true,
 			"optimize": true,
 			"engines": {
@@ -164,7 +163,6 @@
 		"browser-minified-msgpack": {
 			"context": "browser",
 			"outputFormat": "esmodule",
-			"includeNodeModules": true,
 			"isLibrary": true,
 			"optimize": true,
 			"engines": {

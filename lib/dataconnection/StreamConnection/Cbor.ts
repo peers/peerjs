@@ -56,7 +56,7 @@ export class Cbor extends StreamConnection {
 	constructor(peerId: string, provider: Peer, options: any) {
 		super(peerId, provider, { ...options, reliable: true });
 
-		this._rawReadStream.pipeTo(this._decoderStream.writable);
+		void this._rawReadStream.pipeTo(this._decoderStream.writable);
 
 		(async () => {
 			for await (const msg of iterateOver(this._decoderStream.readable)) {

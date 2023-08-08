@@ -37,9 +37,9 @@ export class Negotiator<
 			);
 			dataConnection._initializeDataChannel(dataChannel);
 
-			this._makeOffer();
+			void this._makeOffer();
 		} else {
-			this.handleSDP("OFFER", options.sdp);
+			void this.handleSDP("OFFER", options.sdp);
 		}
 	}
 

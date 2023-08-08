@@ -100,11 +100,11 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		switch (message.type) {
 			case ServerMessageType.Answer:
 				// Forward to negotiator
-				this._negotiator.handleSDP(type, payload.sdp);
+				void this._negotiator.handleSDP(type, payload.sdp);
 				this._open = true;
 				break;
 			case ServerMessageType.Candidate:
-				this._negotiator.handleCandidate(payload.candidate);
+				void this._negotiator.handleCandidate(payload.candidate);
 				break;
 			default:
 				logger.warn(`Unrecognized message type:${type} from peer:${this.peer}`);

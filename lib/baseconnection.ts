@@ -51,7 +51,7 @@ export abstract class BaseConnection<
 		return this._open;
 	}
 
-	constructor(
+	protected constructor(
 		/**
 		 * The ID of the peer on the other end of this connection.
 		 */
