@@ -126,7 +126,7 @@ export type PeerEvents = {
 export class Peer extends EventEmitter<PeerEvents> {
 	private static readonly DEFAULT_KEY = "peerjs";
 
-	private readonly _serializers: SerializerMapping = {
+	protected readonly _serializers: SerializerMapping = {
 		raw: Raw,
 		json: Json,
 		binary: BinaryPack,
