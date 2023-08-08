@@ -28,7 +28,7 @@ export class BinaryPack extends BufferedConnection {
 
 	// Handles a DataChannel message.
 	protected override _handleDataMessage({ data }: { data: Uint8Array }): void {
-		let deserializedData = unpack(data);
+		const deserializedData = unpack(data);
 
 		// PeerJS specific message
 		const peerData = deserializedData["__peerData"];
@@ -93,7 +93,7 @@ export class BinaryPack extends BufferedConnection {
 		const blobs = this.chunker.chunk(blob);
 		logger.log(`DC#${this.connectionId} Try to send ${blobs.length} chunks...`);
 
-		for (let blob of blobs) {
+		for (const blob of blobs) {
 			this.send(blob, true);
 		}
 	}
