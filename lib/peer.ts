@@ -3,23 +3,23 @@ import { util } from "./util";
 import logger, { LogLevel } from "./logger";
 import { Socket } from "./socket";
 import { MediaConnection } from "./mediaconnection";
-import { DataConnection } from "./dataconnection/DataConnection";
+import type { DataConnection } from "./dataconnection/DataConnection";
 import {
 	ConnectionType,
 	PeerErrorType,
 	SocketEventType,
 	ServerMessageType,
 } from "./enums";
-import { ServerMessage } from "./servermessage";
+import type { ServerMessage } from "./servermessage";
 import { API } from "./api";
 import type {
 	PeerConnectOption,
 	PeerJSOption,
 	CallOption,
 } from "./optionInterfaces";
-import { BinaryJSConnection } from "./dataconnection/BufferedConnection/BinaryJSConnection";
-import { RawConnection } from "./dataconnection/BufferedConnection/RawConnection";
-import { JsonConnection } from "./dataconnection/BufferedConnection/JsonConnection";
+import { BinaryPack } from "./dataconnection/BufferedConnection/BinaryPack";
+import { Raw } from "./dataconnection/BufferedConnection/Raw";
+import { Json } from "./dataconnection/BufferedConnection/Json";
 
 class PeerOptions implements PeerJSOption {
 	/**
@@ -127,12 +127,12 @@ export class Peer extends EventEmitter<PeerEvents> {
 	private static readonly DEFAULT_KEY = "peerjs";
 
 	private readonly _serializers: SerializerMapping = {
-		raw: RawConnection,
-		json: JsonConnection,
-		binary: BinaryJSConnection,
-		"binary-utf8": BinaryJSConnection,
+		raw: Raw,
+		json: Json,
+		binary: BinaryPack,
+		"binary-utf8": BinaryPack,
 
-		default: BinaryJSConnection,
+		default: BinaryPack,
 	};
 	private readonly _options: PeerOptions;
 	private readonly _api: API;

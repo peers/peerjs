@@ -107,6 +107,8 @@
 	"module": "dist/bundler.mjs",
 	"browser-minified": "dist/peerjs.min.js",
 	"browser-unminified": "dist/peerjs.js",
+	"browser-minified-cbor": "dist/serializer.cbor.mjs",
+	"browser-minified-msgpack": "dist/serializer.msgpack.mjs",
 	"types": "dist/types.d.ts",
 	"engines": {
 		"node": ">= 14"
@@ -147,6 +149,28 @@
 				"browsers": "chrome >= 83, edge >= 83, firefox >= 80, safari >= 15"
 			},
 			"source": "lib/global.ts"
+		},
+		"browser-minified-cbor": {
+			"context": "node",
+			"outputFormat": "esmodule",
+			"includeNodeModules": true,
+			"isLibrary": true,
+			"optimize": true,
+			"engines": {
+				"browsers": "chrome >= 83, edge >= 83, firefox >= 102, safari >= 15"
+			},
+			"source": "lib/dataconnection/StreamConnection/Cbor.ts"
+		},
+		"browser-minified-msgpack": {
+			"context": "browser",
+			"outputFormat": "esmodule",
+			"includeNodeModules": true,
+			"isLibrary": true,
+			"optimize": true,
+			"engines": {
+				"browsers": "chrome >= 83, edge >= 83, firefox >= 102, safari >= 15"
+			},
+			"source": "lib/dataconnection/StreamConnection/MsgPack.ts"
 		}
 	},
 	"scripts": {
@@ -193,8 +217,14 @@
 		"wdio-geckodriver-service": "^5.0.1"
 	},
 	"dependencies": {
+		"@msgpack/msgpack": "^2.8.0",
+		"cbor-x": "^1.5.3",
 		"eventemitter3": "^4.0.7",
 		"peerjs-js-binarypack": "^2.0.0",
 		"webrtc-adapter": "^8.0.0"
+	},
+	"alias": {
+		"process": false,
+		"buffer": false
 	}
 }

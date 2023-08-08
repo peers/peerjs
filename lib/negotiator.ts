@@ -1,10 +1,9 @@
-import { util } from "./util";
 import logger from "./logger";
-import { MediaConnection } from "./mediaconnection";
-import { DataConnection } from "./dataconnection/DataConnection";
+import type { MediaConnection } from "./mediaconnection";
+import type { DataConnection } from "./dataconnection/DataConnection";
 import { ConnectionType, PeerErrorType, ServerMessageType } from "./enums";
-import { BaseConnection, BaseConnectionEvents } from "./baseconnection";
-import { ValidEventTypes } from "eventemitter3";
+import type { BaseConnection, BaseConnectionEvents } from "./baseconnection";
+import type { ValidEventTypes } from "eventemitter3";
 
 /**
  * Manages all negotiations between Peers.
@@ -112,7 +111,7 @@ export class Negotiator<
 					);
 					break;
 				case "completed":
-					peerConnection.onicecandidate = util.noop;
+					peerConnection.onicecandidate = () => {};
 					break;
 			}
 
@@ -220,7 +219,6 @@ export class Negotiator<
 					type: this.connection.type,
 					connectionId: this.connection.connectionId,
 					metadata: this.connection.metadata,
-					browser: util.browser,
 				};
 
 				if (this.connection.type === ConnectionType.Data) {
@@ -286,7 +284,6 @@ export class Negotiator<
 						sdp: answer,
 						type: this.connection.type,
 						connectionId: this.connection.connectionId,
-						browser: util.browser,
 					},
 					dst: this.connection.peer,
 				});
