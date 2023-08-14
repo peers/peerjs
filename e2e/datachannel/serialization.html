@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title></title>
+		<link rel="stylesheet" href="../style.css" />
+	</head>
+	<body>
+		<h1>Serialization</h1>
+		<div id="inputs">
+			<input type="text" id="receiver-id" placeholder="Receiver ID" />
+			<button id="connect-btn" disabled>Connect</button>
+			<button id="send-btn">Send</button>
+			<button id="check-btn">Check</button>
+		</div>
+		<div id="messages"></div>
+		<div id="result"></div>
+		<div id="error-message"></div>
+		<script src="/dist/peerjs.min.js" type="application/javascript"></script>
+		<script src="serialization.js" type="module"></script>
+	</body>
+</html>
