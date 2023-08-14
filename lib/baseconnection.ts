@@ -1,7 +1,7 @@
 import { EventEmitter, ValidEventTypes } from "eventemitter3";
-import { Peer } from "./peer";
-import { ServerMessage } from "./servermessage";
-import { ConnectionType } from "./enums";
+import type { Peer } from "./peer";
+import type { ServerMessage } from "./servermessage";
+import type { ConnectionType } from "./enums";
 
 export type BaseConnectionEvents = {
 	/**
@@ -51,7 +51,7 @@ export abstract class BaseConnection<
 		return this._open;
 	}
 
-	constructor(
+	protected constructor(
 		/**
 		 * The ID of the peer on the other end of this connection.
 		 */

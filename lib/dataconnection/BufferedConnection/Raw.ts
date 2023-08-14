@@ -1,7 +1,7 @@
 import { BufferedConnection } from "./BufferedConnection";
 import { SerializationType } from "../../enums";
 
-export class RawConnection extends BufferedConnection {
+export class Raw extends BufferedConnection {
 	readonly serialization = SerializationType.None;
 
 	protected _handleDataMessage({ data }) {

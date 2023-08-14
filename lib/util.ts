@@ -1,5 +1,8 @@
+import { BinaryPackChunker } from "./dataconnection/BufferedConnection/binaryPackChunker";
 import * as BinaryPack from "peerjs-js-binarypack";
 import { Supports } from "./supports";
+import { validateId } from "./utils/validateId";
+import { randomToken } from "./utils/randomToken";
 
 export interface UtilSupportsObj {
 	/**
@@ -47,7 +50,7 @@ const DEFAULT_CONFIG = {
 	sdpSemantics: "unified-plan",
 };
 
-export class Util {
+export class Util extends BinaryPackChunker {
 	noop(): void {}
 
 	readonly CLOUD_HOST = "0.peerjs.com";
@@ -55,13 +58,15 @@ export class Util {
 
 	// Browsers that need chunking:
 	readonly chunkedBrowsers = { Chrome: 1, chrome: 1 };
-	readonly chunkedMTU = 16300; // The original 60000 bytes setting does not work when sending data from Firefox to Chrome, which is "cut off" after 16384 bytes and delivered individually.
 
 	// Returns browser-agnostic default config
 	readonly defaultConfig = DEFAULT_CONFIG;
 
 	readonly browser = Supports.getBrowser();
 	readonly browserVersion = Supports.getVersion();
+
+	pack = BinaryPack.pack;
+	unpack = BinaryPack.unpack;
 
 	/**
 	 * A hash of WebRTC features mapped to booleans that correspond to whether the feature is supported by the current browser.
@@ -118,49 +123,8 @@ export class Util {
 	})();
 
 	// Ensure alphanumeric ids
-	validateId(id: string): boolean {
-		// Allow empty ids
-		return !id || /^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.test(id);
-	}
-
-	pack = BinaryPack.pack;
-	unpack = BinaryPack.unpack;
-
-	// Binary stuff
-
-	private _dataCount: number = 1;
-
-	chunk(
-		blob: ArrayBuffer,
-	): { __peerData: number; n: number; total: number; data: Uint8Array }[] {
-		const chunks = [];
-		const size = blob.byteLength;
-		const total = Math.ceil(size / util.chunkedMTU);
-
-		let index = 0;
-		let start = 0;
-
-		while (start < size) {
-			const end = Math.min(size, start + util.chunkedMTU);
-			const b = blob.slice(start, end);
-
-			const chunk = {
-				__peerData: this._dataCount,
-				n: index,
-				data: b,
-				total,
-			};
-
-			chunks.push(chunk);
-
-			start = end;
-			index++;
-		}
-
-		this._dataCount++;
-
-		return chunks;
-	}
+	validateId = validateId;
+	randomToken = randomToken;
 
 	blobToArrayBuffer(
 		blob: Blob,
@@ -188,11 +152,6 @@ export class Util {
 
 		return byteArray.buffer;
 	}
-
-	randomToken(): string {
-		return Math.random().toString(36).slice(2);
-	}
-
 	isSecure(): boolean {
 		return location.protocol === "https:";
 	}
@@ -208,16 +167,3 @@ export class Util {
  * :::
  */
 export const util = new Util();
-export function concatArrayBuffers(bufs: Uint8Array[]) {
-	let size = 0;
-	for (const buf of bufs) {
-		size += buf.byteLength;
-	}
-	const result = new Uint8Array(size);
-	let offset = 0;
-	for (const buf of bufs) {
-		result.set(buf, offset);
-		offset += buf.byteLength;
-	}
-	return result;
-}
