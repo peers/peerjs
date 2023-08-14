@@ -13,13 +13,16 @@ Here's an example application that uses both media and data connections: https:/
 
 ## Setup
 
-**Include the library**
+**Install**
 
-with npm:
-`npm install peerjs`
+```sh
+npm install peerjs     # using npm
+yarn add peerjs        # using yarn
+pnpm add peerjs        # using pnpm
+bun add peerjs         # using bun
+```
 
-with yarn:
-`yarn add peerjs`
+**Import the library**
 
 ```js
 // The usage -
