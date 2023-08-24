@@ -28,7 +28,14 @@
 				.once("open", (id) =>
 					new Peer(id).once(
 						"error",
-						(error) => void (messages.textContent = JSON.stringify(error)),
+						(error) => {
+							messages.textContent = JSON.stringify(error);
+							// At the time of writng the second one succeeds for some reason.
+							new Peer(id).once(
+								"error",
+								(error) => void (errorMessage.textContent = JSON.stringify(error)),
+							);
+						},
 					),
 				);
 		</script>
