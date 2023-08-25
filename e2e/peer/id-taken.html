@@ -20,17 +20,37 @@
 			const messages = document.getElementById("messages");
 			const errorMessage = document.getElementById("error-message");
 
-			new Peer()
+			// Peer A should be created without an error
+			const peerA = new Peer()
 				.once(
 					"error",
-					(error) => void (errorMessage.textContent = JSON.stringify(error)),
+					(err) => (errorMessage.textContent += JSON.stringify(err)),
 				)
-				.once("open", (id) =>
-					new Peer(id).once(
-						"error",
-						(error) => void (messages.textContent = JSON.stringify(error)),
-					),
-				);
+				.once("open", (id) => {
+					// Create 10 new `Peer`s that will try to steel A's id
+					let peers_try_to_take = Array.from(
+						{ length: 10 },
+						(_, i) =>
+							new Promise((resolve, reject) =>
+								new Peer(id)
+									.once("open", () =>
+										reject(`Peer ${i} failed! Connection got established.`),
+									)
+									.once("error", (error) => {
+										if (error.type === "unavailable-id") {
+											resolve(`ID already taken. (${i})`);
+										} else {
+											reject(error);
+										}
+									}),
+							),
+					);
+					Promise.all(peers_try_to_take)
+						.then(() => (messages.textContent = "No ID takeover"))
+						.catch(
+							(error) => (errorMessage.textContent += JSON.stringify(error)),
+						);
+				});
 		</script>
 	</body>
 </html>

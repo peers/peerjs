@@ -4,7 +4,7 @@ import { browser, expect } from "@wdio/globals";
 describe("Peer", () => {
 	it("should emit an error, when the ID is already taken", async () => {
 		await P.open("id-taken");
-		await P.waitForMessage('{"type":"unavailable-id"}');
+		await P.waitForMessage("No ID takeover");
 		expect(await P.errorMessage.getText()).toBe("");
 	});
 	it("should emit an error, when the server is unavailable", async () => {
