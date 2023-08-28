@@ -209,7 +209,7 @@
 		"mock-socket": "^9.0.0",
 		"parcel": "^2.9.3",
 		"prettier": "^3.0.0",
-		"semantic-release": "^20.0.0",
+		"semantic-release": "^21.0.0",
 		"ts-node": "^10.9.1",
 		"typescript": "^5.0.0",
 		"wdio-geckodriver-service": "^5.0.1"
