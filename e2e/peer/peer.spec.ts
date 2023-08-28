@@ -23,3 +23,10 @@ describe("Peer", () => {
 		expect(await P.errorMessage.getText()).toBe('{"type":"peer-unavailable"}');
 	});
 });
+describe("Peer:async", () => {
+	it("should emit an error, when the ID is already taken", async () => {
+		await P.open("id-taken.await");
+		await P.waitForMessage("No ID takeover");
+		expect(await P.errorMessage.getText()).toBe("");
+	});
+});
