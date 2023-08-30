@@ -1,11 +1,12 @@
-import { concatArrayBuffers, util } from "../../util";
+import { BinaryPackChunker, concatArrayBuffers } from "./binaryPackChunker";
 import logger from "../../logger";
-import { Peer } from "../../peer";
+import type { Peer } from "../../peer";
 import { BufferedConnection } from "./BufferedConnection";
 import { SerializationType } from "../../enums";
-import { Packable, pack, unpack } from "peerjs-js-binarypack";
+import { type Packable, pack, unpack } from "peerjs-js-binarypack";
 
-export class BinaryJSConnection extends BufferedConnection {
+export class BinaryPack extends BufferedConnection {
+	private readonly chunker = new BinaryPackChunker();
 	readonly serialization = SerializationType.Binary;
 
 	private _chunkedData: {
@@ -27,7 +28,7 @@ export class BinaryJSConnection extends BufferedConnection {
 
 	// Handles a DataChannel message.
 	protected override _handleDataMessage({ data }: { data: Uint8Array }): void {
-		let deserializedData = unpack(data);
+		const deserializedData = unpack(data);
 
 		// PeerJS specific message
 		const peerData = deserializedData["__peerData"];
@@ -80,7 +81,7 @@ export class BinaryJSConnection extends BufferedConnection {
 	): void | Promise<void> {
 		const blob = pack(data);
 
-		if (!chunked && blob.byteLength > util.chunkedMTU) {
+		if (!chunked && blob.byteLength > this.chunker.chunkedMTU) {
 			this._sendChunks(blob);
 			return;
 		}
@@ -89,10 +90,10 @@ export class BinaryJSConnection extends BufferedConnection {
 	}
 
 	private _sendChunks(blob: ArrayBuffer) {
-		const blobs = util.chunk(blob);
+		const blobs = this.chunker.chunk(blob);
 		logger.log(`DC#${this.connectionId} Try to send ${blobs.length} chunks...`);
 
-		for (let blob of blobs) {
+		for (const blob of blobs) {
 			this.send(blob, true);
 		}
 	}

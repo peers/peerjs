@@ -1,6 +1,6 @@
 import { util } from "./util";
 import logger from "./logger";
-import { PeerJSOption } from "./optionInterfaces";
+import type { PeerJSOption } from "./optionInterfaces";
 import { version } from "../package.json";
 
 export class API {

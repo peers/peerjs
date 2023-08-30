@@ -4,7 +4,7 @@ import "webrtc-adapter";
 const fakeGlobals = {
 	WebSocket,
 	MediaStream: class MediaStream {
-		private _tracks: MediaStreamTrack[] = [];
+		private readonly _tracks: MediaStreamTrack[] = [];
 
 		constructor(tracks?: MediaStreamTrack[]) {
 			if (tracks) {

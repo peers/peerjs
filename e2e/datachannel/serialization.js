@@ -7,9 +7,20 @@ const params = new URLSearchParams(document.location.search);
 const testfile = params.get("testfile");
 const serialization = params.get("serialization");
 
-const serializers = {};
+(async () => {
+	let serializers = {};
+	try {
+		const { Cbor } = await import("/dist/serializer.cbor.mjs");
+		const { MsgPack } = await import("/dist/serializer.msgpack.mjs");
+		serializers = {
+			Cbor,
+			MsgPack,
+		};
+	} catch (e) {
+		console.log(e);
+	}
 
-import(`./${testfile}.js`).then(({ check, send }) => {
+	const { check, send } = await import(`./${testfile}.js`);
 	document.getElementsByTagName("title")[0].innerText =
 		window.location.hash.substring(1);
 
@@ -80,4 +91,4 @@ import(`./${testfile}.js`).then(({ check, send }) => {
 		messages.textContent = "Sent!";
 	});
 	window["connect-btn"].disabled = false;
-});
+})();

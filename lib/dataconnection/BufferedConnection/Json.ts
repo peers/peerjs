@@ -1,7 +1,7 @@
 import { BufferedConnection } from "./BufferedConnection";
 import { SerializationType } from "../../enums";
 import { util } from "../../util";
-export class JsonConnection extends BufferedConnection {
+export class Json extends BufferedConnection {
 	readonly serialization = SerializationType.JSON;
 	private readonly encoder = new TextEncoder();
 	private readonly decoder = new TextDecoder();
@@ -11,7 +11,7 @@ export class JsonConnection extends BufferedConnection {
 
 	// Handles a DataChannel message.
 	protected override _handleDataMessage({ data }: { data: Uint8Array }): void {
-		let deserializedData = this.parse(this.decoder.decode(data));
+		const deserializedData = this.parse(this.decoder.decode(data));
 
 		// PeerJS specific message
 		const peerData = deserializedData["__peerData"];

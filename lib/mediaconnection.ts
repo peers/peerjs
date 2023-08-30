@@ -2,9 +2,9 @@ import { util } from "./util";
 import logger from "./logger";
 import { Negotiator } from "./negotiator";
 import { ConnectionType, ServerMessageType } from "./enums";
-import { Peer } from "./peer";
+import type { Peer } from "./peer";
 import { BaseConnection } from "./baseconnection";
-import { ServerMessage } from "./servermessage";
+import type { ServerMessage } from "./servermessage";
 import type { AnswerOption } from "./optionInterfaces";
 
 export type MediaConnectionEvents = {
@@ -100,11 +100,11 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		switch (message.type) {
 			case ServerMessageType.Answer:
 				// Forward to negotiator
-				this._negotiator.handleSDP(type, payload.sdp);
+				void this._negotiator.handleSDP(type, payload.sdp);
 				this._open = true;
 				break;
 			case ServerMessageType.Candidate:
-				this._negotiator.handleCandidate(payload.candidate);
+				void this._negotiator.handleCandidate(payload.candidate);
 				break;
 			default:
 				logger.warn(`Unrecognized message type:${type} from peer:${this.peer}`);
