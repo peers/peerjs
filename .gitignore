@@ -21,6 +21,7 @@ npm-debug.log
 .DS_STORE
 
 test/output
+browserstack.err
 .tscache
 test/public
 .vscode/
