@@ -1,6 +1,7 @@
 import { BufferedConnection } from "./BufferedConnection";
 import { SerializationType } from "../../enums";
 import { util } from "../../util";
+
 export class Json extends BufferedConnection {
 	readonly serialization = SerializationType.JSON;
 	private readonly encoder = new TextEncoder();

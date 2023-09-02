@@ -7,15 +7,15 @@ import type { DataConnection } from "./dataconnection/DataConnection";
 import {
 	ConnectionType,
 	PeerErrorType,
-	SocketEventType,
 	ServerMessageType,
+	SocketEventType,
 } from "./enums";
 import type { ServerMessage } from "./servermessage";
 import { API } from "./api";
 import type {
+	CallOption,
 	PeerConnectOption,
 	PeerJSOption,
-	CallOption,
 } from "./optionInterfaces";
 import { BinaryPack } from "./dataconnection/BufferedConnection/BinaryPack";
 import { Raw } from "./dataconnection/BufferedConnection/Raw";

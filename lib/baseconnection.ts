@@ -1,4 +1,4 @@
-import { EventEmitter, ValidEventTypes } from "eventemitter3";
+import { EventEmitter, type ValidEventTypes } from "eventemitter3";
 import type { Peer } from "./peer";
 import type { ServerMessage } from "./servermessage";
 import type { ConnectionType } from "./enums";

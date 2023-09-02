@@ -3,7 +3,7 @@ import logger from "../../logger";
 import type { Peer } from "../../peer";
 import { BufferedConnection } from "./BufferedConnection";
 import { SerializationType } from "../../enums";
-import { type Packable, pack, unpack } from "peerjs-js-binarypack";
+import { pack, type Packable, unpack } from "peerjs-js-binarypack";
 
 export class BinaryPack extends BufferedConnection {
 	private readonly chunker = new BinaryPackChunker();
