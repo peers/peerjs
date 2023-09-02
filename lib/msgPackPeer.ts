@@ -1,4 +1,4 @@
-import { Peer, SerializerMapping } from "./peer";
+import { Peer, type SerializerMapping } from "./peer";
 import { MsgPack } from "./exports";
 
 export class MsgPackPeer extends Peer {

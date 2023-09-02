@@ -1,6 +1,7 @@
 import { BufferedConnection } from "./BufferedConnection";
-import { SerializationType } from "../../enums";
+import { DataConnectionErrorType, SerializationType } from "../../enums";
 import { util } from "../../util";
+
 export class Json extends BufferedConnection {
 	readonly serialization = SerializationType.JSON;
 	private readonly encoder = new TextEncoder();
@@ -26,7 +27,10 @@ export class Json extends BufferedConnection {
 	override _send(data, _chunked) {
 		const encodedData = this.encoder.encode(this.stringify(data));
 		if (encodedData.byteLength >= util.chunkedMTU) {
-			this.emit("error", new Error("Message too big for JSON channel"));
+			this.emitError(
+				DataConnectionErrorType.MessageToBig,
+				"Message too big for JSON channel",
+			);
 			return;
 		}
 		this._bufferedSend(encodedData);

@@ -3,11 +3,11 @@ import logger from "./logger";
 import { Negotiator } from "./negotiator";
 import { ConnectionType, ServerMessageType } from "./enums";
 import type { Peer } from "./peer";
-import { BaseConnection } from "./baseconnection";
+import { BaseConnection, type BaseConnectionEvents } from "./baseconnection";
 import type { ServerMessage } from "./servermessage";
 import type { AnswerOption } from "./optionInterfaces";
 
-export type MediaConnectionEvents = {
+export interface MediaConnectionEvents extends BaseConnectionEvents<never> {
 	/**
 	 * Emitted when a connection to the PeerServer is established.
 	 *
@@ -22,7 +22,7 @@ export type MediaConnectionEvents = {
 	 * @beta
 	 */
 	willCloseOnRemote: () => void;
-};
+}
 
 /**
  * Wraps WebRTC's media streams.
@@ -32,7 +32,7 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 	private static readonly ID_PREFIX = "mc_";
 	readonly label: string;
 
-	private _negotiator: Negotiator<MediaConnectionEvents, MediaConnection>;
+	private _negotiator: Negotiator<MediaConnectionEvents, this>;
 	private _localStream: MediaStream;
 	private _remoteStream: MediaStream;
 

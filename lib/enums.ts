@@ -60,6 +60,16 @@ export enum PeerErrorType {
 	WebRTC = "webrtc",
 }
 
+export enum BaseConnectionErrorType {
+	NegotiationFailed = "negotiation-failed",
+	ConnectionClosed = "connection-closed",
+}
+
+export enum DataConnectionErrorType {
+	NotOpenYet = "not-open-yet",
+	MessageToBig = "message-too-big",
+}
+
 export enum SerializationType {
 	Binary = "binary",
 	BinaryUTF8 = "binary-utf8",

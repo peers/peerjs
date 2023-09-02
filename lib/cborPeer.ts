@@ -1,4 +1,4 @@
-import { Peer, SerializerMapping } from "./peer";
+import { Peer, type SerializerMapping } from "./peer";
 import { Cbor } from "./dataconnection/StreamConnection/Cbor";
 
 export class CborPeer extends Peer {

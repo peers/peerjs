@@ -3,7 +3,7 @@ import { Peer } from "./peer";
 import { CborPeer } from "./cborPeer";
 import { MsgPackPeer } from "./msgPackPeer";
 
-export type { PeerEvents, PeerError, PeerOptions } from "./peer";
+export type { PeerEvents, PeerOptions } from "./peer";
 
 export type {
 	PeerJSOption,
@@ -15,13 +15,7 @@ export type { UtilSupportsObj } from "./util";
 export type { DataConnection } from "./dataconnection/DataConnection";
 export type { MediaConnection } from "./mediaconnection";
 export type { LogLevel } from "./logger";
-export type {
-	ConnectionType,
-	PeerErrorType,
-	SerializationType,
-	SocketEventType,
-	ServerMessageType,
-} from "./enums";
+export * from "./enums";
 
 export { BufferedConnection } from "./dataconnection/BufferedConnection/BufferedConnection";
 export { StreamConnection } from "./dataconnection/StreamConnection/StreamConnection";
@@ -31,4 +25,5 @@ export type { SerializerMapping } from "./peer";
 
 export { Peer, MsgPackPeer, CborPeer };
 
+export { PeerError } from "./peerError";
 export default Peer;
