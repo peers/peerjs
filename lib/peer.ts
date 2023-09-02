@@ -495,7 +495,11 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 
 	/**
 	 * Connects to the remote peer specified by id and returns a data connection.
-	 * @param peer The brokering ID of the remote peer (their {@apilink Peer.id}).
+	 *
+	 * Make sure to listen to the `error` event of the resulting {@link DataConnection}
+	 * in case the connection fails.
+	 *
+	 * @param peer The brokering ID of the remote peer (their {@link Peer.id}).
 	 * @param options for specifying details about Peer Connection
 	 */
 	connect(peer: string, options: PeerConnectOption = {}): DataConnection {
