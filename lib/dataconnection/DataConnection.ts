@@ -1,13 +1,20 @@
 import logger from "../logger";
 import { Negotiator } from "../negotiator";
-import { ConnectionType, ServerMessageType } from "../enums";
+import {
+	BaseConnectionErrorType,
+	ConnectionType,
+	DataConnectionErrorType,
+	ServerMessageType,
+} from "../enums";
 import type { Peer } from "../peer";
-import { BaseConnection } from "../baseconnection";
+import { BaseConnection, type BaseConnectionEvents } from "../baseconnection";
 import type { ServerMessage } from "../servermessage";
-import type { DataConnection as IDataConnection } from "./DataConnection";
+import type { EventsWithError } from "../peerError";
 import { randomToken } from "../utils/randomToken";
 
-type DataConnectionEvents = {
+export interface DataConnectionEvents
+	extends EventsWithError<DataConnectionErrorType | BaseConnectionErrorType>,
+		BaseConnectionEvents<DataConnectionErrorType | BaseConnectionErrorType> {
 	/**
 	 * Emitted when data is received from the remote peer.
 	 */
@@ -16,15 +23,15 @@ type DataConnectionEvents = {
 	 * Emitted when the connection is established and ready-to-use.
 	 */
 	open: () => void;
-};
+}
 
 /**
  * Wraps a DataChannel between two Peers.
  */
-export abstract class DataConnection
-	extends BaseConnection<DataConnectionEvents>
-	implements IDataConnection
-{
+export abstract class DataConnection extends BaseConnection<
+	DataConnectionEvents,
+	DataConnectionErrorType
+> {
 	protected static readonly ID_PREFIX = "dc_";
 	protected static readonly MAX_BUFFERED_AMOUNT = 8 * 1024 * 1024;
 
@@ -32,7 +39,6 @@ export abstract class DataConnection
 	abstract readonly serialization: string;
 	readonly reliable: boolean;
 
-	// public type: ConnectionType.Data;
 	public get type() {
 		return ConnectionType.Data;
 	}
@@ -123,11 +129,9 @@ export abstract class DataConnection
 	/** Allows user to send data. */
 	public send(data: any, chunked = false) {
 		if (!this.open) {
-			super.emit(
-				"error",
-				new Error(
-					"Connection is not open. You should listen for the `open` event before sending messages.",
-				),
+			this.emitError(
+				DataConnectionErrorType.NotOpenYet,
+				"Connection is not open. You should listen for the `open` event before sending messages.",
 			);
 			return;
 		}
