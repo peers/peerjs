@@ -69,13 +69,13 @@ class PeerOptions implements PeerJSOption {
 
 export { type PeerOptions };
 
-export type SerializerMapping = {
+export interface SerializerMapping {
 	[key: string]: new (
 		peerId: string,
 		provider: Peer,
 		options: any,
 	) => DataConnection;
-};
+}
 
 export interface PeerEvents {
 	/**
