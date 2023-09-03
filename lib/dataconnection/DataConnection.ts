@@ -11,6 +11,7 @@ import { BaseConnection, type BaseConnectionEvents } from "../baseconnection";
 import type { ServerMessage } from "../servermessage";
 import type { EventsWithError } from "../peerError";
 import { randomToken } from "../utils/randomToken";
+import { PeerError } from "../peerError";
 
 export interface DataConnectionEvents
 	extends EventsWithError<DataConnectionErrorType | BaseConnectionErrorType>,
@@ -23,6 +24,14 @@ export interface DataConnectionEvents
 	 * Emitted when the connection is established and ready-to-use.
 	 */
 	open: () => void;
+}
+
+export interface IDataConnection
+	extends BaseConnection<DataConnectionEvents, DataConnectionErrorType> {
+	/** Allows user to close connection. */
+	close(options?: { flush?: boolean }): void;
+	/** Allows user to send data. */
+	send(data: any, chunked?: boolean): void;
 }
 
 /**
@@ -38,6 +47,10 @@ export abstract class DataConnection extends BaseConnection<
 	private _negotiator: Negotiator<DataConnectionEvents, this>;
 	abstract readonly serialization: string;
 	readonly reliable: boolean;
+	private then: (
+		onfulfilled?: (value: IDataConnection) => any,
+		onrejected?: (reason: PeerError<DataConnectionErrorType>) => any,
+	) => void;
 
 	public get type() {
 		return ConnectionType.Data;
@@ -45,6 +58,20 @@ export abstract class DataConnection extends BaseConnection<
 
 	constructor(peerId: string, provider: Peer, options: any) {
 		super(peerId, provider, options);
+
+		this.then = (
+			onfulfilled?: (value: IDataConnection) => any,
+			onrejected?: (reason: PeerError<DataConnectionErrorType>) => any,
+		) => {
+			// Remove 'then' to prevent potential recursion issues
+			// `await` will wait for a Promise-like to resolve recursively
+			delete this.then;
+
+			// We don’t need to worry about cleaning up listeners here
+			// `await`ing a Promise will make sure only one of the paths executes
+			this.once("open", () => onfulfilled(this));
+			this.once("error", onrejected);
+		};
 
 		this.connectionId =
 			this.options.connectionId || DataConnection.ID_PREFIX + randomToken();
@@ -87,7 +114,6 @@ export abstract class DataConnection extends BaseConnection<
 	 * Exposed functionality for users.
 	 */
 
-	/** Allows user to close connection. */
 	close(options?: { flush?: boolean }): void {
 		if (options?.flush) {
 			this.send({
@@ -126,7 +152,6 @@ export abstract class DataConnection extends BaseConnection<
 
 	protected abstract _send(data: any, chunked: boolean): void;
 
-	/** Allows user to send data. */
 	public send(data: any, chunked = false) {
 		if (!this.open) {
 			this.emitError(

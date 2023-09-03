@@ -29,4 +29,9 @@ describe("Peer:async", () => {
 		await P.waitForMessage("No ID takeover");
 		expect(await P.errorMessage.getText()).toBe("");
 	});
+	it("should emit an error, when the remote peer is unavailable", async () => {
+		await P.open("peer-unavailable.async");
+		await P.waitForMessage("Success: Peer unavailable");
+		expect(await P.errorMessage.getText()).toBe("");
+	});
 });
