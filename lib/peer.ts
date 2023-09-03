@@ -109,7 +109,8 @@ export interface PeerEvents {
 	error: (error: PeerError<`${PeerErrorType}`>) => void;
 }
 
-export interface IPeer {
+export interface IPeer
+	extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	/**
 	 * The brokering ID of this peer
 	 *
@@ -137,7 +138,7 @@ export interface IPeer {
 	 * @param peer The brokering ID of the remote peer (their {@link Peer.id}).
 	 * @param options for specifying details about Peer Connection
 	 */
-	connect(peer: string, options: PeerConnectOption): DataConnection;
+	connect(peer: string, options?: PeerConnectOption): DataConnection;
 	/**
 	 * Calls the remote peer specified by id and returns a media connection.
 	 * @param peer The brokering ID of the remote peer (their peer.id).
