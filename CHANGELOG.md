@@ -1,3 +1,29 @@
+# [1.5.0](https://github.com/peers/peerjs/compare/v1.4.7...v1.5.0) (2023-09-03)
+
+
+### Bug Fixes
+
+* **datachannel:** sending order is now preserved correctly ([#1038](https://github.com/peers/peerjs/issues/1038)) ([0fb6179](https://github.com/peers/peerjs/commit/0fb61792ed3afe91123550a159c8633ed0976f89)), closes [#746](https://github.com/peers/peerjs/issues/746)
+* **deps:** update dependency @swc/helpers to ^0.4.0 ([a7de8b7](https://github.com/peers/peerjs/commit/a7de8b78f57a5cf9708fa54e9f82f4ab43c0bca2))
+* **deps:** update dependency cbor-x to v1.5.4 ([c1f04ec](https://github.com/peers/peerjs/commit/c1f04ecf686e64266fb54b3e4992c73c1522ae79))
+* **deps:** update dependency eventemitter3 to v5 ([caf01c6](https://github.com/peers/peerjs/commit/caf01c6440534cbe190facd84cecf9ca62e4a5ce))
+* **deps:** update dependency peerjs-js-binarypack to v1.0.2 ([7452e75](https://github.com/peers/peerjs/commit/7452e7591d4982d9472c524d6ad30e66c2a2b44f))
+* **deps:** update dependency webrtc-adapter to v8 ([431f00b](https://github.com/peers/peerjs/commit/431f00bd89809867a19c98224509982b82769558))
+* **deps:** update dependency webrtc-adapter to v8.2.2 ([62402fc](https://github.com/peers/peerjs/commit/62402fcae03c78382d7fa80c11f459aca8d21620))
+* **deps:** update dependency webrtc-adapter to v8.2.3 ([963455e](https://github.com/peers/peerjs/commit/963455ee383a069e53bd93b1128d82615a698245))
+* **MediaConnection:** `close` event is fired on remote Peer ([0836356](https://github.com/peers/peerjs/commit/0836356d18c91449f4cbb23e4d4660a4351d7f56)), closes [#636](https://github.com/peers/peerjs/issues/636) [#1089](https://github.com/peers/peerjs/issues/1089) [#1032](https://github.com/peers/peerjs/issues/1032) [#832](https://github.com/peers/peerjs/issues/832) [#780](https://github.com/peers/peerjs/issues/780) [#653](https://github.com/peers/peerjs/issues/653)
+* **npm audit:** Updates all dependencies that cause npm audit to issue a warning ([6ef5707](https://github.com/peers/peerjs/commit/6ef5707dc85d8b921d8dfea74890b110ddf5cd4f))
+
+
+### Features
+
+* `.type` property on `Error`s emitted from connections ([#1126](https://github.com/peers/peerjs/issues/1126)) ([debe7a6](https://github.com/peers/peerjs/commit/debe7a63474b9cdb705676d4c7892b0cd294402a))
+* `PeerError` from connections ([ad3a0cb](https://github.com/peers/peerjs/commit/ad3a0cbe8c5346509099116441e6c3ff0b6ca6c4))
+* **DataConnection:** handle close messages and flush option ([6ca38d3](https://github.com/peers/peerjs/commit/6ca38d32b0929745b92a55c8f6aada1ee0895ce7)), closes [#982](https://github.com/peers/peerjs/issues/982)
+* **MediaChannel:** Add experimental `willCloseOnRemote` event to MediaConnection. ([ed84829](https://github.com/peers/peerjs/commit/ed84829a1092422f3d7f92f467bcf5b8ada82891))
+* MsgPack/Cbor serialization ([fcffbf2](https://github.com/peers/peerjs/commit/fcffbf243cb7d6dabfc773211c155c0ae1e00baf))
+* MsgPack/Cbor serialization ([#1120](https://github.com/peers/peerjs/issues/1120)) ([4367256](https://github.com/peers/peerjs/commit/43672564ee9edcb15e736b0333c6ad8aeae20c59)), closes [#611](https://github.com/peers/peerjs/issues/611)
+
 ## [1.4.7](https://github.com/peers/peerjs/compare/v1.4.6...v1.4.7) (2022-08-09)
 
 
