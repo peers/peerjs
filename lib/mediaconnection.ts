@@ -2,28 +2,43 @@ import { util } from "./util";
 import logger from "./logger";
 import { Negotiator } from "./negotiator";
 import { ConnectionType, ServerMessageType } from "./enums";
-import { Peer } from "./peer";
-import { BaseConnection } from "./baseconnection";
-import { ServerMessage } from "./servermessage";
+import type { Peer } from "./peer";
+import { BaseConnection, type BaseConnectionEvents } from "./baseconnection";
+import type { ServerMessage } from "./servermessage";
 import type { AnswerOption } from "./optionInterfaces";
 
-type MediaConnectionEvents = {
+export interface MediaConnectionEvents extends BaseConnectionEvents<never> {
 	/**
 	 * Emitted when a connection to the PeerServer is established.
+	 *
+	 * ```ts
+	 * mediaConnection.on('stream', (stream) => { ... });
+	 * ```
 	 */
 	stream: (stream: MediaStream) => void;
-};
+	/**
+	 * Emitted when the auxiliary data channel is established.
+	 * After this event, hanging up will close the connection cleanly on the remote peer.
+	 * @beta
+	 */
+	willCloseOnRemote: () => void;
+}
 
 /**
- * Wraps the streaming interface between two Peers.
+ * Wraps WebRTC's media streams.
+ * To get one, use {@apilink Peer.call} or listen for the {@apilink PeerEvents | `call`} event.
  */
 export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 	private static readonly ID_PREFIX = "mc_";
+	readonly label: string;
 
-	private _negotiator: Negotiator<MediaConnectionEvents, MediaConnection>;
+	private _negotiator: Negotiator<MediaConnectionEvents, this>;
 	private _localStream: MediaStream;
 	private _remoteStream: MediaStream;
 
+	/**
+	 * For media connections, this is always 'media'.
+	 */
 	get type() {
 		return ConnectionType.Media;
 	}
@@ -31,6 +46,7 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 	get localStream(): MediaStream {
 		return this._localStream;
 	}
+
 	get remoteStream(): MediaStream {
 		return this._remoteStream;
 	}
@@ -53,6 +69,20 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		}
 	}
 
+	/** Called by the Negotiator when the DataChannel is ready. */
+	override _initializeDataChannel(dc: RTCDataChannel): void {
+		this.dataChannel = dc;
+
+		this.dataChannel.onopen = () => {
+			logger.log(`DC#${this.connectionId} dc connection success`);
+			this.emit("willCloseOnRemote");
+		};
+
+		this.dataChannel.onclose = () => {
+			logger.log(`DC#${this.connectionId} dc closed for:`, this.peer);
+			this.close();
+		};
+	}
 	addStream(remoteStream) {
 		logger.log("Receiving stream", remoteStream);
 
@@ -60,6 +90,9 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		super.emit("stream", remoteStream); // Should we call this `open`?
 	}
 
+	/**
+	 * @internal
+	 */
 	handleMessage(message: ServerMessage): void {
 		const type = message.type;
 		const payload = message.payload;
@@ -67,11 +100,11 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		switch (message.type) {
 			case ServerMessageType.Answer:
 				// Forward to negotiator
-				this._negotiator.handleSDP(type, payload.sdp);
+				void this._negotiator.handleSDP(type, payload.sdp);
 				this._open = true;
 				break;
 			case ServerMessageType.Candidate:
-				this._negotiator.handleCandidate(payload.candidate);
+				void this._negotiator.handleCandidate(payload.candidate);
 				break;
 			default:
 				logger.warn(`Unrecognized message type:${type} from peer:${this.peer}`);
@@ -79,6 +112,16 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		}
 	}
 
+	/**
+     * When receiving a {@apilink PeerEvents | `call`} event on a peer, you can call
+     * `answer` on the media connection provided by the callback to accept the call
+     * and optionally send your own media stream.
+
+     *
+     * @param stream A WebRTC media stream.
+     * @param options
+     * @returns
+     */
 	answer(stream?: MediaStream, options: AnswerOption = {}): void {
 		if (this._localStream) {
 			logger.warn(
@@ -100,7 +143,7 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		// Retrieve lost messages stored because PeerConnection not set up.
 		const messages = this.provider._getMessages(this.connectionId);
 
-		for (let message of messages) {
+		for (const message of messages) {
 			this.handleMessage(message);
 		}
 
@@ -111,7 +154,9 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 	 * Exposed functionality for users.
 	 */
 
-	/** Allows user to close connection. */
+	/**
+	 * Closes the media connection.
+	 */
 	close(): void {
 		if (this._negotiator) {
 			this._negotiator.cleanup();

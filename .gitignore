@@ -1,4 +1,5 @@
 lib-cov
+coverage
 *.seed
 *.log
 *.csv
@@ -20,6 +21,7 @@ npm-debug.log
 .DS_STORE
 
 test/output
+browserstack.err
 .tscache
 test/public
 .vscode/

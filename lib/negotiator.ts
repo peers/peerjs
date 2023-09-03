@@ -1,19 +1,23 @@
-import { util } from "./util";
 import logger from "./logger";
-import { MediaConnection } from "./mediaconnection";
-import { DataConnection } from "./dataconnection";
-import { ConnectionType, PeerErrorType, ServerMessageType } from "./enums";
-import { BaseConnection, BaseConnectionEvents } from "./baseconnection";
-import { ValidEventTypes } from "eventemitter3";
+import type { MediaConnection } from "./mediaconnection";
+import type { DataConnection } from "./dataconnection/DataConnection";
+import {
+	BaseConnectionErrorType,
+	ConnectionType,
+	PeerErrorType,
+	ServerMessageType,
+} from "./enums";
+import type { BaseConnection, BaseConnectionEvents } from "./baseconnection";
+import type { ValidEventTypes } from "eventemitter3";
 
 /**
  * Manages all negotiations between Peers.
  */
 export class Negotiator<
-	A extends ValidEventTypes,
-	T extends BaseConnection<A | BaseConnectionEvents>,
+	Events extends ValidEventTypes,
+	ConnectionType extends BaseConnection<Events | BaseConnectionEvents>,
 > {
-	constructor(readonly connection: T) {}
+	constructor(readonly connection: ConnectionType) {}
 
 	/** Returns a PeerConnection object set up correctly (for data, media). */
 	startConnection(options: any) {
@@ -28,21 +32,19 @@ export class Negotiator<
 
 		// What do we need to do now?
 		if (options.originator) {
-			if (this.connection.type === ConnectionType.Data) {
-				const dataConnection = <DataConnection>(<unknown>this.connection);
+			const dataConnection = this.connection;
 
-				const config: RTCDataChannelInit = { ordered: !!options.reliable };
+			const config: RTCDataChannelInit = { ordered: !!options.reliable };
 
-				const dataChannel = peerConnection.createDataChannel(
-					dataConnection.label,
-					config,
-				);
-				dataConnection.initialize(dataChannel);
-			}
+			const dataChannel = peerConnection.createDataChannel(
+				dataConnection.label,
+				config,
+			);
+			dataConnection._initializeDataChannel(dataChannel);
 
-			this._makeOffer();
+			void this._makeOffer();
 		} else {
-			this.handleSDP("OFFER", options.sdp);
+			void this.handleSDP("OFFER", options.sdp);
 		}
 	}
 
@@ -91,9 +93,9 @@ export class Negotiator<
 					logger.log(
 						"iceConnectionState is failed, closing connections to " + peerId,
 					);
-					this.connection.emit(
-						"error",
-						new Error("Negotiation of connection to " + peerId + " failed."),
+					this.connection.emitError(
+						BaseConnectionErrorType.NegotiationFailed,
+						"Negotiation of connection to " + peerId + " failed.",
 					);
 					this.connection.close();
 					break;
@@ -101,9 +103,9 @@ export class Negotiator<
 					logger.log(
 						"iceConnectionState is closed, closing connections to " + peerId,
 					);
-					this.connection.emit(
-						"error",
-						new Error("Connection to " + peerId + " closed."),
+					this.connection.emitError(
+						BaseConnectionErrorType.ConnectionClosed,
+						"Connection to " + peerId + " closed.",
 					);
 					this.connection.close();
 					break;
@@ -114,7 +116,7 @@ export class Negotiator<
 					);
 					break;
 				case "completed":
-					peerConnection.onicecandidate = util.noop;
+					peerConnection.onicecandidate = () => {};
 					break;
 			}
 
@@ -136,7 +138,7 @@ export class Negotiator<
 				provider.getConnection(peerId, connectionId)
 			);
 
-			connection.initialize(dataChannel);
+			connection._initializeDataChannel(dataChannel);
 		};
 
 		// MEDIACONNECTION.
@@ -177,14 +179,11 @@ export class Negotiator<
 		const peerConnectionNotClosed = peerConnection.signalingState !== "closed";
 		let dataChannelNotClosed = false;
 
-		if (this.connection.type === ConnectionType.Data) {
-			const dataConnection = <DataConnection>(<unknown>this.connection);
-			const dataChannel = dataConnection.dataChannel;
+		const dataChannel = this.connection.dataChannel;
 
-			if (dataChannel) {
-				dataChannelNotClosed =
-					!!dataChannel.readyState && dataChannel.readyState !== "closed";
-			}
+		if (dataChannel) {
+			dataChannelNotClosed =
+				!!dataChannel.readyState && dataChannel.readyState !== "closed";
 		}
 
 		if (peerConnectionNotClosed || dataChannelNotClosed) {
@@ -225,7 +224,6 @@ export class Negotiator<
 					type: this.connection.type,
 					connectionId: this.connection.connectionId,
 					metadata: this.connection.metadata,
-					browser: util.browser,
 				};
 
 				if (this.connection.type === ConnectionType.Data) {
@@ -291,7 +289,6 @@ export class Negotiator<
 						sdp: answer,
 						type: this.connection.type,
 						connectionId: this.connection.connectionId,
-						browser: util.browser,
 					},
 					dst: this.connection.peer,
 				});
@@ -328,26 +325,14 @@ export class Negotiator<
 	}
 
 	/** Handle a candidate. */
-	async handleCandidate(ice: any): Promise<void> {
+	async handleCandidate(ice: RTCIceCandidate) {
 		logger.log(`handleCandidate:`, ice);
 
-		const candidate = ice.candidate;
-		const sdpMLineIndex = ice.sdpMLineIndex;
-		const sdpMid = ice.sdpMid;
-		const peerConnection = this.connection.peerConnection;
-		const provider = this.connection.provider;
-
 		try {
-			await peerConnection.addIceCandidate(
-				new RTCIceCandidate({
-					sdpMid: sdpMid,
-					sdpMLineIndex: sdpMLineIndex,
-					candidate: candidate,
-				}),
-			);
+			await this.connection.peerConnection.addIceCandidate(ice);
 			logger.log(`Added ICE candidate for:${this.connection.peer}`);
 		} catch (err) {
-			provider.emitError(PeerErrorType.WebRTC, err);
+			this.connection.provider.emitError(PeerErrorType.WebRTC, err);
 			logger.log("Failed to handleCandidate, ", err);
 		}
 	}

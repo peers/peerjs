@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title></title>
+		<link rel="stylesheet" href="../style.css" />
+	</head>
+	<body>
+		<h1>ID-TAKEN</h1>
+		<div id="messages"></div>
+		<div id="error-message"></div>
+		<script src="/dist/peerjs.js"></script>
+		<script type="application/javascript">
+			/**
+			 * @type {typeof import("../..").Peer}
+			 */
+			const Peer = window.peerjs.Peer;
+
+			const messages = document.getElementById("messages");
+
+			const peer = new Peer();
+			peer
+				.once(
+					"error",
+					(error) => void (messages.textContent = JSON.stringify(error)),
+				)
+				.once("open", (id) => {
+					peer.disconnect();
+					peer.connect("otherid");
+				});
+		</script>
+	</body>
+</html>

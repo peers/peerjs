@@ -1,14 +1,37 @@
-// Types aren’t accurate
-//@ts-ignore
-import BinaryPack from "peerjs-js-binarypack";
+import { BinaryPackChunker } from "./dataconnection/BufferedConnection/binaryPackChunker";
+import * as BinaryPack from "peerjs-js-binarypack";
 import { Supports } from "./supports";
+import { validateId } from "./utils/validateId";
+import { randomToken } from "./utils/randomToken";
 
 export interface UtilSupportsObj {
+	/**
+	 * The current browser.
+	 * This property can be useful in determining whether two peers can connect.
+	 *
+	 * ```ts
+	 * if (util.browser === 'firefox') {
+	 *  // OK to peer with Firefox peers.
+	 * }
+	 * ```
+	 *
+	 * `util.browser` can currently have the values
+	 * `'firefox', 'chrome', 'safari', 'edge', 'Not a supported browser.', 'Not a browser.' (unknown WebRTC-compatible agent).
+	 */
 	browser: boolean;
 	webRTC: boolean;
+	/**
+	 * True if the current browser supports media streams and PeerConnection.
+	 */
 	audioVideo: boolean;
+	/**
+	 * True if the current browser supports DataChannel and PeerConnection.
+	 */
 	data: boolean;
 	binaryBlob: boolean;
+	/**
+	 * True if the current browser supports reliable DataChannels.
+	 */
 	reliable: boolean;
 }
 
@@ -27,7 +50,7 @@ const DEFAULT_CONFIG = {
 	sdpSemantics: "unified-plan",
 };
 
-class Util {
+export class Util extends BinaryPackChunker {
 	noop(): void {}
 
 	readonly CLOUD_HOST = "0.peerjs.com";
@@ -35,7 +58,6 @@ class Util {
 
 	// Browsers that need chunking:
 	readonly chunkedBrowsers = { Chrome: 1, chrome: 1 };
-	readonly chunkedMTU = 16300; // The original 60000 bytes setting does not work when sending data from Firefox to Chrome, which is "cut off" after 16384 bytes and delivered individually.
 
 	// Returns browser-agnostic default config
 	readonly defaultConfig = DEFAULT_CONFIG;
@@ -43,7 +65,16 @@ class Util {
 	readonly browser = Supports.getBrowser();
 	readonly browserVersion = Supports.getVersion();
 
-	// Lists which features are supported
+	pack = BinaryPack.pack;
+	unpack = BinaryPack.unpack;
+
+	/**
+	 * A hash of WebRTC features mapped to booleans that correspond to whether the feature is supported by the current browser.
+	 *
+	 * :::caution
+	 * Only the properties documented here are guaranteed to be present on `util.supports`
+	 * :::
+	 */
 	readonly supports = (function () {
 		const supported: UtilSupportsObj = {
 			browser: Supports.isBrowserSupported(),
@@ -92,49 +123,8 @@ class Util {
 	})();
 
 	// Ensure alphanumeric ids
-	validateId(id: string): boolean {
-		// Allow empty ids
-		return !id || /^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/.test(id);
-	}
-
-	pack = BinaryPack.pack;
-	unpack = BinaryPack.unpack;
-
-	// Binary stuff
-
-	private _dataCount: number = 1;
-
-	chunk(
-		blob: Blob,
-	): { __peerData: number; n: number; total: number; data: Blob }[] {
-		const chunks = [];
-		const size = blob.size;
-		const total = Math.ceil(size / util.chunkedMTU);
-
-		let index = 0;
-		let start = 0;
-
-		while (start < size) {
-			const end = Math.min(size, start + util.chunkedMTU);
-			const b = blob.slice(start, end);
-
-			const chunk = {
-				__peerData: this._dataCount,
-				n: index,
-				data: b,
-				total,
-			};
-
-			chunks.push(chunk);
-
-			start = end;
-			index++;
-		}
-
-		this._dataCount++;
-
-		return chunks;
-	}
+	validateId = validateId;
+	randomToken = randomToken;
 
 	blobToArrayBuffer(
 		blob: Blob,
@@ -162,13 +152,18 @@ class Util {
 
 		return byteArray.buffer;
 	}
-
-	randomToken(): string {
-		return Math.random().toString(36).slice(2);
-	}
-
 	isSecure(): boolean {
 		return location.protocol === "https:";
 	}
 }
+
+/**
+ * Provides a variety of helpful utilities.
+ *
+ * :::caution
+ * Only the utilities documented here are guaranteed to be present on `util`.
+ * Undocumented utilities can be removed without warning.
+ * We don't consider these to be breaking changes.
+ * :::
+ */
 export const util = new Util();
