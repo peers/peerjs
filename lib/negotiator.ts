@@ -15,7 +15,12 @@ import type { ValidEventTypes } from "eventemitter3";
  */
 export class Negotiator<
 	Events extends ValidEventTypes,
-	ConnectionType extends BaseConnection<Events | BaseConnectionEvents>,
+	ErrorType extends string,
+	ConnectionType extends BaseConnection<
+		any,
+		Events | BaseConnectionEvents,
+		ErrorType
+	>,
 > {
 	constructor(readonly connection: ConnectionType) {}
 

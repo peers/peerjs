@@ -7,14 +7,20 @@ import {
 	ServerMessageType,
 } from "../enums";
 import type { Peer } from "../peer";
-import { BaseConnection, type BaseConnectionEvents } from "../baseconnection";
+import {
+	BaseConnection,
+	type BaseConnectionEvents,
+	IBaseConnection,
+} from "../baseconnection";
 import type { ServerMessage } from "../servermessage";
-import type { EventsWithError } from "../peerError";
+import type { PromiseEvents } from "../peerError";
 import { randomToken } from "../utils/randomToken";
-import { PeerError } from "../peerError";
 
 export interface DataConnectionEvents
-	extends EventsWithError<DataConnectionErrorType | BaseConnectionErrorType>,
+	extends PromiseEvents<
+			never,
+			DataConnectionErrorType | BaseConnectionErrorType
+		>,
 		BaseConnectionEvents<DataConnectionErrorType | BaseConnectionErrorType> {
 	/**
 	 * Emitted when data is received from the remote peer.
@@ -27,7 +33,8 @@ export interface DataConnectionEvents
 }
 
 export interface IDataConnection
-	extends BaseConnection<DataConnectionEvents, DataConnectionErrorType> {
+	extends IBaseConnection<DataConnectionEvents, DataConnectionErrorType> {
+	get type(): ConnectionType.Data;
 	/** Allows user to close connection. */
 	close(options?: { flush?: boolean }): void;
 	/** Allows user to send data. */
@@ -38,19 +45,20 @@ export interface IDataConnection
  * Wraps a DataChannel between two Peers.
  */
 export abstract class DataConnection extends BaseConnection<
+	IDataConnection,
 	DataConnectionEvents,
 	DataConnectionErrorType
 > {
 	protected static readonly ID_PREFIX = "dc_";
 	protected static readonly MAX_BUFFERED_AMOUNT = 8 * 1024 * 1024;
 
-	private _negotiator: Negotiator<DataConnectionEvents, this>;
+	private _negotiator: Negotiator<
+		DataConnectionEvents,
+		DataConnectionErrorType,
+		this
+	>;
 	abstract readonly serialization: string;
 	readonly reliable: boolean;
-	private then: (
-		onfulfilled?: (value: IDataConnection) => any,
-		onrejected?: (reason: PeerError<DataConnectionErrorType>) => any,
-	) => void;
 
 	public get type() {
 		return ConnectionType.Data;
@@ -58,20 +66,6 @@ export abstract class DataConnection extends BaseConnection<
 
 	constructor(peerId: string, provider: Peer, options: any) {
 		super(peerId, provider, options);
-
-		this.then = (
-			onfulfilled?: (value: IDataConnection) => any,
-			onrejected?: (reason: PeerError<DataConnectionErrorType>) => any,
-		) => {
-			// Remove 'then' to prevent potential recursion issues
-			// `await` will wait for a Promise-like to resolve recursively
-			delete this.then;
-
-			// We don’t need to worry about cleaning up listeners here
-			// `await`ing a Promise will make sure only one of the paths executes
-			this.once("open", () => onfulfilled(this));
-			this.once("error", onrejected);
-		};
 
 		this.connectionId =
 			this.options.connectionId || DataConnection.ID_PREFIX + randomToken();

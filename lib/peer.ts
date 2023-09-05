@@ -21,7 +21,9 @@ import { BinaryPack } from "./dataconnection/BufferedConnection/BinaryPack";
 import { Raw } from "./dataconnection/BufferedConnection/Raw";
 import { Json } from "./dataconnection/BufferedConnection/Json";
 
-import { EventEmitterWithError, PeerError } from "./peerError";
+import { PeerError } from "./peerError";
+import { EventEmitterWithPromise } from "./eventEmitterWithPromise";
+import EventEmitter from "eventemitter3";
 
 class PeerOptions implements PeerJSOption {
 	/**
@@ -109,8 +111,7 @@ export interface PeerEvents {
 	error: (error: PeerError<`${PeerErrorType}`>) => void;
 }
 
-export interface IPeer
-	extends EventEmitterWithError<PeerErrorType, PeerEvents> {
+export interface IPeer extends EventEmitter<PeerEvents> {
 	/**
 	 * The brokering ID of this peer
 	 *
@@ -183,7 +184,7 @@ export interface IPeer
  * A peer who can initiate connections with other peers.
  */
 export class Peer
-	extends EventEmitterWithError<PeerErrorType, PeerEvents>
+	extends EventEmitterWithPromise<IPeer, string, PeerErrorType, PeerEvents>
 	implements IPeer
 {
 	private static readonly DEFAULT_KEY = "peerjs";
@@ -206,16 +207,11 @@ export class Peer
 	// States.
 	private _destroyed = false; // Connections have been killed
 	private _disconnected = false; // Connection to PeerServer killed but P2P connections still active
-	private _open = false; // Sockets and such are not yet open.
 	private readonly _connections: Map<
 		string,
 		(DataConnection | MediaConnection)[]
 	> = new Map(); // All connections for this peer.
 	private readonly _lostMessages: Map<string, ServerMessage[]> = new Map(); // src => [list of messages]
-	private then: (
-		onfulfilled?: (value: IPeer) => any,
-		onrejected?: (reason: PeerError<PeerErrorType>) => any,
-	) => void;
 
 	get id() {
 		return this._id;
@@ -275,20 +271,6 @@ export class Peer
 
 	constructor(id?: string | PeerOptions, options?: PeerOptions) {
 		super();
-
-		this.then = (
-			onfulfilled?: (value: IPeer) => any,
-			onrejected?: (reason: PeerError<PeerErrorType>) => any,
-		) => {
-			// Remove 'then' to prevent potential recursion issues
-			// `await` will wait for a Promise-like to resolve recursively
-			delete this.then;
-
-			// We don’t need to worry about cleaning up listeners here
-			// `await`ing a Promise will make sure only one of the paths executes
-			this.once("open", () => onfulfilled(this));
-			this.once("error", onrejected);
-		};
 
 		let userId: string | undefined;
 
@@ -594,6 +576,7 @@ export class Peer
 			options,
 		);
 		this._addConnection(peer, dataConnection);
+
 		return dataConnection;
 	}
 

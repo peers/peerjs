@@ -2,16 +2,14 @@ import type { Peer } from "./peer";
 import type { ServerMessage } from "./servermessage";
 import type { ConnectionType } from "./enums";
 import { BaseConnectionErrorType } from "./enums";
-import {
-	EventEmitterWithError,
-	type EventsWithError,
-	PeerError,
-} from "./peerError";
+import { PeerError, type PromiseEvents } from "./peerError";
 import type { ValidEventTypes } from "eventemitter3";
+import EventEmitter from "eventemitter3";
+import { EventEmitterWithPromise } from "./eventEmitterWithPromise";
 
 export interface BaseConnectionEvents<
 	ErrorType extends string = BaseConnectionErrorType,
-> extends EventsWithError<ErrorType> {
+> extends PromiseEvents<never, ErrorType> {
 	/**
 	 * Emitted when either you or the remote peer closes the connection.
 	 *
@@ -29,13 +27,44 @@ export interface BaseConnectionEvents<
 	iceStateChanged: (state: RTCIceConnectionState) => void;
 }
 
-export abstract class BaseConnection<
+export interface IBaseConnection<
 	SubClassEvents extends ValidEventTypes,
 	ErrorType extends string = never,
-> extends EventEmitterWithError<
-	ErrorType | BaseConnectionErrorType,
-	SubClassEvents & BaseConnectionEvents<BaseConnectionErrorType | ErrorType>
-> {
+> extends EventEmitter<
+		| (SubClassEvents &
+				BaseConnectionEvents<BaseConnectionErrorType | ErrorType>)
+		| BaseConnectionEvents<BaseConnectionErrorType | ErrorType>
+	> {
+	readonly metadata: any;
+	readonly connectionId: string;
+	get type(): ConnectionType;
+	/**
+	 * The optional label passed in or assigned by PeerJS when the connection was initiated.
+	 */
+	label: string;
+	/**
+	 * Whether the media connection is active (e.g. your call has been answered).
+	 * You can check this if you want to set a maximum wait time for a one-sided call.
+	 */
+	get open(): boolean;
+	close(): void;
+}
+
+export abstract class BaseConnection<
+		AwaitType extends EventEmitter<
+			SubClassEvents & BaseConnectionEvents<BaseConnectionErrorType | ErrorType>
+		>,
+		SubClassEvents extends ValidEventTypes,
+		ErrorType extends string = never,
+	>
+	extends EventEmitterWithPromise<
+		AwaitType,
+		never,
+		ErrorType | BaseConnectionErrorType,
+		SubClassEvents & BaseConnectionEvents<BaseConnectionErrorType | ErrorType>
+	>
+	implements IBaseConnection<SubClassEvents, ErrorType>
+{
 	protected _open = false;
 
 	/**
@@ -50,15 +79,8 @@ export abstract class BaseConnection<
 
 	abstract get type(): ConnectionType;
 
-	/**
-	 * The optional label passed in or assigned by PeerJS when the connection was initiated.
-	 */
 	label: string;
 
-	/**
-	 * Whether the media connection is active (e.g. your call has been answered).
-	 * You can check this if you want to set a maximum wait time for a one-sided call.
-	 */
 	get open() {
 		return this._open;
 	}
