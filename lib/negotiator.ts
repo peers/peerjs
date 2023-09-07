@@ -8,13 +8,12 @@ import {
 	ServerMessageType,
 } from "./enums";
 import type { BaseConnection, BaseConnectionEvents } from "./baseconnection";
-import type { ValidEventTypes } from "eventemitter3";
 
 /**
  * Manages all negotiations between Peers.
  */
 export class Negotiator<
-	Events extends ValidEventTypes,
+	Events extends BaseConnectionEvents<ErrorType>,
 	ErrorType extends string,
 	ConnectionType extends BaseConnection<
 		any,
