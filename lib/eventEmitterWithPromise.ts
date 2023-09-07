@@ -45,7 +45,7 @@ export class EventEmitterWithPromise<
 				resolve?.(proxyWithoutThen(this));
 			};
 			const onError = (err: PeerError<`${ErrorType}`>) => {
-				this.removeListener("open", onOpen);
+				this.off("open", onOpen);
 				reject(err);
 			};
 			if (this._open) {
