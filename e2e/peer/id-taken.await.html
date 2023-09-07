@@ -22,25 +22,25 @@
 				const errorMessage = document.getElementById("error-message");
 
 				// Peer A should be created without an error
-				try {
-					const peerA = await new Peer();
-					// Create 10 new `Peer`s that will try to steel A's id
-					let peers_try_to_take = Array.from({ length: 10 }, async (_, i) => {
-						try {
-							await new Peer(peerA.id);
-							throw `Peer ${i} failed! Connection got established.`;
-						} catch (error) {
-							if (error.type === "unavailable-id") {
-								return `ID already taken. (${i})`;
-							} else {
-								throw error;
-							}
-						}
-					});
-					await Promise.all(peers_try_to_take);
+				const peerA = await new Peer().catch(
+					(error) => (errorMessage.textContent += JSON.stringify(error)),
+				);
+
+				// Create 10 new `Peer`s that will try to steel A's id
+				// Wait for all peers to finish
+				const steeling_peers = await Promise.allSettled(
+					Array.from({ length: 10 }, () => new Peer(peerA.id)),
+				);
+
+				if (
+					steeling_peers.every(
+						({ reason, status }) =>
+							status === "rejected" && reason.type === "unavailable-id",
+					)
+				) {
 					messages.textContent = "No ID takeover";
-				} catch (error) {
-					errorMessage.textContent += JSON.stringify(error);
+				} else {
+					errorMessage.textContent += JSON.stringify(steeling_peers);
 				}
 			})();
 		</script>
