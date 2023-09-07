@@ -3,7 +3,6 @@ import type { ServerMessage } from "./servermessage";
 import type { ConnectionType } from "./enums";
 import { BaseConnectionErrorType } from "./enums";
 import { PeerError, type PromiseEvents } from "./peerError";
-import type { ValidEventTypes } from "eventemitter3";
 import EventEmitter from "eventemitter3";
 import { EventEmitterWithPromise } from "./eventEmitterWithPromise";
 
@@ -28,13 +27,11 @@ export interface BaseConnectionEvents<
 }
 
 export interface IBaseConnection<
-	SubClassEvents extends ValidEventTypes,
+	SubClassEvents extends BaseConnectionEvents<
+		BaseConnectionErrorType | ErrorType
+	>,
 	ErrorType extends string = never,
-> extends EventEmitter<
-		| (SubClassEvents &
-				BaseConnectionEvents<BaseConnectionErrorType | ErrorType>)
-		| BaseConnectionEvents<BaseConnectionErrorType | ErrorType>
-	> {
+> extends EventEmitter<SubClassEvents> {
 	readonly metadata: any;
 	readonly connectionId: string;
 	get type(): ConnectionType;
@@ -51,17 +48,17 @@ export interface IBaseConnection<
 }
 
 export abstract class BaseConnection<
-		AwaitType extends EventEmitter<
-			SubClassEvents & BaseConnectionEvents<BaseConnectionErrorType | ErrorType>
+		AwaitType extends EventEmitter<SubClassEvents>,
+		SubClassEvents extends BaseConnectionEvents<
+			BaseConnectionErrorType | ErrorType
 		>,
-		SubClassEvents extends ValidEventTypes,
 		ErrorType extends string = never,
 	>
 	extends EventEmitterWithPromise<
 		AwaitType,
 		never,
 		ErrorType | BaseConnectionErrorType,
-		SubClassEvents & BaseConnectionEvents<BaseConnectionErrorType | ErrorType>
+		SubClassEvents
 	>
 	implements IBaseConnection<SubClassEvents, ErrorType>
 {

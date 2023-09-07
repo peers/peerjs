@@ -21,7 +21,7 @@ import { BinaryPack } from "./dataconnection/BufferedConnection/BinaryPack";
 import { Raw } from "./dataconnection/BufferedConnection/Raw";
 import { Json } from "./dataconnection/BufferedConnection/Json";
 
-import { PeerError } from "./peerError";
+import { PeerError, PromiseEvents } from "./peerError";
 import { EventEmitterWithPromise } from "./eventEmitterWithPromise";
 import EventEmitter from "eventemitter3";
 
@@ -80,7 +80,7 @@ export interface SerializerMapping {
 	) => DataConnection;
 }
 
-export interface PeerEvents {
+export interface PeerEvents extends PromiseEvents<string, PeerErrorType> {
 	/**
 	 * Emitted when a connection to the PeerServer is established.
 	 *
@@ -146,7 +146,11 @@ export interface IPeer extends EventEmitter<PeerEvents> {
 	 * @param stream The caller's media stream
 	 * @param options Metadata associated with the connection, passed in by whoever initiated the connection.
 	 */
-	call(peer: string, stream: MediaStream, options: CallOption): MediaConnection;
+	call(
+		peer: string,
+		stream: MediaStream,
+		options?: CallOption,
+	): MediaConnection;
 	/** Retrieve a data/media connection for this peer. */
 	getConnection(
 		peerId: string,

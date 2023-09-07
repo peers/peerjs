@@ -13,15 +13,12 @@ import {
 	IBaseConnection,
 } from "../baseconnection";
 import type { ServerMessage } from "../servermessage";
-import type { PromiseEvents } from "../peerError";
 import { randomToken } from "../utils/randomToken";
 
 export interface DataConnectionEvents
-	extends PromiseEvents<
-			never,
-			DataConnectionErrorType | BaseConnectionErrorType
-		>,
-		BaseConnectionEvents<DataConnectionErrorType | BaseConnectionErrorType> {
+	extends BaseConnectionEvents<
+		DataConnectionErrorType | BaseConnectionErrorType
+	> {
 	/**
 	 * Emitted when data is received from the remote peer.
 	 */
@@ -60,7 +57,7 @@ export abstract class DataConnection extends BaseConnection<
 	abstract readonly serialization: string;
 	readonly reliable: boolean;
 
-	public get type() {
+	public get type(): ConnectionType.Data {
 		return ConnectionType.Data;
 	}
 

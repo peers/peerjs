@@ -3,11 +3,15 @@ import logger from "./logger";
 import { Negotiator } from "./negotiator";
 import { ConnectionType, ServerMessageType } from "./enums";
 import type { Peer } from "./peer";
-import { BaseConnection, type BaseConnectionEvents } from "./baseconnection";
+import {
+	BaseConnection,
+	type BaseConnectionEvents,
+	IBaseConnection,
+} from "./baseconnection";
 import type { ServerMessage } from "./servermessage";
 import type { AnswerOption } from "./optionInterfaces";
 
-export interface MediaConnectionEvents extends BaseConnectionEvents<never> {
+export interface MediaConnectionEvents extends BaseConnectionEvents {
 	/**
 	 * Emitted when a connection to the PeerServer is established.
 	 *
@@ -25,7 +29,7 @@ export interface MediaConnectionEvents extends BaseConnectionEvents<never> {
 }
 
 export interface IMediaConnection
-	extends BaseConnection<IMediaConnection, MediaConnectionEvents> {
+	extends IBaseConnection<MediaConnectionEvents> {
 	get type(): ConnectionType.Media;
 	get localStream(): MediaStream;
 	get remoteStream(): MediaStream;
@@ -63,7 +67,7 @@ export class MediaConnection extends BaseConnection<
 	/**
 	 * For media connections, this is always 'media'.
 	 */
-	get type() {
+	get type(): ConnectionType.Media {
 		return ConnectionType.Media;
 	}
 

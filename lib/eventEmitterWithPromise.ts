@@ -8,7 +8,7 @@ export class EventEmitterWithPromise<
 		ErrorType extends string,
 		Events extends PromiseEvents<OpenType, ErrorType>,
 	>
-	extends EventEmitter<Events | PromiseEvents<OpenType, ErrorType>, never>
+	extends EventEmitter<Events, never>
 	implements Promise<AwaitType>
 {
 	protected _open = false;
@@ -39,12 +39,14 @@ export class EventEmitterWithPromise<
 	): Promise<TResult1 | TResult2> {
 		const p = new Promise((resolve, reject) => {
 			const onOpen = () => {
+				// @ts-expect-error
 				this.off("error", onError);
 				// Remove 'then' to prevent potential recursion issues
 				// `await` will wait for a Promise-like to resolve recursively
 				resolve?.(proxyWithoutThen(this));
 			};
 			const onError = (err: PeerError<`${ErrorType}`>) => {
+				// @ts-expect-error
 				this.off("open", onOpen);
 				reject(err);
 			};
@@ -52,7 +54,10 @@ export class EventEmitterWithPromise<
 				onOpen();
 				return;
 			}
+
+			// @ts-expect-error
 			this.once("open", onOpen);
+			// @ts-expect-error
 			this.once("error", onError);
 		});
 		return p.then(onfulfilled, onrejected);
@@ -66,11 +71,12 @@ export class EventEmitterWithPromise<
 	emitError(type: ErrorType, err: string | Error): void {
 		logger.error("Error:", err);
 
+		// @ts-expect-error
 		this.emit("error", new PeerError<`${ErrorType}`>(`${type}`, err));
 	}
 }
 
-function proxyWithoutThen<T extends object>(obj: T) {
+function proxyWithoutThen<T extends object>(obj: T): Omit<T, "then"> {
 	return new Proxy(obj, {
 		get(target, p, receiver) {
 			if (p === "then") {
