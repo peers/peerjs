@@ -9,7 +9,7 @@ import {
 	ServerMessageType,
 	SocketEventType,
 } from "./enums";
-import type { ServerMessage } from "./servermessage";
+import type { IncomingServerMessage } from "./serverMessages";
 import { API } from "./api";
 import type {
 	CallOption,
@@ -136,7 +136,8 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		string,
 		(DataConnection | MediaConnection)[]
 	> = new Map(); // All connections for this peer.
-	private readonly _lostMessages: Map<string, ServerMessage[]> = new Map(); // src => [list of messages]
+	private readonly _lostMessages: Map<string, IncomingServerMessage[]> =
+		new Map(); // src => [list of messages]
 	/**
 	 * The brokering ID of this peer
 	 *
@@ -308,7 +309,7 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 			this._options.pingInterval,
 		);
 
-		socket.on(SocketEventType.Message, (data: ServerMessage) => {
+		socket.on(SocketEventType.Message, (data) => {
 			this._handleMessage(data);
 		});
 
@@ -346,10 +347,8 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	}
 
 	/** Handles messages from the server. */
-	private _handleMessage(message: ServerMessage): void {
+	private _handleMessage(message: IncomingServerMessage): void {
 		const type = message.type;
-		const payload = message.payload;
-		const peerId = message.src;
 
 		switch (type) {
 			case ServerMessageType.Open: // The connection to the server is open.
@@ -358,7 +357,7 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 				this.emit("open", this.id);
 				break;
 			case ServerMessageType.Error: // Server error.
-				this._abort(PeerErrorType.ServerError, payload.msg);
+				this._abort(PeerErrorType.ServerError, message.payload.msg);
 				break;
 			case ServerMessageType.IdTaken: // The selected ID is taken.
 				this._abort(PeerErrorType.UnavailableID, `ID "${this.id}" is taken`);
@@ -370,6 +369,7 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 				);
 				break;
 			case ServerMessageType.Leave: // Another peer has closed its connection to this peer.
+				const peerId = message.src;
 				logger.log(`Received leave message from ${peerId}`);
 				this._cleanupPeer(peerId);
 				this._connections.delete(peerId);
@@ -381,6 +381,8 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 				);
 				break;
 			case ServerMessageType.Offer: {
+				const payload = message.payload;
+
 				// we should consider switching this to CALL/CONNECT, but this is the least breaking option.
 				const connectionId = payload.connectionId;
 				let connection = this.getConnection(peerId, connectionId);
@@ -420,6 +422,7 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 					this._addConnection(peerId, connection);
 					this.emit("connection", dataConnection);
 				} else {
+					// @ts-expect-error payload type differs from specifications
 					logger.warn(`Received malformed connection type:${payload.type}`);
 					return;
 				}
@@ -433,6 +436,7 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 				break;
 			}
 			default: {
+				const payload = message.payload;
 				if (!payload) {
 					logger.warn(
 						`You received a malformed message from ${peerId} of type ${type}`,
@@ -458,7 +462,10 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	}
 
 	/** Stores messages without a set up connection, to be claimed later. */
-	private _storeMessage(connectionId: string, message: ServerMessage): void {
+	private _storeMessage(
+		connectionId: string,
+		message: IncomingServerMessage,
+	): void {
 		if (!this._lostMessages.has(connectionId)) {
 			this._lostMessages.set(connectionId, []);
 		}
@@ -471,7 +478,7 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	 * @internal
 	 */
 	//TODO Change it to private
-	public _getMessages(connectionId: string): ServerMessage[] {
+	public _getMessages(connectionId: string) {
 		const messages = this._lostMessages.get(connectionId);
 
 		if (messages) {

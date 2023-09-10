@@ -7,17 +7,13 @@ import {
 	PeerErrorType,
 	ServerMessageType,
 } from "./enums";
-import type { BaseConnection, BaseConnectionEvents } from "./baseconnection";
-import type { ValidEventTypes } from "eventemitter3";
+import { BaseConnection } from "./baseconnection";
 
 /**
  * Manages all negotiations between Peers.
  */
-export class Negotiator<
-	Events extends ValidEventTypes,
-	ConnectionType extends BaseConnection<Events | BaseConnectionEvents>,
-> {
-	constructor(readonly connection: ConnectionType) {}
+export class Negotiator {
+	constructor(readonly connection: DataConnection | MediaConnection) {}
 
 	/** Returns a PeerConnection object set up correctly (for data, media). */
 	startConnection(options: any) {
@@ -119,8 +115,7 @@ export class Negotiator<
 					peerConnection.onicecandidate = () => {};
 					break;
 			}
-
-			this.connection.emit(
+			(this.connection as BaseConnection<{}>).emit(
 				"iceStateChanged",
 				peerConnection.iceConnectionState,
 			);
@@ -219,29 +214,34 @@ export class Negotiator<
 					`for:${this.connection.peer}`,
 				);
 
-				let payload: any = {
-					sdp: offer,
-					type: this.connection.type,
-					connectionId: this.connection.connectionId,
-					metadata: this.connection.metadata,
-				};
-
-				if (this.connection.type === ConnectionType.Data) {
-					const dataConnection = <DataConnection>(<unknown>this.connection);
-
-					payload = {
-						...payload,
-						label: dataConnection.label,
-						reliable: dataConnection.reliable,
-						serialization: dataConnection.serialization,
+				if (this.connection.type === ConnectionType.Media) {
+					const payload = {
+						sdp: offer,
+						type: this.connection.type,
+						connectionId: this.connection.connectionId,
+						metadata: this.connection.metadata,
 					};
+					provider.socket.send({
+						type: ServerMessageType.Offer,
+						dst: this.connection.peer,
+						payload,
+					});
+				} else {
+					const payload = {
+						sdp: offer,
+						type: this.connection.type,
+						connectionId: this.connection.connectionId,
+						metadata: this.connection.metadata,
+						label: this.connection.label,
+						reliable: this.connection.reliable,
+						serialization: this.connection.serialization,
+					};
+					provider.socket.send({
+						type: ServerMessageType.Offer,
+						dst: this.connection.peer,
+						payload,
+					});
 				}
-
-				provider.socket.send({
-					type: ServerMessageType.Offer,
-					payload,
-					dst: this.connection.peer,
-				});
 			} catch (err) {
 				// TODO: investigate why _makeOffer is being called from the answer
 				if (

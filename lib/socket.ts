@@ -2,15 +2,23 @@ import { EventEmitter } from "eventemitter3";
 import logger from "./logger";
 import { ServerMessageType, SocketEventType } from "./enums";
 import { version } from "../package.json";
+import { IncomingServerMessage, OutgoingServerMessage } from "./serverMessages";
+
+interface SocketEvents {
+	[SocketEventType.Disconnected]: () => void;
+	[SocketEventType.Error]: (error: "Invalid message") => void;
+	[SocketEventType.Message]: (message: IncomingServerMessage) => void;
+	[SocketEventType.Close]: () => void;
+}
 
 /**
  * An abstraction on top of WebSockets to provide fastest
  * possible connection for peers.
  */
-export class Socket extends EventEmitter {
+export class Socket extends EventEmitter<SocketEvents, never> {
 	private _disconnected: boolean = true;
 	private _id?: string;
-	private _messagesQueue: Array<object> = [];
+	private _messagesQueue: Array<OutgoingServerMessage> = [];
 	private _socket?: WebSocket;
 	private _wsPingTimer?: any;
 	private readonly _baseUrl: string;
@@ -121,7 +129,7 @@ export class Socket extends EventEmitter {
 	}
 
 	/** Exposed send for DC & Peer. */
-	send(data: any): void {
+	send(data: OutgoingServerMessage): void {
 		if (this._disconnected) {
 			return;
 		}

@@ -1,5 +1,5 @@
 import type { Peer } from "./peer";
-import type { ServerMessage } from "./servermessage";
+import type { IncomingServerMessage } from "./serverMessages";
 import type { ConnectionType } from "./enums";
 import { BaseConnectionErrorType } from "./enums";
 import {
@@ -81,7 +81,7 @@ export abstract class BaseConnection<
 	/**
 	 * @internal
 	 */
-	abstract handleMessage(message: ServerMessage): void;
+	abstract handleMessage(message: IncomingServerMessage): void;
 
 	/**
 	 * Called by the Negotiator when the DataChannel is ready.

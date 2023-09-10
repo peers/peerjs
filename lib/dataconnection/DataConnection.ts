@@ -8,7 +8,7 @@ import {
 } from "../enums";
 import type { Peer } from "../peer";
 import { BaseConnection, type BaseConnectionEvents } from "../baseconnection";
-import type { ServerMessage } from "../servermessage";
+import type { IncomingServerMessage } from "../serverMessages";
 import type { EventsWithError } from "../peerError";
 import { randomToken } from "../utils/randomToken";
 
@@ -35,11 +35,11 @@ export abstract class DataConnection extends BaseConnection<
 	protected static readonly ID_PREFIX = "dc_";
 	protected static readonly MAX_BUFFERED_AMOUNT = 8 * 1024 * 1024;
 
-	private _negotiator: Negotiator<DataConnectionEvents, this>;
+	private _negotiator: Negotiator;
 	abstract readonly serialization: string;
 	readonly reliable: boolean;
 
-	public get type() {
+	public get type(): ConnectionType.Data {
 		return ConnectionType.Data;
 	}
 
@@ -138,15 +138,13 @@ export abstract class DataConnection extends BaseConnection<
 		return this._send(data, chunked);
 	}
 
-	async handleMessage(message: ServerMessage) {
-		const payload = message.payload;
-
+	async handleMessage(message: IncomingServerMessage) {
 		switch (message.type) {
 			case ServerMessageType.Answer:
-				await this._negotiator.handleSDP(message.type, payload.sdp);
+				await this._negotiator.handleSDP(message.type, message.payload.sdp);
 				break;
 			case ServerMessageType.Candidate:
-				await this._negotiator.handleCandidate(payload.candidate);
+				await this._negotiator.handleCandidate(message.payload.candidate);
 				break;
 			default:
 				logger.warn(
