@@ -1,3 +1,5 @@
+import { LogLevel } from "./logger";
+
 export interface AnswerOption {
 	/**
 	 * Function which runs before create answer to modify sdp answer message.
@@ -13,8 +15,20 @@ export interface PeerJSOption {
 	secure?: boolean;
 	token?: string;
 	config?: RTCConfiguration;
-	debug?: number;
+	debug?: LogLevel;
 	referrerPolicy?: ReferrerPolicy;
+}
+
+export enum DataConnectionType {
+	/// Buffered Connections
+	BinaryPack = "binary", 
+	BinaryPack_UTF8 = "binary-utf8",
+	JSON = "json",
+	Raw = "raw",
+
+	/// Streaming Connections
+	CBOR = "cbor",
+	MsgPack = "msgpack",
 }
 
 export interface PeerConnectOption {
@@ -32,7 +46,7 @@ export interface PeerConnectOption {
 	 * Can be any serializable type.
 	 */
 	metadata?: any;
-	serialization?: string;
+	serialization?:  `${DataConnectionType}`;
 	reliable?: boolean;
 }
 

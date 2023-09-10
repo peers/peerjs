@@ -2,7 +2,7 @@ import { util } from "./util";
 import logger, { LogLevel } from "./logger";
 import { Socket } from "./socket";
 import { MediaConnection } from "./mediaconnection";
-import type { DataConnection } from "./dataconnection/DataConnection";
+import { DataConnection } from "./dataconnection/DataConnection";
 import {
 	ConnectionType,
 	PeerErrorType,
@@ -11,10 +11,11 @@ import {
 } from "./enums";
 import type { ServerMessage } from "./servermessage";
 import { API } from "./api";
-import type {
-	CallOption,
-	PeerConnectOption,
-	PeerJSOption,
+import {
+	DataConnectionType,
+	type CallOption,
+	type PeerConnectOption,
+	type PeerJSOption,
 } from "./optionInterfaces";
 import { BinaryPack } from "./dataconnection/BufferedConnection/BinaryPack";
 import { Raw } from "./dataconnection/BufferedConnection/Raw";
@@ -489,7 +490,7 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	 */
 	connect(peer: string, options: PeerConnectOption = {}): DataConnection {
 		options = {
-			serialization: "default",
+			serialization: DataConnectionType.BinaryPack,
 			...options,
 		};
 		if (this.disconnected) {
