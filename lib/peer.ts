@@ -22,6 +22,8 @@ import { Raw } from "./dataconnection/BufferedConnection/Raw";
 import { Json } from "./dataconnection/BufferedConnection/Json";
 
 import { EventEmitterWithError, PeerError } from "./peerError";
+import { Cbor } from "./dataconnection/StreamConnection/Cbor";
+import { MsgPack } from "./exports";
 
 class PeerOptions implements PeerJSOption {
 	/**
@@ -119,6 +121,8 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		json: Json,
 		binary: BinaryPack,
 		"binary-utf8": BinaryPack,
+		cbor: Cbor,
+		msgpack: MsgPack,
 
 		default: BinaryPack,
 	};
@@ -490,15 +494,15 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	 */
 	connect(peer: string, options: PeerConnectOption = {}): DataConnection {
 		options = {
-			serialization: DataConnectionType.BinaryPack,
+			serialization: DataConnectionType.Default,
 			...options,
 		};
 		if (this.disconnected) {
 			logger.warn(
 				"You cannot connect to a new Peer because you called " +
-					".disconnect() on this Peer and ended your connection with the " +
-					"server. You can create a new Peer to reconnect, or call reconnect " +
-					"on this peer if you believe its ID to still be available.",
+				".disconnect() on this Peer and ended your connection with the " +
+				"server. You can create a new Peer to reconnect, or call reconnect " +
+				"on this peer if you believe its ID to still be available.",
 			);
 			this.emitError(
 				PeerErrorType.Disconnected,
@@ -510,8 +514,10 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		const dataConnection = new this._serializers[options.serialization](
 			peer,
 			this,
-			options,
+			// options,
+			{},
 		);
+		console.log({ options, dataConnection});
 		this._addConnection(peer, dataConnection);
 		return dataConnection;
 	}
@@ -530,8 +536,8 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		if (this.disconnected) {
 			logger.warn(
 				"You cannot connect to a new Peer because you called " +
-					".disconnect() on this Peer and ended your connection with the " +
-					"server. You can create a new Peer to reconnect.",
+				".disconnect() on this Peer and ended your connection with the " +
+				"server. You can create a new Peer to reconnect.",
 			);
 			this.emitError(
 				PeerErrorType.Disconnected,
@@ -736,7 +742,7 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	 * the cloud server, email team@peerjs.com to get the functionality enabled for
 	 * your key.
 	 */
-	listAllPeers(cb = (_: any[]) => {}): void {
+	listAllPeers(cb = (_: any[]) => { }): void {
 		this._api
 			.listAllPeers()
 			.then((peers) => cb(peers))

@@ -29,6 +29,7 @@ export enum DataConnectionType {
 	/// Streaming Connections
 	CBOR = "cbor",
 	MsgPack = "msgpack",
+	Default = "default",
 }
 
 export interface PeerConnectOption {
