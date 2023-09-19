@@ -44,6 +44,18 @@ export class BinaryPackChunker {
 
 		return chunks;
 	};
+
+	singleChunk = (blob: ArrayBuffer): BinaryPackChunk => {
+		const __peerData = this._dataCount;
+		this._dataCount++;
+
+		return {
+			__peerData,
+			n: 0,
+			total: 1,
+			data: new Uint8Array(blob),
+		};
+	}
 }
 
 export function concatArrayBuffers(bufs: Uint8Array[]) {

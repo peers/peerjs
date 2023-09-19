@@ -5,7 +5,7 @@ import { BinaryPackChunk, BinaryPackChunker, concatArrayBuffers } from "./Buffer
 
 
 export class BufferedNotifyConnection extends DataConnection {
-    serialization: 'notify';
+    readonly serialization = 'notify';
     private readonly chunker = new BinaryPackChunker();
 
     private _chunkedData: {
@@ -17,11 +17,11 @@ export class BufferedNotifyConnection extends DataConnection {
     } = {};
 
 
-    protected _send(data: any, chunked: boolean): { __peerData: number, total: number } {
+    public _send(data: any): { __peerData: number, total: number } {
 
         const blob = pack(data);
 
-        if (!chunked && blob.byteLength > this.chunker.chunkedMTU) {
+        if (blob.byteLength > this.chunker.chunkedMTU) {
 
             const blobs = this.chunker.chunk(blob);
             logger.log(`DC#${this.connectionId} Try to send ${blobs.length} chunks...`);
@@ -33,8 +33,10 @@ export class BufferedNotifyConnection extends DataConnection {
             return { __peerData: blobs[0].__peerData, total: blobs.length };
         }
         //We send everything in one chunk
+        const msg = this.chunker.singleChunk(blob);
+        this._bufferedSend(msg);
 
-        return { __peerData: 0, total: 1 };
+        return { __peerData: msg.__peerData, total: 1 };
     }
 
     private _buffer: BinaryPackChunk[] = [];
