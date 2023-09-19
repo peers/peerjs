@@ -175,7 +175,7 @@
 		"contributors": "git-authors-cli --print=false && prettier --write package.json && git add package.json package-lock.json && git commit -m \"chore(contributors): update and sort contributors list\"",
 		"check": "tsc --noEmit && tsc -p e2e/tsconfig.json --noEmit",
 		"watch": "parcel watch",
-		"build": "rm -rf dist && parcel build",
+		"build": "npx rimraf dist && parcel build",
 		"prepublishOnly": "npm run build",
 		"test": "jest",
 		"test:watch": "jest --watch",

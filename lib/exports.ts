@@ -20,6 +20,7 @@ export * from "./enums";
 export { BufferedConnection } from "./dataconnection/BufferedConnection/BufferedConnection";
 export { StreamConnection } from "./dataconnection/StreamConnection/StreamConnection";
 export { Cbor } from "./dataconnection/StreamConnection/Cbor";
+export { BufferedNotifyConnection } from "./dataconnection/BufferedNotifyConnection";
 export { MsgPack } from "./dataconnection/StreamConnection/MsgPack";
 export type { SerializerMapping } from "./peer";
 

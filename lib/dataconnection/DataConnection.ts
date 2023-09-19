@@ -12,9 +12,14 @@ import type { ServerMessage } from "../servermessage";
 import type { EventsWithError } from "../peerError";
 import { randomToken } from "../utils/randomToken";
 
+export interface ChunkSentNotification {
+	__peerData: number,
+	n: number
+}
+
 export interface DataConnectionEvents
 	extends EventsWithError<DataConnectionErrorType | BaseConnectionErrorType>,
-		BaseConnectionEvents<DataConnectionErrorType | BaseConnectionErrorType> {
+	BaseConnectionEvents<DataConnectionErrorType | BaseConnectionErrorType> {
 	/**
 	 * Emitted when data is received from the remote peer.
 	 */
@@ -23,6 +28,13 @@ export interface DataConnectionEvents
 	 * Emitted when the connection is established and ready-to-use.
 	 */
 	open: () => void;
+
+	/**
+	 * Emitted when the connection sends out a chunk of data to the remote peer.
+	 * Currently Only implemented by BufferedNotifyConnection.
+	 */
+	sentChunk: (chunk: ChunkSentNotification) => void;
+
 }
 
 /**
