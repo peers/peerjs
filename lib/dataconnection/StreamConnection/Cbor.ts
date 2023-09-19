@@ -1,6 +1,7 @@
 import type { Peer } from "../../peer.js";
 import { Decoder, Encoder } from "cbor-x";
 import { StreamConnection } from "./StreamConnection.js";
+import { SerializationType } from "../../enums.js";
 
 const NullValue = Symbol.for(null);
 
@@ -25,7 +26,7 @@ const iterateOver = async function* (stream: ReadableStream) {
 };
 
 export class Cbor extends StreamConnection {
-	readonly serialization = "Cbor";
+	readonly serialization = SerializationType.CBOR;
 	private _encoder = new Encoder();
 	private _decoder = new Decoder();
 	private _inc;

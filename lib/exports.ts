@@ -14,7 +14,6 @@ export type {
 export type { UtilSupportsObj } from "./util";
 export type { DataConnection } from "./dataconnection/DataConnection";
 export type { MediaConnection } from "./mediaconnection";
-export { DataConnectionType } from "./optionInterfaces";
 export { LogLevel } from "./logger";
 export * from "./enums";
 
@@ -22,7 +21,7 @@ export { BufferedConnection } from "./dataconnection/BufferedConnection/Buffered
 export { StreamConnection } from "./dataconnection/StreamConnection/StreamConnection";
 export { Cbor } from "./dataconnection/StreamConnection/Cbor";
 export { MsgPack } from "./dataconnection/StreamConnection/MsgPack";
-export type { SerializerMapping } from "./peer";
+export type { SerializerMapping } from "./optionInterfaces";
 
 export { Peer, MsgPackPeer, CborPeer };
 

@@ -6,24 +6,20 @@ import { DataConnection } from "./dataconnection/DataConnection";
 import {
 	ConnectionType,
 	PeerErrorType,
+	SerializationType,
 	ServerMessageType,
 	SocketEventType,
 } from "./enums";
 import type { ServerMessage } from "./servermessage";
 import { API } from "./api";
 import {
-	DataConnectionType,
+	SerializerMapping,
 	type CallOption,
 	type PeerConnectOption,
 	type PeerJSOption,
+	defaultSerializers,
 } from "./optionInterfaces";
-import { BinaryPack } from "./dataconnection/BufferedConnection/BinaryPack";
-import { Raw } from "./dataconnection/BufferedConnection/Raw";
-import { Json } from "./dataconnection/BufferedConnection/Json";
-
 import { EventEmitterWithError, PeerError } from "./peerError";
-import { Cbor } from "./dataconnection/StreamConnection/Cbor";
-import { MsgPack } from "./exports";
 
 class PeerOptions implements PeerJSOption {
 	/**
@@ -72,14 +68,6 @@ class PeerOptions implements PeerJSOption {
 
 export { type PeerOptions };
 
-export interface SerializerMapping {
-	[key: string]: new (
-		peerId: string,
-		provider: Peer,
-		options: any,
-	) => DataConnection;
-}
-
 export interface PeerEvents {
 	/**
 	 * Emitted when a connection to the PeerServer is established.
@@ -110,22 +98,14 @@ export interface PeerEvents {
 	 */
 	error: (error: PeerError<`${PeerErrorType}`>) => void;
 }
+
 /**
  * A peer who can initiate connections with other peers.
  */
 export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	private static readonly DEFAULT_KEY = "peerjs";
 
-	protected readonly _serializers: SerializerMapping = {
-		raw: Raw,
-		json: Json,
-		binary: BinaryPack,
-		"binary-utf8": BinaryPack,
-		cbor: Cbor,
-		msgpack: MsgPack,
-
-		default: BinaryPack,
-	};
+	protected readonly _serializers: SerializerMapping = defaultSerializers;
 	private readonly _options: PeerOptions;
 	private readonly _api: API;
 	private readonly _socket: Socket;
@@ -237,7 +217,6 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 			token: util.randomToken(),
 			config: util.defaultConfig,
 			referrerPolicy: "strict-origin-when-cross-origin",
-			serializers: {},
 			...options,
 		};
 		this._options = options;
@@ -494,7 +473,7 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	 */
 	connect(peer: string, options: PeerConnectOption = {}): DataConnection {
 		options = {
-			serialization: DataConnectionType.Default,
+			serialization: SerializationType.Default,
 			...options,
 		};
 		if (this.disconnected) {

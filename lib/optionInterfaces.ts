@@ -1,4 +1,15 @@
+import { DataConnection } from "./dataconnection/DataConnection";
+import { SerializationType } from "./enums";
 import { LogLevel } from "./logger";
+import { Peer } from "./peer";
+
+
+import { BinaryPack } from "./dataconnection/BufferedConnection/BinaryPack";
+import { Raw } from "./dataconnection/BufferedConnection/Raw";
+import { Json } from "./dataconnection/BufferedConnection/Json";
+import { Cbor } from "./dataconnection/StreamConnection/Cbor";
+import { MsgPack } from "./exports";
+
 
 export interface AnswerOption {
 	/**
@@ -19,18 +30,6 @@ export interface PeerJSOption {
 	referrerPolicy?: ReferrerPolicy;
 }
 
-export enum DataConnectionType {
-	/// Buffered Connections
-	BinaryPack = "binary", 
-	BinaryPack_UTF8 = "binary-utf8",
-	JSON = "json",
-	Raw = "raw",
-
-	/// Streaming Connections
-	CBOR = "cbor",
-	MsgPack = "msgpack",
-	Default = "default",
-}
 
 export interface PeerConnectOption {
 	/**
@@ -47,7 +46,7 @@ export interface PeerConnectOption {
 	 * Can be any serializable type.
 	 */
 	metadata?: any;
-	serialization?:  `${DataConnectionType}`;
+	serialization?: `${SerializationType}`;
 	reliable?: boolean;
 }
 
@@ -63,4 +62,30 @@ export interface CallOption {
 	 * Function which runs before create offer to modify sdp offer message.
 	 */
 	sdpTransform?: Function;
+}
+
+
+type SerializationTypeConstructor = new (
+	peerId: string,
+	provider: Peer,
+	options: any,
+) => DataConnection;
+
+/**
+ * A mapping of serialization types to their implementations.
+ * Should map 1:1 with the serialization type property in the class.
+ */
+export type SerializerMapping = {
+	[key in SerializationType]: SerializationTypeConstructor;
+}
+
+export const defaultSerializers: SerializerMapping = {
+	raw: Raw,
+	json: Json,
+	binary: BinaryPack,
+	"binary-utf8": BinaryPack,
+	cbor: Cbor,
+	msgpack: MsgPack,
+
+	default: BinaryPack,
 }
