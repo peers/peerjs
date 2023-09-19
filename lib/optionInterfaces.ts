@@ -46,7 +46,7 @@ export interface PeerConnectOption {
 	 * Can be any serializable type.
 	 */
 	metadata?: any;
-	serialization?: `${SerializationType}`;
+	serialization?: `${SerializationType}` | string;
 	reliable?: boolean;
 }
 
