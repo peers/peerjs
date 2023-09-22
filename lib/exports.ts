@@ -12,7 +12,7 @@ export type {
 	CallOption,
 } from "./optionInterfaces";
 export type { UtilSupportsObj } from "./util";
-export type { DataConnection } from "./dataconnection/DataConnection";
+export type { DataConnection, ChunkSentNotification, SendData } from "./dataconnection/DataConnection";
 export type { MediaConnection } from "./mediaconnection";
 export type { LogLevel } from "./logger";
 export * from "./enums";
