@@ -15,6 +15,10 @@ export class BinaryPackChunker {
 	// Binary stuff
 
 	private _dataCount: number = 1;
+	
+	public get nextID(): number {
+		return this._dataCount;
+	}
 
 	chunk = (
 		blob: ArrayBuffer,

@@ -140,26 +140,26 @@ export abstract class DataConnection extends BaseConnection<
 		super.emit("close");
 	}
 
+	protected abstract _send(data: any, chunked: boolean): void;
+
+
 	/**
+	 * Allows user to send data.
 	 * @param data 
 	 * @param chunked 
-	 * @returns Returns SendData if datachannel is notification based
 	 * @example
-	 * const res = conn.send(currentMessage);
-	 * if (typeof res === 'object' && 'id' in res) {
-	 * 	conn.on('sentChunk', (chunk) => {
-	 * 		if (chunk.id === res.id) {
-	 * 			console.log('Sent chunk', chunk);
-	 * 			if (chunk.n == res.total -1) {
-	 * 				console.log('Sent last chunk');
-	 * 			}
-	 * 		}
-	 * 	});
-	 * }
+	 * 
+	 * 	const nextId = conn.nextID;
+	 *	conn.on('sentChunk', (chunk) => {
+	 *		if (chunk.id === nextId) {
+	 *			console.log('Sent chunk', chunk);
+	 *			if (chunk.n == chunk.total - 1) {
+	 *				console.log('Sent last chunk');
+	 *			}
+	 *		}
+	 *	});
+	 *	conn.send(arr);
 	 */
-	protected abstract _send(data: any, chunked: boolean): void | Promise<void> | SendData;
-
-	/** Allows user to send data. */
 	public send(data: any, chunked = false) {
 		if (!this.open) {
 			this.emitError(

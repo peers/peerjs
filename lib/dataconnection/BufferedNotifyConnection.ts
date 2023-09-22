@@ -24,6 +24,10 @@ export class BufferedNotifyConnection extends DataConnection {
         return this._bufferSize;
     }
 
+    public get nextID(): number {
+        return this.chunker.nextID;
+    }
+
     public override _initializeDataChannel(dc: RTCDataChannel) {
         super._initializeDataChannel(dc);
         this.dataChannel.binaryType = "arraybuffer";
@@ -32,7 +36,7 @@ export class BufferedNotifyConnection extends DataConnection {
         );
     }
 
-	// Handles a DataChannel message.
+    // Handles a DataChannel message.
     protected _handleDataMessage({ data }: { data: Uint8Array }): void {
         const deserializedData = unpack(data);
 
@@ -76,7 +80,11 @@ export class BufferedNotifyConnection extends DataConnection {
         }
     }
 
-    public _send(data: any): SendData {
+    public SendWithCallback(data: any, callback: (chunk: BinaryPackChunk) => void): SendData {
+        throw new Error("Method not implemented.");
+    }
+
+    protected _send(data: any): void {
         const blob = pack(data);
 
         if (blob.byteLength > this.chunker.chunkedMTU) {
@@ -87,14 +95,12 @@ export class BufferedNotifyConnection extends DataConnection {
             for (const blob of blobs) {
                 this._bufferedSend(blob);
             }
+            return;
 
-            return { id: blobs[0].id, total: blobs.length };
         }
         //We send everything in one chunk
         const msg = this.chunker.singleChunk(blob);
         this._bufferedSend(msg);
-
-        return { id: msg.id, total: 1 };
     }
 
     protected _bufferedSend(msg: BinaryPackChunk): void {
