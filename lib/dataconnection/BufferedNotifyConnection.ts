@@ -1,7 +1,7 @@
 import { pack, unpack } from "peerjs-js-binarypack";
 import logger from "../logger";
-import { DataConnection } from "./DataConnection";
-import { BinaryPackChunk, BinaryPackChunker, concatArrayBuffers } from "./BufferedConnection/binaryPackChunker";
+import { DataConnection, SendData } from "./DataConnection";
+import { BinaryPackChunk, BinaryPackChunker, concatArrayBuffers, isBinaryPackChunk } from "./BufferedConnection/binaryPackChunker";
 
 
 export class BufferedNotifyConnection extends DataConnection {
@@ -15,29 +15,6 @@ export class BufferedNotifyConnection extends DataConnection {
             total: number;
         };
     } = {};
-
-
-    public _send(data: any): { __peerData: number, total: number } {
-
-        const blob = pack(data);
-
-        if (blob.byteLength > this.chunker.chunkedMTU) {
-
-            const blobs = this.chunker.chunk(blob);
-            logger.log(`DC#${this.connectionId} Try to send ${blobs.length} chunks...`);
-
-            for (const blob of blobs) {
-                this._bufferedSend(blob);
-            }
-
-            return { __peerData: blobs[0].__peerData, total: blobs.length };
-        }
-        //We send everything in one chunk
-        const msg = this.chunker.singleChunk(blob);
-        this._bufferedSend(msg);
-
-        return { __peerData: msg.__peerData, total: 1 };
-    }
 
     private _buffer: BinaryPackChunk[] = [];
     private _bufferSize = 0;
@@ -55,9 +32,8 @@ export class BufferedNotifyConnection extends DataConnection {
         );
     }
 
-
+	// Handles a DataChannel message.
     protected _handleDataMessage({ data }: { data: Uint8Array }): void {
-        // Assume we only get BinaryPackChunks
         const deserializedData = unpack(data);
 
         // PeerJS specific message
@@ -67,26 +43,18 @@ export class BufferedNotifyConnection extends DataConnection {
                 this.close();
                 return;
             }
+        }
 
-            if (typeof peerData === "number") {
-                // @ts-ignore
-                this._handleChunk(deserializedData);
-                return;
-            }
-
+        if (isBinaryPackChunk(deserializedData)) {
+            this._handleChunk(deserializedData);
+            return;
         }
 
         this.emit("data", deserializedData);
     }
 
-
-    private _handleChunk(data: {
-        __peerData: number;
-        n: number;
-        total: number;
-        data: ArrayBuffer;
-    }): void {
-        const id = data.__peerData;
+    private _handleChunk(data: BinaryPackChunk): void {
+        const id = data.id;
         const chunkInfo = this._chunkedData[id] || {
             data: [],
             count: 0,
@@ -108,6 +76,26 @@ export class BufferedNotifyConnection extends DataConnection {
         }
     }
 
+    public _send(data: any): SendData {
+        const blob = pack(data);
+
+        if (blob.byteLength > this.chunker.chunkedMTU) {
+
+            const blobs = this.chunker.chunk(blob);
+            logger.log(`DC#${this.connectionId} Try to send ${blobs.length} chunks...`);
+
+            for (const blob of blobs) {
+                this._bufferedSend(blob);
+            }
+
+            return { id: blobs[0].id, total: blobs.length };
+        }
+        //We send everything in one chunk
+        const msg = this.chunker.singleChunk(blob);
+        this._bufferedSend(msg);
+
+        return { id: msg.id, total: 1 };
+    }
 
     protected _bufferedSend(msg: BinaryPackChunk): void {
         if (this._buffering || !this._trySend(msg)) {
@@ -134,7 +122,7 @@ export class BufferedNotifyConnection extends DataConnection {
 
         try {
             // Send notification
-            this.emit("sentChunk", { __peerData: msg.__peerData, n: msg.n });
+            this.emit("sentChunk", { id: msg.id, n: msg.n, total: msg.total });
             const msgPacked = pack(msg as any);
             this.dataChannel.send(msgPacked);
         } catch (e) {

@@ -12,8 +12,12 @@ import type { ServerMessage } from "../servermessage";
 import type { EventsWithError } from "../peerError";
 import { randomToken } from "../utils/randomToken";
 
-export interface ChunkSentNotification {
-	__peerData: number,
+export interface SendData {
+	id: number,
+	total: number
+}
+
+export interface ChunkSentNotification extends SendData{
 	n: number
 }
 
@@ -136,7 +140,7 @@ export abstract class DataConnection extends BaseConnection<
 		super.emit("close");
 	}
 
-	protected abstract _send(data: any, chunked: boolean): void;
+	protected abstract _send(data: any, chunked: boolean): void | Promise<void> | SendData;
 
 	/** Allows user to send data. */
 	public send(data: any, chunked = false) {

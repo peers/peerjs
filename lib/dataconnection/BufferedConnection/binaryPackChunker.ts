@@ -1,10 +1,13 @@
-
 export interface BinaryPackChunk {
-	__peerData: number
+	id: number
 	n: number
 	total: number
-	data: Uint8Array
+	data: ArrayBuffer
 };
+
+export function isBinaryPackChunk(obj: any): obj is BinaryPackChunk {
+    return typeof obj === 'object' && 'id' in obj;
+}
 
 export class BinaryPackChunker {
 	readonly chunkedMTU = 16300; // The original 60000 bytes setting does not work when sending data from Firefox to Chrome, which is "cut off" after 16384 bytes and delivered individually.
@@ -16,7 +19,7 @@ export class BinaryPackChunker {
 	chunk = (
 		blob: ArrayBuffer,
 	): BinaryPackChunk[] => {
-		const chunks = [];
+		const chunks: BinaryPackChunk[] = [];
 		const size = blob.byteLength;
 		const total = Math.ceil(size / this.chunkedMTU);
 
@@ -27,8 +30,8 @@ export class BinaryPackChunker {
 			const end = Math.min(size, start + this.chunkedMTU);
 			const b = blob.slice(start, end);
 
-			const chunk = {
-				__peerData: this._dataCount,
+			const chunk: BinaryPackChunk = {
+				id: this._dataCount,
 				n: index,
 				data: b,
 				total,
@@ -46,11 +49,11 @@ export class BinaryPackChunker {
 	};
 
 	singleChunk = (blob: ArrayBuffer): BinaryPackChunk => {
-		const __peerData = this._dataCount;
+		const id = this._dataCount;
 		this._dataCount++;
 
 		return {
-			__peerData,
+			id,
 			n: 0,
 			total: 1,
 			data: new Uint8Array(blob),
