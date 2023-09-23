@@ -1,3 +1,11 @@
+## [1.5.1](https://github.com/peers/peerjs/compare/v1.5.0...v1.5.1) (2023-09-23)
+
+
+### Bug Fixes
+
+* convert `Blob`s to `ArrayBuffer`s during `.send()` ([95bb0f7](https://github.com/peers/peerjs/commit/95bb0f7fa9aa0d119613727c32857e5af33e14a1)), closes [#1137](https://github.com/peers/peerjs/issues/1137)
+* convert `Blob`s to `ArrayBuffer`s during `.send()` ([#1142](https://github.com/peers/peerjs/issues/1142)) ([094f849](https://github.com/peers/peerjs/commit/094f849816d327bf74a447fbf7d58195c1a4fc66))
+
 # [1.5.0](https://github.com/peers/peerjs/compare/v1.4.7...v1.5.0) (2023-09-03)
 
 
