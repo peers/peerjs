@@ -124,7 +124,7 @@ export abstract class DataConnection extends BaseConnection<
 		super.emit("close");
 	}
 
-	protected abstract _send(data: any, chunked: boolean): void;
+	protected abstract _send(data: any, chunked: boolean): void | Promise<void>;
 
 	/** Allows user to send data. */
 	public send(data: any, chunked = false) {

@@ -33,6 +33,18 @@ describe("DataChannel:Binary", () => {
 		2,
 	);
 	it(
+		"should transfer Blobs",
+		serializationTest("./blobs", "binary"),
+		jasmine.DEFAULT_TIMEOUT_INTERVAL,
+		2,
+	);
+	it(
+		"should transfer Files",
+		serializationTest("./files", "binary"),
+		jasmine.DEFAULT_TIMEOUT_INTERVAL,
+		2,
+	);
+	it(
 		"should transfer arrays",
 		serializationTest("./arrays", "binary"),
 		jasmine.DEFAULT_TIMEOUT_INTERVAL,
