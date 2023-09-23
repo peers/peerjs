@@ -79,6 +79,11 @@ export class BinaryPack extends BufferedConnection {
 		data: Packable,
 		chunked: boolean,
 	): void | Promise<void> {
+		if (data instanceof Blob) {
+			return data.arrayBuffer().then((buffer) => {
+				this._send(buffer, chunked);
+			});
+		}
 		const blob = pack(data);
 
 		if (!chunked && blob.byteLength > this.chunker.chunkedMTU) {

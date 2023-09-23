@@ -82,11 +82,11 @@ const serialization = params.get("serialization");
 		}
 	});
 
-	sendBtn.addEventListener("click", () => {
+	sendBtn.addEventListener("click", async () => {
 		dataConnection.once("error", (err) => {
 			errorMessage.innerText = err.toString();
 		});
-		send(dataConnection);
+		await send(dataConnection);
 		dataConnection.close({ flush: true });
 		messages.textContent = "Sent!";
 	});
