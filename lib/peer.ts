@@ -106,6 +106,7 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	private static readonly DEFAULT_KEY = "peerjs";
 
 	protected readonly _serializers: SerializerMapping = defaultSerializers;
+	protected readonly _defaultSerialization: string = SerializationType.Binary;
 	private readonly _options: PeerOptions;
 	private readonly _api: API;
 	private readonly _socket: Socket;
@@ -472,10 +473,6 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	 * @param options for specifying details about Peer Connection
 	 */
 	connect(peer: string, options: PeerConnectOption = {}): DataConnection {
-		options = {
-			serialization: SerializationType.Default,
-			...options,
-		};
 		if (this.disconnected) {
 			logger.warn(
 				"You cannot connect to a new Peer because you called " +
@@ -490,11 +487,25 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 			return;
 		}
 
-		const dataConnection = new this._serializers[options.serialization](
-			peer,
-			this,
-			options,
-		);
+		let dataConnection: DataConnection;
+		if (!options.serialization) {
+			dataConnection = new this._serializers[this._defaultSerialization](peer, this, options);
+		}
+		else {
+			if (!(options.serialization in this._serializers)) {
+				logger.warn(
+					"The serialization " + options.serialization + " is not in this peer's serialization mapping." +
+					"Please add it in the options when creating the peer."
+				);
+				return;
+			}
+			dataConnection = new this._serializers[options.serialization](
+				peer,
+				this,
+				options,
+			);
+		}
+
 		this._addConnection(peer, dataConnection);
 		return dataConnection;
 	}

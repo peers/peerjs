@@ -80,8 +80,6 @@ export enum SerializationType {
 	/// Streaming Connections
 	CBOR = "cbor",
 	MsgPack = "msgpack",
-
-	Default = "default",
 }
 
 export enum SocketEventType {

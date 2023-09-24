@@ -7,8 +7,6 @@ import { Peer } from "./peer";
 import { BinaryPack } from "./dataconnection/BufferedConnection/BinaryPack";
 import { Raw } from "./dataconnection/BufferedConnection/Raw";
 import { Json } from "./dataconnection/BufferedConnection/Json";
-import { Cbor } from "./dataconnection/StreamConnection/Cbor";
-import { MsgPack } from "./exports";
 
 
 export interface AnswerOption {
@@ -76,7 +74,7 @@ type SerializationTypeConstructor = new (
  * Should map 1:1 with the serialization type property in the class.
  */
 export type SerializerMapping = {
-	[key in SerializationType]: SerializationTypeConstructor;
+	[key in string]: SerializationTypeConstructor;
 }
 
 export const defaultSerializers: SerializerMapping = {
@@ -84,8 +82,4 @@ export const defaultSerializers: SerializerMapping = {
 	json: Json,
 	binary: BinaryPack,
 	"binary-utf8": BinaryPack,
-	cbor: Cbor,
-	msgpack: MsgPack,
-
-	default: BinaryPack,
 }
