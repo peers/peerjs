@@ -493,10 +493,8 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		const dataConnection = new this._serializers[options.serialization](
 			peer,
 			this,
-			// options,
-			{},
+			options,
 		);
-		console.log({ options, dataConnection});
 		this._addConnection(peer, dataConnection);
 		return dataConnection;
 	}

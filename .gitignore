@@ -19,6 +19,7 @@ node_modules
 .idea
 npm-debug.log
 .DS_STORE
+pnpm-lock.yaml
 
 test/output
 browserstack.err
