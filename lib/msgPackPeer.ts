@@ -1,9 +1,11 @@
-import { Peer, type SerializerMapping } from "./peer";
-import { MsgPack } from "./exports";
+import { Peer, } from "./peer";
+import { SerializerMapping, } from "./optionInterfaces";
+import { MsgPack } from "./dataconnection/StreamConnection/MsgPack";
+import { SerializationType } from "./enums";
 
 export class MsgPackPeer extends Peer {
+	protected override _defaultSerialization = SerializationType.CBOR;
 	override _serializers: SerializerMapping = {
-		MsgPack,
-		default: MsgPack,
+		msgpack: MsgPack,
 	};
 }

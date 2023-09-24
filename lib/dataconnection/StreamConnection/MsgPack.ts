@@ -1,9 +1,10 @@
 import { decodeMultiStream, Encoder } from "@msgpack/msgpack";
 import { StreamConnection } from "./StreamConnection.js";
 import type { Peer } from "../../peer.js";
+import { SerializationType } from "../../enums.js";
 
 export class MsgPack extends StreamConnection {
-	readonly serialization = "MsgPack";
+	readonly serialization = SerializationType.MsgPack;
 	private _encoder = new Encoder();
 
 	constructor(peerId: string, provider: Peer, options: any) {

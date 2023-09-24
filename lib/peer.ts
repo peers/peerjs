@@ -2,24 +2,23 @@ import { util } from "./util";
 import logger, { LogLevel } from "./logger";
 import { Socket } from "./socket";
 import { MediaConnection } from "./mediaconnection";
-import type { DataConnection } from "./dataconnection/DataConnection";
+import { DataConnection } from "./dataconnection/DataConnection";
 import {
 	ConnectionType,
 	PeerErrorType,
+	SerializationType,
 	ServerMessageType,
 	SocketEventType,
 } from "./enums";
 import type { ServerMessage } from "./servermessage";
 import { API } from "./api";
-import type {
-	CallOption,
-	PeerConnectOption,
-	PeerJSOption,
+import {
+	SerializerMapping,
+	type CallOption,
+	type PeerConnectOption,
+	type PeerJSOption,
+	defaultSerializers,
 } from "./optionInterfaces";
-import { BinaryPack } from "./dataconnection/BufferedConnection/BinaryPack";
-import { Raw } from "./dataconnection/BufferedConnection/Raw";
-import { Json } from "./dataconnection/BufferedConnection/Json";
-
 import { EventEmitterWithError, PeerError } from "./peerError";
 
 class PeerOptions implements PeerJSOption {
@@ -69,14 +68,6 @@ class PeerOptions implements PeerJSOption {
 
 export { type PeerOptions };
 
-export interface SerializerMapping {
-	[key: string]: new (
-		peerId: string,
-		provider: Peer,
-		options: any,
-	) => DataConnection;
-}
-
 export interface PeerEvents {
 	/**
 	 * Emitted when a connection to the PeerServer is established.
@@ -107,20 +98,15 @@ export interface PeerEvents {
 	 */
 	error: (error: PeerError<`${PeerErrorType}`>) => void;
 }
+
 /**
  * A peer who can initiate connections with other peers.
  */
 export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	private static readonly DEFAULT_KEY = "peerjs";
 
-	protected readonly _serializers: SerializerMapping = {
-		raw: Raw,
-		json: Json,
-		binary: BinaryPack,
-		"binary-utf8": BinaryPack,
-
-		default: BinaryPack,
-	};
+	protected readonly _serializers: SerializerMapping = defaultSerializers;
+	protected readonly _defaultSerialization: string = SerializationType.Binary;
 	private readonly _options: PeerOptions;
 	private readonly _api: API;
 	private readonly _socket: Socket;
@@ -232,7 +218,6 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 			token: util.randomToken(),
 			config: util.defaultConfig,
 			referrerPolicy: "strict-origin-when-cross-origin",
-			serializers: {},
 			...options,
 		};
 		this._options = options;
@@ -488,16 +473,12 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	 * @param options for specifying details about Peer Connection
 	 */
 	connect(peer: string, options: PeerConnectOption = {}): DataConnection {
-		options = {
-			serialization: "default",
-			...options,
-		};
 		if (this.disconnected) {
 			logger.warn(
 				"You cannot connect to a new Peer because you called " +
-					".disconnect() on this Peer and ended your connection with the " +
-					"server. You can create a new Peer to reconnect, or call reconnect " +
-					"on this peer if you believe its ID to still be available.",
+				".disconnect() on this Peer and ended your connection with the " +
+				"server. You can create a new Peer to reconnect, or call reconnect " +
+				"on this peer if you believe its ID to still be available.",
 			);
 			this.emitError(
 				PeerErrorType.Disconnected,
@@ -506,11 +487,25 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 			return;
 		}
 
-		const dataConnection = new this._serializers[options.serialization](
-			peer,
-			this,
-			options,
-		);
+		let dataConnection: DataConnection;
+		if (!options.serialization) {
+			dataConnection = new this._serializers[this._defaultSerialization](peer, this, options);
+		}
+		else {
+			if (!(options.serialization in this._serializers)) {
+				logger.warn(
+					"The serialization " + options.serialization + " is not in this peer's serialization mapping." +
+					"Please add it in the options when creating the peer."
+				);
+				return;
+			}
+			dataConnection = new this._serializers[options.serialization](
+				peer,
+				this,
+				options,
+			);
+		}
+
 		this._addConnection(peer, dataConnection);
 		return dataConnection;
 	}
@@ -529,8 +524,8 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		if (this.disconnected) {
 			logger.warn(
 				"You cannot connect to a new Peer because you called " +
-					".disconnect() on this Peer and ended your connection with the " +
-					"server. You can create a new Peer to reconnect.",
+				".disconnect() on this Peer and ended your connection with the " +
+				"server. You can create a new Peer to reconnect.",
 			);
 			this.emitError(
 				PeerErrorType.Disconnected,
@@ -735,7 +730,7 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	 * the cloud server, email team@peerjs.com to get the functionality enabled for
 	 * your key.
 	 */
-	listAllPeers(cb = (_: any[]) => {}): void {
+	listAllPeers(cb = (_: any[]) => { }): void {
 		this._api
 			.listAllPeers()
 			.then((peers) => cb(peers))

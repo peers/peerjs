@@ -71,10 +71,15 @@ export enum DataConnectionErrorType {
 }
 
 export enum SerializationType {
+	/// Buffered Connections
 	Binary = "binary",
 	BinaryUTF8 = "binary-utf8",
 	JSON = "json",
 	None = "raw",
+
+	/// Streaming Connections
+	CBOR = "cbor",
+	MsgPack = "msgpack",
 }
 
 export enum SocketEventType {
