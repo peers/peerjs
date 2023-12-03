@@ -1,5 +1,8 @@
 name: "BrowserStack Test"
 on: [push, pull_request]
+
+concurrency:
+  group: browserstack
 jobs:
   ubuntu-job:
     name: "BrowserStack Test on Ubuntu"
