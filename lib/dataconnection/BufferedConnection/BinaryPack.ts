@@ -75,18 +75,22 @@ export class BinaryPack extends BufferedConnection {
 		}
 	}
 
-	protected override _send(
-		data: Packable,
-		chunked: boolean,
-	): void | Promise<void> {
-		if (data instanceof Blob) {
-			return data.arrayBuffer().then((buffer) => {
-				this._send(buffer, chunked);
-			});
-		}
+	protected override _send(data: Packable, chunked: boolean) {
 		const blob = pack(data);
+		if (blob instanceof Promise) {
+			return this._send_blob(blob);
+		}
 
 		if (!chunked && blob.byteLength > this.chunker.chunkedMTU) {
+			this._sendChunks(blob);
+			return;
+		}
+
+		this._bufferedSend(blob);
+	}
+	private async _send_blob(blobPromise: Promise<ArrayBufferLike>) {
+		const blob = await blobPromise;
+		if (blob.byteLength > this.chunker.chunkedMTU) {
 			this._sendChunks(blob);
 			return;
 		}
