@@ -216,7 +216,7 @@
 	},
 	"dependencies": {
 		"@msgpack/msgpack": "^2.8.0",
-		"cbor-x": "1.5.4",
+		"cbor-x": "1.5.6",
 		"eventemitter3": "^4.0.7",
 		"peerjs-js-binarypack": "^2.1.0",
 		"webrtc-adapter": "^8.0.0"
