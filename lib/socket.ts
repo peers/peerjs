@@ -1,6 +1,6 @@
 import { EventEmitter } from "eventemitter3";
 import logger from "./logger";
-import { SocketEventType, ServerMessageType } from "./enums";
+import { ServerMessageType, SocketEventType } from "./enums";
 import { version } from "../package.json";
 
 /**

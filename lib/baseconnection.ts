@@ -1,9 +1,17 @@
-import { EventEmitter, ValidEventTypes } from "eventemitter3";
 import type { Peer } from "./peer";
 import type { ServerMessage } from "./servermessage";
 import type { ConnectionType } from "./enums";
+import { BaseConnectionErrorType } from "./enums";
+import {
+	EventEmitterWithError,
+	type EventsWithError,
+	PeerError,
+} from "./peerError";
+import type { ValidEventTypes } from "eventemitter3";
 
-export type BaseConnectionEvents = {
+export interface BaseConnectionEvents<
+	ErrorType extends string = BaseConnectionErrorType,
+> extends EventsWithError<ErrorType> {
 	/**
 	 * Emitted when either you or the remote peer closes the connection.
 	 *
@@ -17,13 +25,17 @@ export type BaseConnectionEvents = {
 	 * connection.on('error', (error) => { ... });
 	 * ```
 	 */
-	error: (error: Error) => void;
+	error: (error: PeerError<`${ErrorType}`>) => void;
 	iceStateChanged: (state: RTCIceConnectionState) => void;
-};
+}
 
 export abstract class BaseConnection<
-	T extends ValidEventTypes,
-> extends EventEmitter<T & BaseConnectionEvents> {
+	SubClassEvents extends ValidEventTypes,
+	ErrorType extends string = never,
+> extends EventEmitterWithError<
+	ErrorType | BaseConnectionErrorType,
+	SubClassEvents & BaseConnectionEvents<BaseConnectionErrorType | ErrorType>
+> {
 	protected _open = false;
 
 	/**

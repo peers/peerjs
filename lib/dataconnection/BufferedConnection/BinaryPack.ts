@@ -3,7 +3,7 @@ import logger from "../../logger";
 import type { Peer } from "../../peer";
 import { BufferedConnection } from "./BufferedConnection";
 import { SerializationType } from "../../enums";
-import { type Packable, pack, unpack } from "peerjs-js-binarypack";
+import { pack, type Packable, unpack } from "peerjs-js-binarypack";
 
 export class BinaryPack extends BufferedConnection {
 	private readonly chunker = new BinaryPackChunker();
@@ -75,13 +75,22 @@ export class BinaryPack extends BufferedConnection {
 		}
 	}
 
-	protected override _send(
-		data: Packable,
-		chunked: boolean,
-	): void | Promise<void> {
+	protected override _send(data: Packable, chunked: boolean) {
 		const blob = pack(data);
+		if (blob instanceof Promise) {
+			return this._send_blob(blob);
+		}
 
 		if (!chunked && blob.byteLength > this.chunker.chunkedMTU) {
+			this._sendChunks(blob);
+			return;
+		}
+
+		this._bufferedSend(blob);
+	}
+	private async _send_blob(blobPromise: Promise<ArrayBufferLike>) {
+		const blob = await blobPromise;
+		if (blob.byteLength > this.chunker.chunkedMTU) {
 			this._sendChunks(blob);
 			return;
 		}

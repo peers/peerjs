@@ -1,7 +1,12 @@
 import logger from "./logger";
 import type { MediaConnection } from "./mediaconnection";
 import type { DataConnection } from "./dataconnection/DataConnection";
-import { ConnectionType, PeerErrorType, ServerMessageType } from "./enums";
+import {
+	BaseConnectionErrorType,
+	ConnectionType,
+	PeerErrorType,
+	ServerMessageType,
+} from "./enums";
 import type { BaseConnection, BaseConnectionEvents } from "./baseconnection";
 import type { ValidEventTypes } from "eventemitter3";
 
@@ -9,10 +14,10 @@ import type { ValidEventTypes } from "eventemitter3";
  * Manages all negotiations between Peers.
  */
 export class Negotiator<
-	A extends ValidEventTypes,
-	T extends BaseConnection<A | BaseConnectionEvents>,
+	Events extends ValidEventTypes,
+	ConnectionType extends BaseConnection<Events | BaseConnectionEvents>,
 > {
-	constructor(readonly connection: T) {}
+	constructor(readonly connection: ConnectionType) {}
 
 	/** Returns a PeerConnection object set up correctly (for data, media). */
 	startConnection(options: any) {
@@ -88,9 +93,9 @@ export class Negotiator<
 					logger.log(
 						"iceConnectionState is failed, closing connections to " + peerId,
 					);
-					this.connection.emit(
-						"error",
-						new Error("Negotiation of connection to " + peerId + " failed."),
+					this.connection.emitError(
+						BaseConnectionErrorType.NegotiationFailed,
+						"Negotiation of connection to " + peerId + " failed.",
 					);
 					this.connection.close();
 					break;
@@ -98,9 +103,9 @@ export class Negotiator<
 					logger.log(
 						"iceConnectionState is closed, closing connections to " + peerId,
 					);
-					this.connection.emit(
-						"error",
-						new Error("Connection to " + peerId + " closed."),
+					this.connection.emitError(
+						BaseConnectionErrorType.ConnectionClosed,
+						"Connection to " + peerId + " closed.",
 					);
 					this.connection.close();
 					break;

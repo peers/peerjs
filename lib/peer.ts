@@ -1,4 +1,3 @@
-import { EventEmitter } from "eventemitter3";
 import { util } from "./util";
 import logger, { LogLevel } from "./logger";
 import { Socket } from "./socket";
@@ -7,19 +6,21 @@ import type { DataConnection } from "./dataconnection/DataConnection";
 import {
 	ConnectionType,
 	PeerErrorType,
-	SocketEventType,
 	ServerMessageType,
+	SocketEventType,
 } from "./enums";
 import type { ServerMessage } from "./servermessage";
 import { API } from "./api";
 import type {
+	CallOption,
 	PeerConnectOption,
 	PeerJSOption,
-	CallOption,
 } from "./optionInterfaces";
 import { BinaryPack } from "./dataconnection/BufferedConnection/BinaryPack";
 import { Raw } from "./dataconnection/BufferedConnection/Raw";
 import { Json } from "./dataconnection/BufferedConnection/Json";
+
+import { EventEmitterWithError, PeerError } from "./peerError";
 
 class PeerOptions implements PeerJSOption {
 	/**
@@ -66,31 +67,17 @@ class PeerOptions implements PeerJSOption {
 	serializers?: SerializerMapping;
 }
 
-class PeerError extends Error {
-	constructor(type: PeerErrorType, err: Error | string) {
-		if (typeof err === "string") {
-			super(err);
-		} else {
-			super();
-			Object.assign(this, err);
-		}
+export { type PeerOptions };
 
-		this.type = type;
-	}
-
-	type: PeerErrorType;
-}
-export type { PeerError, PeerOptions };
-
-export type SerializerMapping = {
+export interface SerializerMapping {
 	[key: string]: new (
 		peerId: string,
 		provider: Peer,
 		options: any,
 	) => DataConnection;
-};
+}
 
-export type PeerEvents = {
+export interface PeerEvents {
 	/**
 	 * Emitted when a connection to the PeerServer is established.
 	 *
@@ -118,12 +105,12 @@ export type PeerEvents = {
 	 *
 	 * Errors from the underlying socket and PeerConnections are forwarded here.
 	 */
-	error: (error: PeerError) => void;
-};
+	error: (error: PeerError<`${PeerErrorType}`>) => void;
+}
 /**
  * A peer who can initiate connections with other peers.
  */
-export class Peer extends EventEmitter<PeerEvents> {
+export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	private static readonly DEFAULT_KEY = "peerjs";
 
 	protected readonly _serializers: SerializerMapping = {
@@ -500,7 +487,7 @@ export class Peer extends EventEmitter<PeerEvents> {
 	 * @param peer The brokering ID of the remote peer (their {@apilink Peer.id}).
 	 * @param options for specifying details about Peer Connection
 	 */
-	connect(peer: string, options: PeerConnectOption): DataConnection {
+	connect(peer: string, options: PeerConnectOption = {}): DataConnection {
 		options = {
 			serialization: "default",
 			...options,
@@ -638,13 +625,6 @@ export class Peer extends EventEmitter<PeerEvents> {
 		} else {
 			this.disconnect();
 		}
-	}
-
-	/** Emits a typed error message. */
-	emitError(type: PeerErrorType, err: string | Error): void {
-		logger.error("Error:", err);
-
-		this.emit("error", new PeerError(type, err));
 	}
 
 	/**
