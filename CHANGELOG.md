@@ -1,3 +1,10 @@
+## [1.5.2](https://github.com/peers/peerjs/compare/v1.5.1...v1.5.2) (2023-12-05)
+
+
+### Bug Fixes
+
+* support Blobs nested in objects ([7956dd6](https://github.com/peers/peerjs/commit/7956dd640388fce62c83453d56e1a20aec2212b2)), closes [#1163](https://github.com/peers/peerjs/issues/1163)
+
 ## [1.5.1](https://github.com/peers/peerjs/compare/v1.5.0...v1.5.1) (2023-09-23)
 
 
