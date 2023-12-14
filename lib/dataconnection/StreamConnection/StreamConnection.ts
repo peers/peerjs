@@ -1,6 +1,6 @@
-import logger from "../../logger.js";
-import type { Peer } from "../../peer.js";
-import { DataConnection } from "../DataConnection.js";
+import logger from "../../logger";
+import type { Peer } from "../../peer";
+import { DataConnection } from "../DataConnection";
 
 export abstract class StreamConnection extends DataConnection {
 	private _CHUNK_SIZE = 1024 * 8 * 4;

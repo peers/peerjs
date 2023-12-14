@@ -1,6 +1,6 @@
 import { decodeMultiStream, Encoder } from "@msgpack/msgpack";
-import { StreamConnection } from "./StreamConnection.js";
-import type { Peer } from "../../peer.js";
+import { StreamConnection } from "./StreamConnection";
+import type { Peer } from "../../peer";
 
 export class MsgPack extends StreamConnection {
 	readonly serialization = "MsgPack";
