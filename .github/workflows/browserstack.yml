@@ -24,7 +24,7 @@ jobs:
       # The next 3 steps are for building the web application to be tested and starting the web server on the runner environment
 
       - name: "Checkout the repository"
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: "Building web application to be tested"
         run: npm install && npm run build
