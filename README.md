@@ -21,7 +21,7 @@ Here's an example application that uses both media and data connections: https:/
   <br>
   <sub><b>We now have a Discord Channel</b></sub>
   <br>
-  <sub>There we plan to discuss roadmaps, feature requests, and more<br><a href="https://discord.com/invite/4QWgSz4hTC">Join us today</a></sub>
+  <sub>There we plan to discuss roadmaps, feature requests, and more<br><a href="https://discord.gg/Ud2PvAtK37">Join us today</a></sub>
 </p>
 
 ---
