@@ -4,7 +4,9 @@ import type { Peer } from "../../peer.js";
 
 export class MsgPack extends StreamConnection {
 	readonly serialization = "MsgPack";
-	private _encoder = new Encoder();
+  // null を無視するために true を渡す
+	private _encoder = new Encoder(
+    undefined, undefined, undefined, undefined, undefined, undefined, true);
 
 	constructor(peerId: string, provider: Peer, options: any) {
 		super(peerId, provider, options);

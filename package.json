@@ -176,6 +176,7 @@
 		"check": "tsc --noEmit && tsc -p e2e/tsconfig.json --noEmit",
 		"watch": "parcel watch",
 		"build": "rm -rf dist && parcel build",
+    "clean": "rm -rf .parcel-cache dist",
 		"prepublishOnly": "npm run build",
 		"test": "jest",
 		"test:watch": "jest --watch",
@@ -218,7 +219,7 @@
 		"@msgpack/msgpack": "^2.8.0",
 		"cbor-x": "1.5.4",
 		"eventemitter3": "^4.0.7",
-		"peerjs-js-binarypack": "^2.1.0",
+		"peerjs-js-binarypack": "file:../js-binarypack",
 		"webrtc-adapter": "^8.0.0"
 	},
 	"alias": {
