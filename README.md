@@ -15,7 +15,7 @@ Here's an example application that uses both media and data connections: https:/
 <p align="center">
   <sup>Special Announcement:</sup>
   <br>
-  <a href="https://discord.gg/mpWSRUhG7e">
+  <a href="https://discord.gg/Ud2PvAtK37">
     <img width="70px" src="https://assets-global.website-files.com/6257adef93867e50d84d30e2/625e5fcef7ab80b8c1fe559e_Discord-Logo-Color.png">
   </a>
   <br>
