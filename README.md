@@ -16,7 +16,7 @@ Here's an example application that uses both media and data connections: https:/
   <sup>Special Announcement:</sup>
   <br>
   <a href="https://discord.gg/Ud2PvAtK37">
-    <img width="70px" src="https://assets-global.website-files.com/6257adef93867e50d84d30e2/625e5fcef7ab80b8c1fe559e_Discord-Logo-Color.png">
+    <img width="70px" src="https://assets-global.website-files.com/6257adef93867e50d84d30e2/625e5fcef7ab80b8c1fe559e_Discord-Logo-Color.png" />
   </a>
   <br>
   <sub><b>We now have a Discord Channel</b></sub>
@@ -127,7 +127,7 @@ We test PeerJS against these versions of Chrome, Edge, Firefox, and Safari with 
 It may work in other and older browsers, but we don't officially support them.
 Changes to browser support will be a breaking change going forward.
 
-> [!NOTE]  
+> [!NOTE]
 > Firefox 102+ is required for CBOR / MessagePack support.
 
 ## FAQ
