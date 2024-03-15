@@ -155,7 +155,7 @@
 
 - added: TURN server to default config
 
-- fixed: emit error message, then destory/disconnect when error occured
+- fixed: emit error message, then destroy/disconnect when error occurred
 - fixed: use `peerjs-js-binarypack` instead of `js-binarypack`
 - fixed: sending large files via DataConnection #121
 
