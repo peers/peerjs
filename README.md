@@ -1,15 +1,30 @@
 # PeerJS: Simple peer-to-peer with WebRTC
 
-### https://t.me/joinchat/VWI0UBxnG7f7_DV7
-
 [![Backers on Open Collective](https://opencollective.com/peer/backers/badge.svg)](#backers)
 [![Sponsors on Open Collective](https://opencollective.com/peer/sponsors/badge.svg)](#sponsors)
+[![Discord](https://img.shields.io/discord/1016419835455996076?color=5865F2&label=Discord&logo=discord&logoColor=white)](https://discord.gg/Ud2PvAtK37)
 
 PeerJS provides a complete, configurable, and easy-to-use peer-to-peer API built on top of WebRTC, supporting both data channels and media streams.
 
 ## Live Example
 
 Here's an example application that uses both media and data connections: https://glitch.com/~peerjs-video. The example also uses its own [PeerServer](https://github.com/peers/peerjs-server).
+
+---
+
+<p align="center">
+  <sup>Special Announcement:</sup>
+  <br>
+  <a href="https://discord.gg/Ud2PvAtK37">
+    <img width="70px" src="https://assets-global.website-files.com/6257adef93867e50d84d30e2/625e5fcef7ab80b8c1fe559e_Discord-Logo-Color.png" />
+  </a>
+  <br>
+  <sub><b>We now have a Discord Channel</b></sub>
+  <br>
+  <sub>There we plan to discuss roadmaps, feature requests, and more<br><a href="https://discord.gg/Ud2PvAtK37">Join us today</a></sub>
+</p>
+
+---
 
 ## Setup
 
@@ -112,7 +127,7 @@ We test PeerJS against these versions of Chrome, Edge, Firefox, and Safari with 
 It may work in other and older browsers, but we don't officially support them.
 Changes to browser support will be a breaking change going forward.
 
-> [!NOTE]  
+> [!NOTE]
 > Firefox 102+ is required for CBOR / MessagePack support.
 
 ## FAQ

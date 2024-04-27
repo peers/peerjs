@@ -1,10 +1,8 @@
-## [1.5.2-rc.1](https://github.com/peers/peerjs/compare/v1.5.1...v1.5.2-rc.1) (2023-12-03)
+## [1.5.2](https://github.com/peers/peerjs/compare/v1.5.1...v1.5.2) (2023-12-05)
 
 
 ### Bug Fixes
 
-* `close` event was not triggered reliably ([#860](https://github.com/peers/peerjs/issues/860)) ([ec1d5ae](https://github.com/peers/peerjs/commit/ec1d5ae8436b5265a59ef277e3fa05608f19f1ae)), closes [#636](https://github.com/peers/peerjs/issues/636)
-* **datachannel:** sending order is now preserved correctly ([18d491a](https://github.com/peers/peerjs/commit/18d491a83df759f26c08d1bb10d6011891eb2efc)), closes [#746](https://github.com/peers/peerjs/issues/746)
 * support Blobs nested in objects ([7956dd6](https://github.com/peers/peerjs/commit/7956dd640388fce62c83453d56e1a20aec2212b2)), closes [#1163](https://github.com/peers/peerjs/issues/1163)
 
 ## [1.5.1](https://github.com/peers/peerjs/compare/v1.5.0...v1.5.1) (2023-09-23)
@@ -157,7 +155,7 @@
 
 - added: TURN server to default config
 
-- fixed: emit error message, then destory/disconnect when error occured
+- fixed: emit error message, then destroy/disconnect when error occurred
 - fixed: use `peerjs-js-binarypack` instead of `js-binarypack`
 - fixed: sending large files via DataConnection #121
 
