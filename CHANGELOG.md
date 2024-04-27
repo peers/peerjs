@@ -1,3 +1,14 @@
+## [1.5.3-rc.1](https://github.com/peers/peerjs/compare/v1.5.2...v1.5.3-rc.1) (2024-04-27)
+
+
+### Bug Fixes
+
+* `close` event was not triggered reliably ([#860](https://github.com/peers/peerjs/issues/860)) ([ec1d5ae](https://github.com/peers/peerjs/commit/ec1d5ae8436b5265a59ef277e3fa05608f19f1ae)), closes [#636](https://github.com/peers/peerjs/issues/636)
+* **datachannel:** sending order is now preserved correctly ([18d491a](https://github.com/peers/peerjs/commit/18d491a83df759f26c08d1bb10d6011891eb2efc)), closes [#746](https://github.com/peers/peerjs/issues/746)
+* navigator is not defined ([305a180](https://github.com/peers/peerjs/commit/305a180a62146f395b147fe9ffbb8f6aedbc12e9))
+* navigator is not defined. ([6f85dd3](https://github.com/peers/peerjs/commit/6f85dd353d2edc92a676f94ae6b748aedff6e37b))
+* remove need for `unsafe-eval` ([f1857fe](https://github.com/peers/peerjs/commit/f1857fe796790c85255e71869e19918e22acc72f))
+
 ## [1.5.2](https://github.com/peers/peerjs/compare/v1.5.1...v1.5.2) (2023-12-05)
 
 
