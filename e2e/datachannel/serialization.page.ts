@@ -1,4 +1,7 @@
 import { browser, $ } from "@wdio/globals";
+
+const { BYPASS_WAF } = process.env;
+
 class SerializationPage {
 	get sendBtn() {
 		return $("button[id='send-btn']");
@@ -40,13 +43,13 @@ class SerializationPage {
 	async open(testFile: string, serialization: string) {
 		await browser.switchWindow("Alice");
 		await browser.url(
-			`/e2e/datachannel/serialization.html?testfile=${testFile}&serialization=${serialization}#Alice`,
+			`/e2e/datachannel/serialization.html?testfile=${testFile}&serialization=${serialization}&key=${BYPASS_WAF}#Alice`,
 		);
 		await this.connectBtn.waitForEnabled();
 
 		await browser.switchWindow("Bob");
 		await browser.url(
-			`/e2e/datachannel/serialization.html?testfile=${testFile}#Bob`,
+			`/e2e/datachannel/serialization.html?testfile=${testFile}&key=${BYPASS_WAF}#Bob`,
 		);
 		await this.connectBtn.waitForEnabled();
 	}

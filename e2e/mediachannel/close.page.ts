@@ -1,4 +1,7 @@
 import { browser, $ } from "@wdio/globals";
+
+const { BYPASS_WAF } = process.env;
+
 class SerializationPage {
 	get receiverId() {
 		return $("input[id='receiver-id']");
@@ -35,11 +38,11 @@ class SerializationPage {
 
 	async open() {
 		await browser.switchWindow("Alice");
-		await browser.url(`/e2e/mediachannel/close.html#Alice`);
+		await browser.url(`/e2e/mediachannel/close.html?key=${BYPASS_WAF}#Alice`);
 		await this.callBtn.waitForEnabled();
 
 		await browser.switchWindow("Bob");
-		await browser.url(`/e2e/mediachannel/close.html#Bob`);
+		await browser.url(`/e2e/mediachannel/close.html?key=${BYPASS_WAF}#Bob`);
 		await this.callBtn.waitForEnabled();
 	}
 	async init() {
