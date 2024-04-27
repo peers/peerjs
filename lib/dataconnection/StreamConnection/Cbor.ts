@@ -1,5 +1,5 @@
 import type { Peer } from "../../peer.js";
-import { Decoder, Encoder } from "cbor-x";
+import { Decoder, Encoder } from "cbor-x/index-no-eval";
 import { StreamConnection } from "./StreamConnection.js";
 
 const NullValue = Symbol.for(null);
