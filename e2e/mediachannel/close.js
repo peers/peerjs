@@ -3,6 +3,8 @@
  */
 const Peer = window.peerjs.Peer;
 
+const params = new URLSearchParams(document.location.search);
+
 document.getElementsByTagName("title")[0].innerText =
 	window.location.hash.substring(1);
 
@@ -14,7 +16,7 @@ const messages = document.getElementById("messages");
 const errorMessage = document.getElementById("error-message");
 
 const stream = window["sender-stream"].captureStream(30);
-const peer = new Peer({ debug: 3 });
+const peer = new Peer({ debug: 3, key: params.get("key") });
 /**
  * @type {import("peerjs").MediaConnection}
  */

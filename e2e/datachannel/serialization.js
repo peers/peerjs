@@ -32,7 +32,11 @@ const serialization = params.get("serialization");
 	const result = document.getElementById("result");
 	const errorMessage = document.getElementById("error-message");
 
-	const peer = new Peer({ debug: 3, serializers });
+	const peer = new Peer({
+		debug: 3,
+		serializers,
+		key: params.get("key"),
+	});
 	const received = [];
 	/**
 	 * @type {import("../../lib/exports.js").DataConnection}
