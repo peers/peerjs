@@ -12,9 +12,18 @@ import type { ServerMessage } from "../servermessage";
 import type { EventsWithError } from "../peerError";
 import { randomToken } from "../utils/randomToken";
 
+export interface SendData {
+	id: number,
+	total: number
+}
+
+export interface ChunkSentNotification extends SendData {
+	n: number
+}
+
 export interface DataConnectionEvents
 	extends EventsWithError<DataConnectionErrorType | BaseConnectionErrorType>,
-		BaseConnectionEvents<DataConnectionErrorType | BaseConnectionErrorType> {
+	BaseConnectionEvents<DataConnectionErrorType | BaseConnectionErrorType> {
 	/**
 	 * Emitted when data is received from the remote peer.
 	 */
@@ -23,6 +32,13 @@ export interface DataConnectionEvents
 	 * Emitted when the connection is established and ready-to-use.
 	 */
 	open: () => void;
+
+	/**
+	 * Emitted when the connection sends out a chunk of data to the remote peer.
+	 * Currently Only implemented by BufferedNotifyConnection.
+	 */
+	sentChunk: (chunk: ChunkSentNotification) => void;
+
 }
 
 /**
@@ -126,7 +142,24 @@ export abstract class DataConnection extends BaseConnection<
 
 	protected abstract _send(data: any, chunked: boolean): void | Promise<void>;
 
-	/** Allows user to send data. */
+
+	/**
+	 * Allows user to send data.
+	 * @param data 
+	 * @param chunked 
+	 * @example
+	 * 
+	 * 	const nextId = conn.nextID;
+	 *	conn.on('sentChunk', (chunk) => {
+	 *		if (chunk.id === nextId) {
+	 *			console.log('Sent chunk', chunk);
+	 *			if (chunk.n == chunk.total - 1) {
+	 *				console.log('Sent last chunk');
+	 *			}
+	 *		}
+	 *	});
+	 *	conn.send(arr);
+	 */
 	public send(data: any, chunked = false) {
 		if (!this.open) {
 			this.emitError(

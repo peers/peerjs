@@ -1,4 +1,4 @@
-import { BinaryPackChunker, concatArrayBuffers } from "./binaryPackChunker";
+import { BinaryPackChunk, BinaryPackChunker, concatArrayBuffers, isBinaryPackChunk } from "./binaryPackChunker";
 import logger from "../../logger";
 import type { Peer } from "../../peer";
 import { BufferedConnection } from "./BufferedConnection";
@@ -27,33 +27,29 @@ export class BinaryPack extends BufferedConnection {
 	}
 
 	// Handles a DataChannel message.
-	protected override _handleDataMessage({ data }: { data: Uint8Array }): void {
-		const deserializedData = unpack(data);
+    protected _handleDataMessage({ data }: { data: Uint8Array }): void {
+        const deserializedData = unpack(data);
 
-		// PeerJS specific message
-		const peerData = deserializedData["__peerData"];
-		if (peerData) {
-			if (peerData.type === "close") {
-				this.close();
-				return;
-			}
+        // PeerJS specific message
+        const peerData = deserializedData["__peerData"];
+        if (peerData) {
+            if (peerData.type === "close") {
+                this.close();
+                return;
+            }
+        }
 
-			// Chunked data -- piece things back together.
-			// @ts-ignore
-			this._handleChunk(deserializedData);
-			return;
-		}
+        if (isBinaryPackChunk(deserializedData)) {
+            this._handleChunk(deserializedData);
+            return;
+        }
 
-		this.emit("data", deserializedData);
-	}
+        this.emit("data", deserializedData);
+    }
 
-	private _handleChunk(data: {
-		__peerData: number;
-		n: number;
-		total: number;
-		data: ArrayBuffer;
-	}): void {
-		const id = data.__peerData;
+
+    private _handleChunk(data: BinaryPackChunk): void {
+        const id = data.id;
 		const chunkInfo = this._chunkedData[id] || {
 			data: [],
 			count: 0,

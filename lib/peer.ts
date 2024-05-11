@@ -21,6 +21,7 @@ import { Raw } from "./dataconnection/BufferedConnection/Raw";
 import { Json } from "./dataconnection/BufferedConnection/Json";
 
 import { EventEmitterWithError, PeerError } from "./peerError";
+import { BufferedNotifyConnection } from "./exports";
 
 class PeerOptions implements PeerJSOption {
 	/**
@@ -118,6 +119,7 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		json: Json,
 		binary: BinaryPack,
 		"binary-utf8": BinaryPack,
+		notify: BufferedNotifyConnection,
 
 		default: BinaryPack,
 	};
