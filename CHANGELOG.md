@@ -1,3 +1,11 @@
+## [1.5.3](https://github.com/peers/peerjs/compare/v1.5.2...v1.5.3) (2024-05-11)
+
+
+### Bug Fixes
+
+* navigator is not defined. ([#1202](https://github.com/peers/peerjs/issues/1202)) ([4b7a74d](https://github.com/peers/peerjs/commit/4b7a74d74c50461fde80e84992d88a9d564dbe72)), closes [#1165](https://github.com/peers/peerjs/issues/1165)
+* remove need for `unsafe-eval` ([3fb31b3](https://github.com/peers/peerjs/commit/3fb31b316b8f4d699d087e1b465e908688be3872))
+
 ## [1.5.2](https://github.com/peers/peerjs/compare/v1.5.1...v1.5.2) (2023-12-05)
 
 
