@@ -31,6 +31,6 @@ jobs:
       # - run: npm run lint
       - run: npm run coverage
       - name: Publish code coverage to CodeClimate
-        uses: paambaati/codeclimate-action@v5.0.0
+        uses: paambaati/codeclimate-action@v6.0.0
         env:
           CC_TEST_REPORTER_ID: ${{secrets.CC_TEST_REPORTER_ID}}
