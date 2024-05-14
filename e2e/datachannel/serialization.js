@@ -10,10 +10,8 @@ const serialization = params.get("serialization");
 (async () => {
 	let serializers = {};
 	try {
-		const { Cbor } = await import("/dist/serializer.cbor.mjs");
 		const { MsgPack } = await import("/dist/serializer.msgpack.mjs");
 		serializers = {
-			Cbor,
 			MsgPack,
 		};
 	} catch (e) {
