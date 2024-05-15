@@ -1,3 +1,11 @@
+## [1.5.4](https://github.com/peers/peerjs/compare/v1.5.3...v1.5.4) (2024-05-14)
+
+
+### Bug Fixes
+
+* **deps:** update dependency webrtc-adapter to v9 ([#1266](https://github.com/peers/peerjs/issues/1266)) ([5536abf](https://github.com/peers/peerjs/commit/5536abf8d6345c248df875e0e22c520a20cb2919))
+* remove CBOR ([badc9e8](https://github.com/peers/peerjs/commit/badc9e8bc4f7ce5517de3a58abcaec1d566eccf5)), closes [#1271](https://github.com/peers/peerjs/issues/1271) [#1247](https://github.com/peers/peerjs/issues/1247) [#1271](https://github.com/peers/peerjs/issues/1271)
+
 ## [1.5.3](https://github.com/peers/peerjs/compare/v1.5.2...v1.5.3) (2024-05-11)
 
 
