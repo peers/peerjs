@@ -451,10 +451,10 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 					// Store for possible later use
 					this._storeMessage(connectionId, message);
 				}
-				
-			/**For listening to  custom events */	
-				if(typeof type === 'string') {						
-					this.emit(type, payload);						
+
+				/**For listening to  custom events */
+				if (typeof type === "string") {
+					this.emit(type, payload);
 				} else {
 					logger.warn("You received an unrecognized message:", message);
 				}
@@ -748,10 +748,7 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 			.catch((error) => this._abort(PeerErrorType.ServerError, error));
 	}
 
-
 	_emit(type, payload) {
 		this.socket.send({ type, payload });
 	}
-
-	
 }

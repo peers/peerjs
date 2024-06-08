@@ -58,7 +58,6 @@ export enum PeerErrorType {
 	 * Native WebRTC errors.
 	 */
 	WebRTC = "webrtc",
-
 }
 
 export enum BaseConnectionErrorType {
