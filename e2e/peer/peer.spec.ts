@@ -17,4 +17,9 @@ describe("Peer", () => {
 		await P.waitForMessage('{"type":"disconnected"}');
 		expect(await P.errorMessage.getText()).toBe("");
 	});
+	it("should emit an error, when the remote peer is unavailable", async () => {
+		await P.open("peer-unavailable");
+		await P.waitForMessage('{"type":"peer-unavailable"}');
+		expect(await P.errorMessage.getText()).toBe('{"type":"peer-unavailable"}');
+	});
 });
