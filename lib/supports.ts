@@ -5,7 +5,10 @@ const webRTCAdapter: typeof webRTCAdapter_import =
 	webRTCAdapter_import.default || webRTCAdapter_import;
 
 export const Supports = new (class {
-	readonly isIOS = ["iPad", "iPhone", "iPod"].includes(navigator.platform);
+	readonly isIOS =
+		typeof navigator !== "undefined"
+			? ["iPad", "iPhone", "iPod"].includes(navigator.platform)
+			: false;
 	readonly supportedBrowsers = ["firefox", "chrome", "safari"];
 
 	readonly minFirefoxVersion = 59;

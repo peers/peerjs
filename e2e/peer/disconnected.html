@@ -17,9 +17,11 @@
 			 */
 			const Peer = window.peerjs.Peer;
 
+			const params = new URLSearchParams(document.location.search);
+
 			const messages = document.getElementById("messages");
 
-			const peer = new Peer();
+			const peer = new Peer({ key: params.get("key") });
 			peer
 				.once(
 					"error",

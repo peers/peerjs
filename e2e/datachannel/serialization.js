@@ -10,10 +10,8 @@ const serialization = params.get("serialization");
 (async () => {
 	let serializers = {};
 	try {
-		const { Cbor } = await import("/dist/serializer.cbor.mjs");
 		const { MsgPack } = await import("/dist/serializer.msgpack.mjs");
 		serializers = {
-			Cbor,
 			MsgPack,
 		};
 	} catch (e) {
@@ -32,7 +30,11 @@ const serialization = params.get("serialization");
 	const result = document.getElementById("result");
 	const errorMessage = document.getElementById("error-message");
 
-	const peer = new Peer({ debug: 3, serializers });
+	const peer = new Peer({
+		debug: 3,
+		serializers,
+		key: params.get("key"),
+	});
 	const received = [];
 	/**
 	 * @type {import("../../lib/exports.js").DataConnection}

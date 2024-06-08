@@ -34,6 +34,8 @@ jobs:
 
       - name: "Running test on BrowserStack" # Invokes the actual test script that would run on BrowserStack browsers
         run: npm run e2e:bstack # See sample test script above
+        env:
+          BYPASS_WAF: ${{ secrets.BYPASS_WAF }}
 
       - name: "BrowserStackLocal Stop" # Terminating the BrowserStackLocal tunnel connection
         uses: browserstack/github-actions/setup-local@master

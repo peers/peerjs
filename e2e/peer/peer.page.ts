@@ -1,4 +1,7 @@
 import { browser, $ } from "@wdio/globals";
+
+const { BYPASS_WAF } = process.env;
+
 class PeerPage {
 	get messages() {
 		return $("div[id='messages']");
@@ -19,7 +22,7 @@ class PeerPage {
 	}
 
 	async open(test: string) {
-		await browser.url(`/e2e/peer/${test}.html`);
+		await browser.url(`/e2e/peer/${test}.html?key=${BYPASS_WAF}`);
 	}
 }
 
