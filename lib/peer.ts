@@ -453,15 +453,8 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 				}
 				
 			/**For listening to  custom events */	
-				if(typeof type === 'string') {
-					try{
-						const data = JSON.parse(payload);
-						this.emit(type, data);
-					}catch(err){
-						this.emitError(PeerErrorType.InvalidJson,"Invalid JSON")
-						logger.warn("Invalid JSON:", err)
-					}
-					
+				if(typeof type === 'string') {						
+					this.emit(type, payload);						
 				} else {
 					logger.warn("You received an unrecognized message:", message);
 				}

@@ -58,10 +58,7 @@ export enum PeerErrorType {
 	 * Native WebRTC errors.
 	 */
 	WebRTC = "webrtc",
-	/**
-	 * The payload is not a valid JSON
-	 */
-	InvalidJson = "Invalid JSON",
+
 }
 
 export enum BaseConnectionErrorType {
