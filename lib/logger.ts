@@ -24,6 +24,10 @@ export enum LogLevel {
 	 * Prints all logs.
 	 */
 	All,
+  /**
+   * prints data Chunks
+   */
+  DataChunk
 }
 
 class Logger {
@@ -35,6 +39,12 @@ class Logger {
 
 	set logLevel(logLevel: LogLevel) {
 		this._logLevel = logLevel;
+	}
+
+	chunk(...args: any[]) {
+		if (this._logLevel >= LogLevel.DataChunk) {
+			this._print(LogLevel.DataChunk, ...args);
+		}
 	}
 
 	log(...args: any[]) {

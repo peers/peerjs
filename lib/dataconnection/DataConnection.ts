@@ -11,6 +11,7 @@ import { BaseConnection, type BaseConnectionEvents } from "../baseconnection";
 import type { ServerMessage } from "../servermessage";
 import type { EventsWithError } from "../peerError";
 import { randomToken } from "../utils/randomToken";
+import { BinaryPackChunker } from "./BufferedConnection/binaryPackChunker";
 
 export interface DataConnectionEvents
 	extends EventsWithError<DataConnectionErrorType | BaseConnectionErrorType>,
@@ -38,6 +39,7 @@ export abstract class DataConnection extends BaseConnection<
 	private _negotiator: Negotiator<DataConnectionEvents, this>;
 	abstract readonly serialization: string;
 	readonly reliable: boolean;
+	messageSize =new BinaryPackChunker().chunkedMTU;
 
 	public get type() {
 		return ConnectionType.Data;
@@ -62,13 +64,45 @@ export abstract class DataConnection extends BaseConnection<
 		);
 	}
 
+	protected parseMaximumSize(description?: RTCSessionDescription): number {
+		const remoteLines = description?.sdp?.split('\r\n') ?? [];
+		logger.log("peerDescription\n" +remoteLines)
+		let remoteMaximumSize = 0;
+		for (const line of remoteLines) {
+			if (line.startsWith('a=max-message-size:')) {
+				const string = line.substring('a=max-message-size:'.length);
+				remoteMaximumSize = parseInt(string, 10);
+				break;
+			}
+		}
+
+		if (remoteMaximumSize === 0) {
+			logger.log('SENDER: No max message size session description');
+		}
+
+		// 16 kb should be supported on all clients so we can use it
+		// even if no max message is set
+		return Math.max(remoteMaximumSize, (new BinaryPackChunker()).chunkedMTU);
+	}
+
+	protected async updateMaximumMessageSize(): Promise<void> {
+		const local = await this.peerConnection!.localDescription;
+		const remote = await this.peerConnection!.remoteDescription;
+		const localMaximumSize = this.parseMaximumSize(local);
+		const remoteMaximumSize = this.parseMaximumSize(remote);
+		this.messageSize = Math.min(localMaximumSize, remoteMaximumSize);
+
+		logger.log(`SENDER: Updated max message size: ${this.messageSize} Local: ${localMaximumSize} Remote: ${remoteMaximumSize}`);
+	}
+
 	/** Called by the Negotiator when the DataChannel is ready. */
 	override _initializeDataChannel(dc: RTCDataChannel): void {
 		this.dataChannel = dc;
 
-		this.dataChannel.onopen = () => {
+		this.dataChannel.onopen = async () => {
 			logger.log(`DC#${this.connectionId} dc connection success`);
 			this._open = true;
+			await this.updateMaximumMessageSize()
 			this.emit("open");
 		};
 
