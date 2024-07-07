@@ -29,13 +29,10 @@ export interface BaseConnectionEvents<
 	iceStateChanged: (state: RTCIceConnectionState) => void;
 }
 
-export abstract class BaseConnection<
-	SubClassEvents extends ValidEventTypes,
-	ErrorType extends string = never,
-> extends EventEmitterWithError<
-	ErrorType | BaseConnectionErrorType,
-	SubClassEvents & BaseConnectionEvents<BaseConnectionErrorType | ErrorType>
-> {
+export abstract class BaseConnection<SubClassEvents extends ValidEventTypes,ErrorType extends string = never> extends
+	EventEmitterWithError<
+		ErrorType | BaseConnectionErrorType, SubClassEvents & BaseConnectionEvents<BaseConnectionErrorType | ErrorType>
+	> {
 	protected _open = false;
 
 	/**
