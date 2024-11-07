@@ -97,11 +97,11 @@ export class Negotiator<
 					logger.log(
 						"iceConnectionState is failed, closing connections to " + peerId,
 					);
-					this.connection.emitError(
-						BaseConnectionErrorType.NegotiationFailed,
-						"Negotiation of connection to " + peerId + " failed.",
-					);
-					this.connection.close();
+					// this.connection.emitError(
+					// 	BaseConnectionErrorType.NegotiationFailed,
+					// 	"Negotiation of connection to " + peerId + " failed.",
+					// );
+					// this.connection.close();
 					break;
 				case "closed":
 					logger.log(
