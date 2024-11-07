@@ -25,3 +25,4 @@ browserstack.err
 .tscache
 test/public
 .vscode/
+.npmrc
