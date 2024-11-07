@@ -36,6 +36,10 @@ export class Negotiator<
 
 			const config: RTCDataChannelInit = { ordered: !!options.reliable };
 
+			if (!config.ordered) {
+				config.maxRetransmits = 0;
+			}
+
 			const dataChannel = peerConnection.createDataChannel(
 				dataConnection.label,
 				config,
