@@ -1,0 +1,3 @@
+# Create Github Personal Access Token (classic) with write:packages scope
+# at https://github.com/settings/tokens to be able to publish packages to Github npm registry locally.
+//npm.pkg.github.com/:_authToken=XXXXXXX

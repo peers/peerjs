@@ -1,6 +1,6 @@
 {
-	"name": "peerjs",
-	"version": "1.5.4",
+	"name": "@deadsetbit/peerjs",
+	"version": "1.5.4-fork.0",
 	"keywords": [
 		"peerjs",
 		"webrtc",
@@ -14,7 +14,10 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/peers/peerjs"
+		"url": "https://github.com/deadsetbit/peerjs"
+	},
+	"publishConfig": {
+		"registry": "https://npm.pkg.github.com"
 	},
 	"license": "MIT",
 	"contributors": [
