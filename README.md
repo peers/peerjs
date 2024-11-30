@@ -48,6 +48,12 @@ const peer = new Peer("pick-an-id");
 // You can pick your own id or omit the id if you want to get a random one from the server.
 ```
 
+**Socketio?**
+* not supported on the official peer server  you need to launch your own using this [link](https://github.com/Judimax/peerjs-server/tree/PR-socketio-support)
+```js
+const peer = new Peer("pick-an-id",{clientType:"socketio"});
+```
+
 ## Data connections
 
 **Connect**
