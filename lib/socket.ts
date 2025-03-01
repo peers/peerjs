@@ -1,7 +1,8 @@
 import { EventEmitter } from "eventemitter3";
 import logger from "./logger";
 import { ServerMessageType, SocketEventType } from "./enums";
-import { version } from "../package.json";
+
+const version = process.env.npm_package_version;
 
 /**
  * An abstraction on top of WebSockets to provide fastest
