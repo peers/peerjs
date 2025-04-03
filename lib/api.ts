@@ -1,7 +1,8 @@
 import { util } from "./util";
 import logger from "./logger";
 import type { PeerJSOption } from "./optionInterfaces";
-import { version } from "../package.json";
+
+const version = process.env.npm_package_version;
 
 export class API {
 	constructor(private readonly _options: PeerJSOption) {}
