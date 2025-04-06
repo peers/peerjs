@@ -19,7 +19,6 @@ import type {
 import { BinaryPack } from "./dataconnection/BufferedConnection/BinaryPack";
 import { Raw } from "./dataconnection/BufferedConnection/Raw";
 import { Json } from "./dataconnection/BufferedConnection/Json";
-
 import { EventEmitterWithError, PeerError } from "./peerError";
 
 class PeerOptions implements PeerJSOption {
@@ -106,6 +105,8 @@ export interface PeerEvents {
 	 * Errors from the underlying socket and PeerConnections are forwarded here.
 	 */
 	error: (error: PeerError<`${PeerErrorType}`>) => void;
+
+	[eventName: string]: any;
 }
 /**
  * A peer who can initiate connections with other peers.
@@ -449,6 +450,11 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 				} else if (connectionId) {
 					// Store for possible later use
 					this._storeMessage(connectionId, message);
+				}
+
+				/**For listening to  custom events */
+				if (typeof type === "string") {
+					this.emit(type, payload);
 				} else {
 					logger.warn("You received an unrecognized message:", message);
 				}
@@ -740,5 +746,9 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 			.listAllPeers()
 			.then((peers) => cb(peers))
 			.catch((error) => this._abort(PeerErrorType.ServerError, error));
+	}
+
+	_emit(type, payload) {
+		this.socket.send({ type, payload });
 	}
 }
