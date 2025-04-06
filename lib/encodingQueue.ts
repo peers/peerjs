@@ -40,7 +40,7 @@ export class EncodingQueue extends EventEmitter {
 		return this._processing;
 	}
 
-	enque(blob: Blob): void {
+	enqueue(blob: Blob): void {
 		this.queue.push(blob);
 
 		if (this.processing) return;
