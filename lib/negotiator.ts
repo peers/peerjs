@@ -345,7 +345,7 @@ export class Negotiator<
 
 		if (!peerConnection.addTrack) {
 			return logger.error(
-				`Your browser does't support RTCPeerConnection#addTrack. Ignored.`,
+				`Your browser doesn't support RTCPeerConnection#addTrack. Ignored.`,
 			);
 		}
 
