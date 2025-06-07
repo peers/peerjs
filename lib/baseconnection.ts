@@ -45,7 +45,7 @@ export abstract class BaseConnection<
 	readonly metadata: any;
 	connectionId: string;
 
-	peerConnection: RTCPeerConnection;
+	peerConnection: RTCPeerConnection | null;
 	dataChannel: RTCDataChannel;
 
 	abstract get type(): ConnectionType;
