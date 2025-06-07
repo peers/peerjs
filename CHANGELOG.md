@@ -1,3 +1,10 @@
+## [1.5.5](https://github.com/peers/peerjs/compare/v1.5.4...v1.5.5) (2025-06-07)
+
+
+### Bug Fixes
+
+* inline package version ([bd6e017](https://github.com/peers/peerjs/commit/bd6e0170c16a0dedc16a4128b81482f109b390a0)), closes [#1322](https://github.com/peers/peerjs/issues/1322)
+
 ## [1.5.4](https://github.com/peers/peerjs/compare/v1.5.3...v1.5.4) (2024-05-14)
 
 
