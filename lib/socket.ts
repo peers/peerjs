@@ -147,6 +147,13 @@ export class Socket extends EventEmitter {
 		this._socket!.send(message);
 	}
 
+	/** Exposed listening */
+	addEventListener(event: "message" | "error" | "open" | "close", callback: (event: Event) => void): void {
+		if (this._disconnected) return;
+
+		this._socket!.addEventListener(event, callback)
+	}
+
 	close(): void {
 		if (this._disconnected) {
 			return;
