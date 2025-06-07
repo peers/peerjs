@@ -4,6 +4,7 @@ import { Socket } from "./socket";
 import { MediaConnection } from "./mediaconnection";
 import type { DataConnection } from "./dataconnection/DataConnection";
 import {
+	BaseConnectionErrorType,
 	ConnectionType,
 	PeerErrorType,
 	ServerMessageType,
@@ -20,7 +21,9 @@ import { BinaryPack } from "./dataconnection/BufferedConnection/BinaryPack";
 import { Raw } from "./dataconnection/BufferedConnection/Raw";
 import { Json } from "./dataconnection/BufferedConnection/Json";
 
-import { EventEmitterWithError, PeerError } from "./peerError";
+import { PeerError, PromiseEvents } from "./peerError";
+import { EventEmitterWithPromise } from "./eventEmitterWithPromise";
+import EventEmitter from "eventemitter3";
 
 class PeerOptions implements PeerJSOption {
 	/**
@@ -77,7 +80,7 @@ export interface SerializerMapping {
 	) => DataConnection;
 }
 
-export interface PeerEvents {
+export interface PeerEvents extends PromiseEvents<string, PeerErrorType> {
 	/**
 	 * Emitted when a connection to the PeerServer is established.
 	 *
@@ -107,10 +110,87 @@ export interface PeerEvents {
 	 */
 	error: (error: PeerError<`${PeerErrorType}`>) => void;
 }
+
+export interface IPeer extends EventEmitter<PeerEvents> {
+	/**
+	 * The brokering ID of this peer
+	 *
+	 * If no ID was specified in {@apilink Peer | the constructor},
+	 * this will be `undefined` until the {@apilink PeerEvents | `open`} event is emitted.
+	 */
+	get id(): string;
+	get open(): boolean;
+	/**
+	 * A hash of all connections associated with this peer, keyed by the remote peer's ID.
+	 * @deprecated
+	 * Return type will change from Object to Map<string,[]>
+	 */
+	get connections(): Object;
+	/**
+	 * true if this peer and all of its connections can no longer be used.
+	 */
+	get destroyed(): boolean;
+	/**
+	 * Connects to the remote peer specified by id and returns a data connection.
+	 *
+	 * Make sure to listen to the `error` event of the resulting {@link DataConnection}
+	 * in case the connection fails.
+	 *
+	 * @param peer The brokering ID of the remote peer (their {@link Peer.id}).
+	 * @param options for specifying details about Peer Connection
+	 */
+	connect(peer: string, options?: PeerConnectOption): DataConnection;
+	/**
+	 * Calls the remote peer specified by id and returns a media connection.
+	 * @param peer The brokering ID of the remote peer (their peer.id).
+	 * @param stream The caller's media stream
+	 * @param options Metadata associated with the connection, passed in by whoever initiated the connection.
+	 */
+	call(
+		peer: string,
+		stream: MediaStream,
+		options?: CallOption,
+	): MediaConnection;
+	/** Retrieve a data/media connection for this peer. */
+	getConnection(
+		peerId: string,
+		connectionId: string,
+	): null | DataConnection | MediaConnection;
+	/**
+	 * Destroys the Peer: closes all active connections as well as the connection
+	 * to the server.
+	 *
+	 * :::caution
+	 * This cannot be undone; the respective peer object will no longer be able
+	 * to create or receive any connections, its ID will be forfeited on the server,
+	 * and all of its data and media connections will be closed.
+	 * :::
+	 */
+	destroy(): void;
+	/**
+	 * Disconnects the Peer's connection to the PeerServer. Does not close any
+	 *  active connections.
+	 * Warning: The peer can no longer create or accept connections after being
+	 *  disconnected. It also cannot reconnect to the server.
+	 */
+	disconnect(): void;
+	/** Attempts to reconnect with the same ID.
+	 *
+	 * Only {@apilink Peer.disconnect | disconnected peers} can be reconnected.
+	 * Destroyed peers cannot be reconnected.
+	 * If the connection fails (as an example, if the peer's old ID is now taken),
+	 * the peer's existing connections will not close, but any associated errors events will fire.
+	 */
+	reconnect(): void;
+}
+
 /**
  * A peer who can initiate connections with other peers.
  */
-export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
+export class Peer
+	extends EventEmitterWithPromise<IPeer, string, PeerErrorType, PeerEvents>
+	implements IPeer
+{
 	private static readonly DEFAULT_KEY = "peerjs";
 
 	protected readonly _serializers: SerializerMapping = {
@@ -131,18 +211,12 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	// States.
 	private _destroyed = false; // Connections have been killed
 	private _disconnected = false; // Connection to PeerServer killed but P2P connections still active
-	private _open = false; // Sockets and such are not yet open.
 	private readonly _connections: Map<
 		string,
 		(DataConnection | MediaConnection)[]
 	> = new Map(); // All connections for this peer.
 	private readonly _lostMessages: Map<string, ServerMessage[]> = new Map(); // src => [list of messages]
-	/**
-	 * The brokering ID of this peer
-	 *
-	 * If no ID was specified in {@apilink Peer | the constructor},
-	 * this will be `undefined` until the {@apilink PeerEvents | `open`} event is emitted.
-	 */
+
 	get id() {
 		return this._id;
 	}
@@ -162,11 +236,6 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		return this._socket;
 	}
 
-	/**
-	 * A hash of all connections associated with this peer, keyed by the remote peer's ID.
-	 * @deprecated
-	 * Return type will change from Object to Map<string,[]>
-	 */
 	get connections(): Object {
 		const plainConnections = Object.create(null);
 
@@ -177,15 +246,9 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		return plainConnections;
 	}
 
-	/**
-	 * true if this peer and all of its connections can no longer be used.
-	 */
 	get destroyed() {
 		return this._destroyed;
 	}
-	/**
-	 * false if there is an active connection to the PeerServer.
-	 */
 	get disconnected() {
 		return this._disconnected;
 	}
@@ -379,6 +442,16 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 					PeerErrorType.PeerUnavailable,
 					`Could not connect to peer ${peerId}`,
 				);
+				// Emit an error on all connections with this peer.
+				const connections = (this._connections.get(peerId) ?? []).filter(
+					(c) => c.peer === peerId,
+				);
+				for (const conn of connections) {
+					conn.emitError(
+						BaseConnectionErrorType.PeerUnavailable,
+						`${peerId} is unavailable`,
+					);
+				}
 				break;
 			case ServerMessageType.Offer: {
 				// we should consider switching this to CALL/CONNECT, but this is the least breaking option.
@@ -482,11 +555,6 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		return [];
 	}
 
-	/**
-	 * Connects to the remote peer specified by id and returns a data connection.
-	 * @param peer The brokering ID of the remote peer (their {@apilink Peer.id}).
-	 * @param options for specifying details about Peer Connection
-	 */
 	connect(peer: string, options: PeerConnectOption = {}): DataConnection {
 		options = {
 			serialization: "default",
@@ -512,15 +580,10 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 			options,
 		);
 		this._addConnection(peer, dataConnection);
+
 		return dataConnection;
 	}
 
-	/**
-	 * Calls the remote peer specified by id and returns a media connection.
-	 * @param peer The brokering ID of the remote peer (their peer.id).
-	 * @param stream The caller's media stream
-	 * @param options Metadata associated with the connection, passed in by whoever initiated the connection.
-	 */
 	call(
 		peer: string,
 		stream: MediaStream,
@@ -585,7 +648,6 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		this._lostMessages.delete(connection.connectionId);
 	}
 
-	/** Retrieve a data/media connection for this peer. */
 	getConnection(
 		peerId: string,
 		connectionId: string,
@@ -627,16 +689,6 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		}
 	}
 
-	/**
-	 * Destroys the Peer: closes all active connections as well as the connection
-	 * to the server.
-	 *
-	 * :::caution
-	 * This cannot be undone; the respective peer object will no longer be able
-	 * to create or receive any connections, its ID will be forfeited on the server,
-	 * and all of its data and media connections will be closed.
-	 * :::
-	 */
 	destroy(): void {
 		if (this.destroyed) {
 			return;
@@ -673,12 +725,6 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		}
 	}
 
-	/**
-	 * Disconnects the Peer's connection to the PeerServer. Does not close any
-	 *  active connections.
-	 * Warning: The peer can no longer create or accept connections after being
-	 *  disconnected. It also cannot reconnect to the server.
-	 */
 	disconnect(): void {
 		if (this.disconnected) {
 			return;
@@ -699,13 +745,6 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		this.emit("disconnected", currentId);
 	}
 
-	/** Attempts to reconnect with the same ID.
-	 *
-	 * Only {@apilink Peer.disconnect | disconnected peers} can be reconnected.
-	 * Destroyed peers cannot be reconnected.
-	 * If the connection fails (as an example, if the peer's old ID is now taken),
-	 * the peer's existing connections will not close, but any associated errors events will fire.
-	 */
 	reconnect(): void {
 		if (this.disconnected && !this.destroyed) {
 			logger.log(
