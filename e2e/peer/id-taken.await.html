@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title></title>
+		<link rel="stylesheet" href="../style.css" />
+	</head>
+	<body>
+		<h1>ID-TAKEN</h1>
+		<div id="messages"></div>
+		<div id="error-message"></div>
+		<script src="/dist/peerjs.js"></script>
+		<script type="application/javascript">
+			(async () => {
+				/**
+				 * @type {typeof import("../../lib/exports.ts").Peer}
+				 */
+				const Peer = window.peerjs.Peer;
+
+				const messages = document.getElementById("messages");
+				const errorMessage = document.getElementById("error-message");
+
+				// Peer A should be created without an error
+				const peerA = await new Peer().catch(
+					(error) => (errorMessage.textContent += JSON.stringify(error)),
+				);
+
+				// Create 10 new `Peer`s that will try to steel A's id
+				// Wait for all peers to finish
+				const steeling_peers = await Promise.allSettled(
+					Array.from({ length: 10 }, () => new Peer(peerA.id)),
+				);
+
+				if (
+					steeling_peers.every(
+						({ reason, status }) =>
+							status === "rejected" && reason.type === "unavailable-id",
+					)
+				) {
+					messages.textContent = "No ID takeover";
+				} else {
+					errorMessage.textContent += JSON.stringify(steeling_peers);
+				}
+			})();
+		</script>
+	</body>
+</html>
