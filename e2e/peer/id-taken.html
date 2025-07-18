@@ -30,7 +30,7 @@
 				)
 				.once("open", (id) => {
 					// Create 10 new `Peer`s that will try to steel A's id
-					let peers_try_to_take = Array.from(
+					const steeling_peers = Array.from(
 						{ length: 10 },
 						(_, i) =>
 							new Promise((resolve, reject) =>
@@ -47,7 +47,7 @@
 									}),
 							),
 					);
-					Promise.all(peers_try_to_take)
+					Promise.all(steeling_peers)
 						.then(() => (messages.textContent = "No ID takeover"))
 						.catch(
 							(error) => (errorMessage.textContent += JSON.stringify(error)),

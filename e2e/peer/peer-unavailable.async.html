@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title></title>
+		<link rel="stylesheet" href="../style.css" />
+	</head>
+	<body>
+		<h1>PEER-UNAVAILABLE</h1>
+		<div id="messages"></div>
+		<div id="error-message"></div>
+		<script src="/dist/peerjs.js"></script>
+		<script type="application/javascript">
+			(async () => {
+				/**
+				 * @type {typeof import("../../lib/exports.ts").Peer}
+				 */
+				const Peer = window.peerjs.Peer;
+
+				const messages = document.getElementById("messages");
+				const errors = document.getElementById("error-message");
+
+				const not_existing_peer = crypto
+					.getRandomValues(new Uint8Array(16))
+					.join("");
+
+				try {
+					const peer = await new Peer();
+					await peer.connect(not_existing_peer);
+				} catch (error) {
+					if (error.type === "peer-unavailable") {
+						messages.textContent = "Success: Peer unavailable";
+					} else {
+						errors.textContent += JSON.stringify(error);
+					}
+				}
+			})();
+		</script>
+	</body>
+</html>

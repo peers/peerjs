@@ -7,14 +7,18 @@ import {
 	ServerMessageType,
 } from "../enums";
 import type { Peer } from "../peer";
-import { BaseConnection, type BaseConnectionEvents } from "../baseconnection";
+import {
+	BaseConnection,
+	type BaseConnectionEvents,
+	IBaseConnection,
+} from "../baseconnection";
 import type { ServerMessage } from "../servermessage";
-import type { EventsWithError } from "../peerError";
 import { randomToken } from "../utils/randomToken";
 
 export interface DataConnectionEvents
-	extends EventsWithError<DataConnectionErrorType | BaseConnectionErrorType>,
-		BaseConnectionEvents<DataConnectionErrorType | BaseConnectionErrorType> {
+	extends BaseConnectionEvents<
+		DataConnectionErrorType | BaseConnectionErrorType
+	> {
 	/**
 	 * Emitted when data is received from the remote peer.
 	 */
@@ -25,21 +29,35 @@ export interface DataConnectionEvents
 	open: () => void;
 }
 
+export interface IDataConnection
+	extends IBaseConnection<DataConnectionEvents, DataConnectionErrorType> {
+	get type(): ConnectionType.Data;
+	/** Allows user to close connection. */
+	close(options?: { flush?: boolean }): void;
+	/** Allows user to send data. */
+	send(data: any, chunked?: boolean): void;
+}
+
 /**
  * Wraps a DataChannel between two Peers.
  */
 export abstract class DataConnection extends BaseConnection<
+	IDataConnection,
 	DataConnectionEvents,
 	DataConnectionErrorType
 > {
 	protected static readonly ID_PREFIX = "dc_";
 	protected static readonly MAX_BUFFERED_AMOUNT = 8 * 1024 * 1024;
 
-	private _negotiator: Negotiator<DataConnectionEvents, this>;
+	private _negotiator: Negotiator<
+		DataConnectionEvents,
+		DataConnectionErrorType,
+		this
+	>;
 	abstract readonly serialization: string;
 	readonly reliable: boolean;
 
-	public get type() {
+	public get type(): ConnectionType.Data {
 		return ConnectionType.Data;
 	}
 
@@ -87,7 +105,6 @@ export abstract class DataConnection extends BaseConnection<
 	 * Exposed functionality for users.
 	 */
 
-	/** Allows user to close connection. */
 	close(options?: { flush?: boolean }): void {
 		if (options?.flush) {
 			this.send({
@@ -126,7 +143,6 @@ export abstract class DataConnection extends BaseConnection<
 
 	protected abstract _send(data: any, chunked: boolean): void | Promise<void>;
 
-	/** Allows user to send data. */
 	public send(data: any, chunked = false) {
 		if (!this.open) {
 			this.emitError(

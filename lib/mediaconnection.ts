@@ -3,11 +3,15 @@ import logger from "./logger";
 import { Negotiator } from "./negotiator";
 import { ConnectionType, ServerMessageType } from "./enums";
 import type { Peer } from "./peer";
-import { BaseConnection, type BaseConnectionEvents } from "./baseconnection";
+import {
+	BaseConnection,
+	type BaseConnectionEvents,
+	IBaseConnection,
+} from "./baseconnection";
 import type { ServerMessage } from "./servermessage";
 import type { AnswerOption } from "./optionInterfaces";
 
-export interface MediaConnectionEvents extends BaseConnectionEvents<never> {
+export interface MediaConnectionEvents extends BaseConnectionEvents {
 	/**
 	 * Emitted when a connection to the PeerServer is established.
 	 *
@@ -24,22 +28,46 @@ export interface MediaConnectionEvents extends BaseConnectionEvents<never> {
 	willCloseOnRemote: () => void;
 }
 
+export interface IMediaConnection
+	extends IBaseConnection<MediaConnectionEvents> {
+	get type(): ConnectionType.Media;
+	get localStream(): MediaStream;
+	get remoteStream(): MediaStream;
+	/**
+	 * When receiving a {@apilink PeerEvents | `call`} event on a peer, you can call
+	 * `answer` on the media connection provided by the callback to accept the call
+	 * and optionally send your own media stream.
+
+	 *
+	 * @param stream A WebRTC media stream.
+	 * @param options
+	 * @returns
+	 */
+	answer(stream?: MediaStream, options?: AnswerOption): void;
+
+	/**
+	 * Closes the media connection.
+	 */
+	close(): void;
+}
 /**
  * Wraps WebRTC's media streams.
  * To get one, use {@apilink Peer.call} or listen for the {@apilink PeerEvents | `call`} event.
  */
-export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
+export class MediaConnection extends BaseConnection<
+	IMediaConnection,
+	MediaConnectionEvents
+> {
 	private static readonly ID_PREFIX = "mc_";
-	readonly label: string;
 
-	private _negotiator: Negotiator<MediaConnectionEvents, this>;
+	private _negotiator: Negotiator<MediaConnectionEvents, never, this>;
 	private _localStream: MediaStream;
 	private _remoteStream: MediaStream;
 
 	/**
 	 * For media connections, this is always 'media'.
 	 */
-	get type() {
+	get type(): ConnectionType.Media {
 		return ConnectionType.Media;
 	}
 
@@ -112,16 +140,6 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		}
 	}
 
-	/**
-     * When receiving a {@apilink PeerEvents | `call`} event on a peer, you can call
-     * `answer` on the media connection provided by the callback to accept the call
-     * and optionally send your own media stream.
-
-     *
-     * @param stream A WebRTC media stream.
-     * @param options
-     * @returns
-     */
 	answer(stream?: MediaStream, options: AnswerOption = {}): void {
 		if (this._localStream) {
 			logger.warn(
@@ -150,13 +168,6 @@ export class MediaConnection extends BaseConnection<MediaConnectionEvents> {
 		this._open = true;
 	}
 
-	/**
-	 * Exposed functionality for users.
-	 */
-
-	/**
-	 * Closes the media connection.
-	 */
 	close(): void {
 		if (this._negotiator) {
 			this._negotiator.cleanup();
