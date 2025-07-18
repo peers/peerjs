@@ -62,6 +62,7 @@ class PeerOptions implements PeerJSOption {
 	 */
 	secure?: boolean;
 	pingInterval?: number;
+	protocol?: string | string[];
 	referrerPolicy?: ReferrerPolicy;
 	logFunction?: (logLevel: LogLevel, ...rest: any[]) => void;
 	serializers?: SerializerMapping;
@@ -306,6 +307,7 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 			this._options.path!,
 			this._options.key!,
 			this._options.pingInterval,
+			this._options.protocol,
 		);
 
 		socket.on(SocketEventType.Message, (data: ServerMessage) => {

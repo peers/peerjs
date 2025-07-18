@@ -22,6 +22,7 @@ export class Socket extends EventEmitter {
 		path: string,
 		key: string,
 		private readonly pingInterval: number = 5000,
+		private readonly protocol: string | string[] | undefined = undefined,
 	) {
 		super();
 
@@ -39,7 +40,7 @@ export class Socket extends EventEmitter {
 			return;
 		}
 
-		this._socket = new WebSocket(wsUrl + "&version=" + version);
+		this._socket = new WebSocket(wsUrl + "&version=" + version, this.protocol);
 		this._disconnected = false;
 
 		this._socket.onmessage = (event) => {
