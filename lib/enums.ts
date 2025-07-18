@@ -61,6 +61,7 @@ export enum PeerErrorType {
 }
 
 export enum BaseConnectionErrorType {
+	PeerUnavailable = "peer-unavailable",
 	NegotiationFailed = "negotiation-failed",
 	ConnectionClosed = "connection-closed",
 }
