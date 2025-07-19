@@ -195,6 +195,47 @@ describe("Peer", () => {
 			});
 		});
 
+		it("reconnect => disconnect => destroy", (done) => {
+			const peer1 = new Peer("1", { port: 8080, host: "localhost" });
+
+			peer1.once("open", () => {
+				expect(peer1.open).toBe(true);
+
+				peer1.once("disconnected", () => {
+					expect(peer1.disconnected).toBe(true);
+					expect(peer1.destroyed).toBe(false);
+					expect(peer1.open).toBe(false);
+
+					peer1.once("open", (id) => {
+						expect(id).toBe("1");
+						expect(peer1.disconnected).toBe(false);
+						expect(peer1.destroyed).toBe(false);
+						expect(peer1.open).toBe(true);
+
+						peer1.once("disconnected", () => {
+							expect(peer1.disconnected).toBe(true);
+							expect(peer1.destroyed).toBe(false);
+							expect(peer1.open).toBe(false);
+
+							peer1.once("close", () => {
+								expect(peer1.disconnected).toBe(true);
+								expect(peer1.destroyed).toBe(true);
+								expect(peer1.open).toBe(false);
+
+								done();
+							});
+						});
+
+						peer1.destroy();
+					});
+
+					peer1.reconnect();
+				});
+
+				peer1.disconnect();
+			});
+		});
+
 		it("destroy peer if no id and no connection", (done) => {
 			mockServer.stop();
 
