@@ -294,7 +294,10 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 			this._api
 				.retrieveId()
 				.then((id) => this._initialize(id))
-				.catch((error) => this._abort(PeerErrorType.ServerError, error));
+				.catch((error) => {
+					if (!this.destroyed && !this.disconnected)
+						this._abort(PeerErrorType.ServerError, error);
+				});
 		}
 	}
 
@@ -341,6 +344,8 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 
 	/** Initialize a connection with the server. */
 	private _initialize(id: string): void {
+		if (this.destroyed || this.disconnected) return;
+
 		this._id = id;
 		this.socket.start(id, this._options.token!);
 	}
@@ -739,6 +744,9 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		this._api
 			.listAllPeers()
 			.then((peers) => cb(peers))
-			.catch((error) => this._abort(PeerErrorType.ServerError, error));
+			.catch((error) => {
+				if (!this.destroyed && !this.disconnected)
+					this._abort(PeerErrorType.ServerError, error);
+			});
 	}
 }
