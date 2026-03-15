@@ -6,7 +6,10 @@ import { version } from "./version";
 export class API {
 	constructor(private readonly _options: PeerJSOption) {}
 
-	private _buildRequest(method: string): Promise<Response> {
+	private _buildRequest(
+		method: string,
+		options?: { signal?: AbortSignal },
+	): Promise<Response> {
 		const protocol = this._options.secure ? "https" : "http";
 		const { host, port, path, key } = this._options;
 		const url = new URL(`${protocol}://${host}:${port}${path}${key}/${method}`);
@@ -15,13 +18,14 @@ export class API {
 		url.searchParams.set("version", version);
 		return fetch(url.href, {
 			referrerPolicy: this._options.referrerPolicy,
+			signal: options?.signal,
 		});
 	}
 
 	/** Get a unique ID from the server via XHR and initialize with it. */
-	async retrieveId(): Promise<string> {
+	async retrieveId(options?: { signal?: AbortSignal }): Promise<string> {
 		try {
-			const response = await this._buildRequest("id");
+			const response = await this._buildRequest("id", options);
 
 			if (response.status !== 200) {
 				throw new Error(`Error. Status:${response.status}`);
