@@ -127,6 +127,7 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 
 	private _id: string | null = null;
 	private _lastServerId: string | null = null;
+	private _retrieveIdController: AbortController | null = null;
 
 	// States.
 	private _destroyed = false; // Connections have been killed
@@ -291,10 +292,15 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		if (userId) {
 			this._initialize(userId);
 		} else {
+			this._retrieveIdController = new AbortController();
 			this._api
-				.retrieveId()
+				.retrieveId({ signal: this._retrieveIdController.signal })
 				.then((id) => this._initialize(id))
-				.catch((error) => this._abort(PeerErrorType.ServerError, error));
+				.catch((error) => {
+					if (!this.destroyed && !this.disconnected) {
+						this._abort(PeerErrorType.ServerError, error);
+					}
+				});
 		}
 	}
 
@@ -341,6 +347,9 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 
 	/** Initialize a connection with the server. */
 	private _initialize(id: string): void {
+		if (this.destroyed || this.disconnected) {
+			return;
+		}
 		this._id = id;
 		this.socket.start(id, this._options.token!);
 	}
@@ -688,6 +697,9 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 
 		logger.log(`Disconnect peer with ID:${currentId}`);
 
+		this._retrieveIdController?.abort();
+		this._retrieveIdController = null;
+
 		this._disconnected = true;
 		this._open = false;
 
@@ -708,11 +720,18 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	 */
 	reconnect(): void {
 		if (this.disconnected && !this.destroyed) {
+			if (this._lastServerId === null) {
+				this.emitError(
+					PeerErrorType.Disconnected,
+					"Cannot reconnect: peer has no ID. Create a new Peer instead.",
+				);
+				return;
+			}
 			logger.log(
 				`Attempting reconnection to server with ID ${this._lastServerId}`,
 			);
 			this._disconnected = false;
-			this._initialize(this._lastServerId!);
+			this._initialize(this._lastServerId);
 		} else if (this.destroyed) {
 			throw new Error(
 				"This peer cannot reconnect to the server. It has already been destroyed.",
@@ -739,6 +758,10 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 		this._api
 			.listAllPeers()
 			.then((peers) => cb(peers))
-			.catch((error) => this._abort(PeerErrorType.ServerError, error));
+			.catch((error) => {
+				if (!this.destroyed && !this.disconnected) {
+					this._abort(PeerErrorType.ServerError, error);
+				}
+			});
 	}
 }
