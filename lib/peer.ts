@@ -208,7 +208,7 @@ export class Peer extends EventEmitterWithError<PeerErrorType, PeerEvents> {
 	 * The ID must start and end with an alphanumeric character (lower or upper case character or a digit). In the middle of the ID spaces, dashes (-) and underscores (_) are allowed. Use {@apilink PeerOptions.metadata } to send identifying information.
 	 * @param options for specifying details about PeerServer
 	 */
-	constructor(id: string, options?: PeerOptions);
+	constructor(id: string | undefined, options?: PeerOptions);
 
 	constructor(id?: string | PeerOptions, options?: PeerOptions) {
 		super();
